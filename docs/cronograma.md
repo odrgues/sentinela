@@ -3,8 +3,6 @@
 Projetos Integrados 2 (VIA231) · Uniube · 2026/2
 Calendário oficial da disciplina, às quintas-feiras.
 
-> As datas abaixo seguem o calendário divulgado pelo professor. Segundo o CLAUDE.md do projeto, "datas ainda não confirmadas para 2026/2" — atualizar esta tabela se houver retificação oficial.
-
 ## Calendário oficial
 
 | Data | Etapa | Entrega técnica | Entrega de gestão |
@@ -16,7 +14,7 @@ Calendário oficial da disciplina, às quintas-feiras.
 | 24/09 | Mentoria | Laboratório — dúvidas e adiantamento do CP-3 | — |
 | 01/10 | CP-3 — Integração | Frontend consumindo a API · CRUD pela tela · filtros · feedback visual · **sistema hospedado** | Atas em dia · board atualizado |
 | 08/10 | Mentoria | Laboratório — dúvidas e adiantamento do CP-4 | — |
-| 15/10 | CP-4 — MVP completo | Fluxo end-to-end: cadastro → previsão → alertas · agente no Telegram · todas as 12 regras de negócio · autenticação | Bugs e pendências como issues abertas · branches por funcionalidade |
+| 15/10 | CP-4 — MVP completo | Fluxo end-to-end: cadastro → previsão → alertas · agente no WhatsApp · todas as 12 regras de negócio · autenticação | Bugs e pendências como issues abertas · branches por funcionalidade |
 | 22/10 | Mentoria | Laboratório — dúvidas e adiantamento do CP-5 | — |
 | 29/10 | CP-5 — Produção | URL pública estável · banco em produção · README final com screenshots · relatório final | Todas as atas em `/docs/atas` · board finalizado |
 | 10/12 | AMOSTRATEC | Defesa final — funcionamento end-to-end (25) · hospedagem (10) · qualidade técnica e defesa (15) | — |
@@ -25,7 +23,7 @@ Calendário oficial da disciplina, às quintas-feiras.
 
 Decidida antecipadamente no termo de abertura, para não improvisar sob pressão:
 
-1. Agente no Telegram sai primeiro.
+1. Agente no Whatsapp sai primeiro.
 2. Contexto do El Niño / La Niña sai em segundo.
 3. CRUD, previsão de 7 dias e motor de alertas são intocáveis.
 
