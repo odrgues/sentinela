@@ -1,0 +1,28 @@
+# Segredos
+.env
+.env.local
+
+# Rascunhos do planejamento (não fazem parte do projeto)
+.rascunhos/
+
+# Java / Maven
+target/
+*.class
+*.jar
+
+# Node / Vite
+node_modules/
+dist/
+.vite/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+.CLAUDE.md
+.organizar.sh
