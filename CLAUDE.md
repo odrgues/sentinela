@@ -32,13 +32,13 @@ O produtor cadastra seus cultivos: qual cultura, em qual município, plantado em
 2. Compara com as **faixas climáticas daquela cultura**, guardadas no banco com a fonte registrada.
 3. Gera **alertas em linguagem direta** — "Mínima de 10,4 °C na sexta; o feijão sofre dano abaixo de 12 °C".
 4. Mostra a **fase do El Niño / La Niña** vigente no ciclo daquele cultivo.
-5. Responde ao produtor **pelo Telegram**, em linguagem natural.
+5. Responde ao produtor **pelo WhatsApp**, em linguagem natural.
 
 **Não existe modelo preditivo, estatística, aprendizado de máquina ou processamento de série histórica.** A previsão vem pronta das agências meteorológicas; a "inteligência" do sistema é comparação de valores.
 
 ---
 
-## O agente no Telegram — regra de ouro
+## O agente no WhatsApp — regra de ouro
 
 O agente é **canal de consulta**, não de cadastro. O CRUD continua no site.
 
@@ -46,7 +46,7 @@ O agente é **canal de consulta**, não de cadastro. O CRUD continua no site.
 
 ```
 1. Mensagem chega no webhook
-2. Identifica o usuário pelo chat_id (usuario.telegram_chat_id)
+2. Identifica o usuário pelo número (usuario.whatsapp_numero)
 3. Classifica a intenção (saudacao | consulta_cultivos | consulta_previsao |
                           consulta_alertas | nao_identificada)
 4. O NOSSO backend busca os dados: cultivos, alertas já calculados, previsão
@@ -56,7 +56,7 @@ O agente é **canal de consulta**, não de cadastro. O CRUD continua no site.
 
 O modelo não sabe agronomia, não calcula alerta, não inventa número. Se não houver dado para responder, a resposta é dizer que não encontrou — nunca preencher a lacuna.
 
-Se o chat não estiver vinculado a nenhuma conta, responda convidando a se cadastrar pelo site. Não crie usuário pelo Telegram.
+Se o chat não estiver vinculado a nenhuma conta, responda convidando a se cadastrar pelo site. Não crie usuário pelo WhatsApp.
 
 **Apenas reativo.** O sistema só responde a quem mandou mensagem primeiro. Envio proativo está fora do escopo.
 
@@ -91,7 +91,7 @@ Estrutura obrigatória publicada pelo professor: `/src`, `/database`, `/docs` e 
       repository/     interfaces JPA
       model/          entidades
       dto/            objetos de entrada e saída
-      client/         OpenMeteoClient, TelegramClient, ModeloLinguagemClient
+      client/         OpenMeteoClient, WhatsAppClient, ModeloLinguagemClient
       config/         segurança e CORS
   /frontend           projeto React + Vite
     src/
@@ -126,7 +126,7 @@ O DDL oficial está em `/database/schema/01_ddl.sql`. **Nunca altere o schema se
 
 | Tabela | Conteúdo |
 |---|---|
-| `usuario` | id, nome, email (único), senha_hash, **telegram_chat_id** (único), criado_em |
+| `usuario` | id, nome, email (único), senha_hash, **whatsapp_numero** (único), criado_em |
 | `municipio` | id, nome, uf, latitude, longitude · único (nome, uf) |
 | `cultura` | id, nome, ciclo_dias, faixas ideais e críticas de temperatura e chuva, **fonte**, observacao |
 | `fase_enso` | id, ano, mes, fase, intensidade, indice · único (ano, mes) |
@@ -202,9 +202,9 @@ GET https://api.open-meteo.com/v1/forecast
     &forecast_days=7&timezone=America/Sao_Paulo
 ```
 
-### Telegram Bot API (Meta)
+### WhatsApp Business Platform (Meta)
 
-Número de teste gerado no painel de desenvolvedor, com até 5 destinatários liberados. O webhook precisa de URL pública HTTPS — em desenvolvimento, use ngrok.
+Número de teste gerado no painel de desenvolvedor (Meta for Developers), com até 5 destinatários liberados. O webhook precisa de URL pública HTTPS — em desenvolvimento, use ngrok.
 
 
 
@@ -248,7 +248,7 @@ DELETE              /alertas/{id}
 GET                 /fases-enso?ano=
 GET                 /painel/resumo
 
-GET    POST         /webhook/telegram              ← recebe as mensagens do bot
+GET    POST         /webhook/whatsapp              ← recebe as mensagens do bot
 GET                 /mensagens?chatId=
 ```
 
@@ -322,7 +322,7 @@ As semanas de mentoria entre os checkpoints são laboratório: use para tirar d�
 | **CP-1** | Diagrama ER · script de criação · script de dados iniciais · banco rodando · README explicando tabelas e relacionamentos | Termo de abertura · cronograma · 2 atas · projeto no GitHub com issues, labels e responsáveis |
 | **CP-2** | API com CRUD completo de pelo menos 2 entidades · tratamento de erro com status corretos · coleção do Insomnia · especificação da API em `/docs` | atas em dia · commits das duas |
 | **CP-3** | Front consumindo a API · CRUD pela tela · filtros · feedback visual · **sistema já hospedado** | idem |
-| **CP-4** | Fluxo completo: cadastro → previsão → alertas → agente no Telegram · todas as validações · autenticação | idem |
+| **CP-4** | Fluxo completo: cadastro → previsão → alertas → agente no WhatsApp · todas as validações · autenticação | idem |
 | **CP-5** | URL pública funcionando · banco em produção · README final com screenshots · relatório final | todas as atas em `/docs/atas` · board finalizado |
 
 ### Checklist detalhado
@@ -374,7 +374,7 @@ Antes de cada checkpoint, percorra a lista correspondente item por item. Se eu p
 **CP-4 — MVP completo**
 
 - [ ] Fluxo end-to-end: cadastra cultivo → recebe previsão → recebe alertas
-- [ ] Agente do Telegram respondendo
+- [ ] Agente do WhatsApp respondendo
 - [ ] Todas as 12 regras de negócio implementadas
 - [ ] Autenticação fechando as rotas
 - [ ] Interface responsiva
@@ -404,7 +404,7 @@ Antes de cada checkpoint, percorra a lista correspondente item por item. Se eu p
 
 **Hospedar já no CP-3, não no CP-5.** O professor recomenda explicitamente, e descobrir problema de deploy na última semana é o erro mais caro possível.
 
-**Ordem de corte se o prazo apertar:** o agente no Telegram sai primeiro, depois o contexto do ENSO. O CRUD, a previsão e os alertas são intocáveis.
+**Ordem de corte se o prazo apertar:** o agente no WhatsApp sai primeiro, depois o contexto do ENSO. O CRUD, a previsão e os alertas são intocáveis.
 
 ---
 
@@ -449,7 +449,7 @@ GITHUB_TOKEN=
 DB_URL=
 DB_USER=
 DB_PASSWORD=
-TELEGRAM_BOT_TOKEN=
+WHATSAPP_TOKEN=
 LLM_API_KEY=
 ```
 
