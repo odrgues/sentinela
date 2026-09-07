@@ -1,0 +1,74 @@
+// Sentinela — cole em https://dbdiagram.io para gerar o diagrama ER
+
+Table usuario {
+  id int [pk, increment]
+  nome varchar(120)
+  email varchar(160) [unique]
+  senha_hash varchar(255)
+  telegram_chat_id varchar(32) [unique, note: 'id da conversa no Telegram']
+  criado_em timestamp
+}
+
+Table municipio {
+  id int [pk, increment]
+  nome varchar(120)
+  uf char(2)
+  latitude decimal(9,6)
+  longitude decimal(9,6)
+}
+
+Table cultura {
+  id int [pk, increment]
+  nome varchar(80) [unique]
+  ciclo_dias int
+  temp_min_ideal_c decimal(4,1)
+  temp_max_ideal_c decimal(4,1)
+  temp_critica_baixa_c decimal(4,1)
+  temp_critica_alta_c decimal(4,1)
+  chuva_sem_min_mm decimal(5,1)
+  chuva_sem_max_mm decimal(5,1)
+  fonte varchar(200)
+  observacao text
+}
+
+Table fase_enso {
+  id int [pk, increment]
+  ano int
+  mes int
+  fase varchar(10)
+  intensidade varchar(15)
+  indice decimal(4,2)
+}
+
+Table cultivo {
+  id int [pk, increment]
+  usuario_id int [ref: > usuario.id]
+  municipio_id int [ref: > municipio.id]
+  cultura_id int [ref: > cultura.id]
+  apelido varchar(80)
+  area_ha decimal(10,2)
+  data_plantio date
+  data_colheita_prevista date
+  status varchar(20)
+  criado_em timestamp
+}
+
+Table alerta {
+  id int [pk, increment]
+  cultivo_id int [ref: > cultivo.id]
+  tipo varchar(25)
+  severidade varchar(10)
+  mensagem text
+  data_prevista date
+  gerado_em timestamp
+}
+
+Table mensagem {
+  id int [pk, increment]
+  usuario_id int [ref: > usuario.id, note: 'nulo quando o chat não é cadastrado']
+  chat_id varchar(32)
+  direcao varchar(10)
+  conteudo text
+  intencao varchar(30)
+  registrado_em timestamp
+}
