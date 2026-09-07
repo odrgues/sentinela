@@ -5,7 +5,7 @@ Sistema de acompanhamento de cultivos que traduz a previsão do tempo para o que
 Trabalho da disciplina **Projetos Integrados 2 (VIA231)** — Uniube.
 Equipe: **Jessica Rodrigues** e **Larissa Miuki**.
 
-> Este README cobre o que já está pronto no **CP-1 (banco de dados)**. As demais partes (API, front-end, agente no Telegram) chegam nos próximos checkpoints.
+> Este README cobre o que já está pronto no **CP-1 (banco de dados)**. As demais partes (API, front-end, agente no WhatsApp) chegam nos próximos checkpoints.
 
 ---
 
@@ -41,13 +41,13 @@ Exportado em `database/er_diagrama.png` e `database/er_diagrama.pdf`.
 
 | Tabela | O que guarda |
 |---|---|
-| `usuario` | Quem usa o sistema — produtor cadastrado no site. `telegram_chat_id` liga a conta a uma conversa no Telegram (fica nulo até o produtor vincular). |
+| `usuario` | Quem usa o sistema — produtor cadastrado no site. `whatsapp_numero` liga a conta a uma conversa no WhatsApp (fica nulo até o produtor vincular). |
 | `municipio` | Município onde um cultivo está plantado, com latitude/longitude — é o ponto usado para buscar a previsão na Open-Meteo. Criado por geocodificação na primeira vez que aparece; reaproveitado depois. |
 | `cultura` | Uma cultura agrícola (feijão, milho, soja...) e suas faixas ideais e críticas de temperatura e chuva. Toda linha tem `fonte` preenchida — vêm de publicações da Embrapa, nunca de valor inventado. |
 | `fase_enso` | Classificação mensal do fenômeno El Niño / La Niña (fase, intensidade, índice ONI), carregada uma vez no seed a partir da série do NOAA. Não tem relação com nenhuma outra tabela — é só consultada por ano e mês. |
 | `cultivo` | O registro central: um produtor plantou uma cultura, num município, numa data. Guarda a data de colheita prevista (calculada) e o status atual. |
 | `alerta` | Um aviso gerado ao comparar a previsão de 7 dias de um cultivo com as faixas da sua cultura — por exemplo, risco de geada ou de déficit hídrico. |
-| `mensagem` | Histórico de conversa do agente no Telegram: toda mensagem recebida e enviada é salva aqui, mesmo quando o chat ainda não está vinculado a nenhum usuário. |
+| `mensagem` | Histórico de conversa do agente no WhatsApp: toda mensagem recebida e enviada é salva aqui, mesmo quando o chat ainda não está vinculado a nenhum usuário. |
 
 ---
 
