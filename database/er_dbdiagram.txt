@@ -1,11 +1,9 @@
-// Sentinela — cole em https://dbdiagram.io para gerar o diagrama ER
-
 Table usuario {
   id int [pk, increment]
   nome varchar(120)
   email varchar(160) [unique]
   senha_hash varchar(255)
-  telegram_chat_id varchar(32) [unique, note: 'id da conversa no Telegram']
+  whatsapp_numero varchar(20) [unique, note: 'número do WhatsApp vinculado, formato E.164']
   criado_em timestamp
 }
 

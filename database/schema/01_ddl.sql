@@ -8,7 +8,7 @@ CREATE TABLE usuario (
     nome        VARCHAR(120) NOT NULL,
     email       VARCHAR(160) NOT NULL UNIQUE,
     senha_hash  VARCHAR(255) NOT NULL,
-    telegram_chat_id VARCHAR(32) UNIQUE,     -- id da conversa no Telegram
+    whatsapp_numero VARCHAR(20) UNIQUE,      -- número do WhatsApp vinculado, formato E.164
     criado_em   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -83,7 +83,7 @@ CREATE TABLE alerta (
     CHECK (severidade IN ('info','atencao','critico'))
 );
 
--- Histórico das conversas do agente no Telegram
+-- Histórico das conversas do agente no WhatsApp
 CREATE TABLE mensagem (
     id           INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id   INT NULL,                    -- nulo quando o chat não é cadastrado

@@ -1,11 +1,11 @@
 -- Sentinela — Dados iniciais
 USE sentinela;
 
-INSERT INTO usuario (nome, email, senha_hash, telegram_chat_id)
+INSERT INTO usuario (nome, email, senha_hash, whatsapp_numero)
 VALUES
-('Jéssica Rodrigues', 'jessicaRo@gmail.com', 'hashJessica1', '781234501'),
-('Larissa Miuki',     'LarissaMiu@gmail.com', 'hashLarissa1', '781234502'),
-('João Produtor',     'joao.produtor@exemplo.com', 'hashJoao1',  '781234503');
+('Jéssica Rodrigues', 'jessicaRo@gmail.com', 'hashJessica1', '+5534991234501'),
+('Larissa Miuki',     'LarissaMiu@gmail.com', 'hashLarissa1', '+5534991234502'),
+('João Produtor',     'joao.produtor@exemplo.com', 'hashJoao1',  '+5534991234503');
 
 INSERT INTO municipio (nome, uf, latitude, longitude)
 VALUES
@@ -70,12 +70,12 @@ VALUES
 (3,'favoravel','info','Chuva e temperatura dentro da faixa ideal para a cultura nesta semana.','2026-08-23'),
 (4,'favoravel','info','Chuva e temperatura dentro da faixa ideal para a cultura nesta semana.','2026-09-15');
 
--- Exemplo de conversa do agente no Telegram
+-- Exemplo de conversa do agente no WhatsApp
 INSERT INTO mensagem (usuario_id, chat_id, direcao, conteudo, intencao)
 VALUES
-(3,'781234503','recebida','oi, como esta minha lavoura essa semana?','consulta_alertas'),
-(3,'781234503','enviada','Olá! Você tem 2 cultivos em andamento. No Milho do milharal, em Araguari, há 58 mm de chuva previstos nos próximos 7 dias, acima do limite para a cultura. O Feijão da várzea, em Uberlândia, está com condições favoráveis.',NULL),
-(3,'781234503','recebida','e a previsao pro feijao?','consulta_previsao'),
-(3,'781234503','enviada','Para Uberlândia nos próximos 7 dias: mínimas entre 14 e 19 °C, máximas entre 27 e 31 °C, e 8 mm de chuva no acumulado. Dentro da faixa ideal para o feijão.',NULL),
-(NULL,'789999999','recebida','bom dia','saudacao'),
-(NULL,'789999999','enviada','Bom dia! Não encontrei essa conta vinculada ao Sentinela. Cadastre-se pelo site e vincule seu Telegram para acompanhar seus cultivos por aqui.',NULL);
+(3,'+5534991234503','recebida','oi, como esta minha lavoura essa semana?','consulta_alertas'),
+(3,'+5534991234503','enviada','Olá! Você tem 2 cultivos em andamento. No Milho do milharal, em Araguari, há 58 mm de chuva previstos nos próximos 7 dias, acima do limite para a cultura. O Feijão da várzea, em Uberlândia, está com condições favoráveis.',NULL),
+(3,'+5534991234503','recebida','e a previsao pro feijao?','consulta_previsao'),
+(3,'+5534991234503','enviada','Para Uberlândia nos próximos 7 dias: mínimas entre 14 e 19 °C, máximas entre 27 e 31 °C, e 8 mm de chuva no acumulado. Dentro da faixa ideal para o feijão.',NULL),
+(NULL,'+5534999998888','recebida','bom dia','saudacao'),
+(NULL,'+5534999998888','enviada','Bom dia! Não encontrei essa conta vinculada ao Sentinela. Cadastre-se pelo site e vincule seu WhatsApp para acompanhar seus cultivos por aqui.',NULL);
