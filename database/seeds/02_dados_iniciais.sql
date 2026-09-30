@@ -23,6 +23,10 @@ VALUES
 -- Faixas do feijão conforme Embrapa: média ótima 18-24 °C, temperatura diurna 18-30 °C,
 -- abortamento de flores/vagens acima de 30 °C ou abaixo de 12 °C, máxima suportada 35 °C.
 -- Limites semanais de chuva derivados do total de ciclo (300-400 mm em ~90 dias).
+-- Faixas do milho conforme Embrapa: germinação/crescimento 24-30 °C, paralisação abaixo de 10 °C,
+-- estresse térmico/perda de pólen acima de 35 °C. Limites semanais de chuva derivados do total do ciclo (500-800 mm em ~120 dias).
+-- Faixas da soja conforme Embrapa: ideal 20-30 °C, paralisação abaixo de 10 °C,
+-- abortamento floral severo acima de 35 °C. Limites semanais de chuva derivados do total do ciclo (450-800 mm em ~120 dias).
 INSERT INTO cultura
 (nome, ciclo_dias, temp_min_ideal_c, temp_max_ideal_c, temp_critica_baixa_c,
  temp_critica_alta_c, chuva_sem_min_mm, chuva_sem_max_mm, fonte, observacao)
@@ -30,12 +34,12 @@ VALUES
 ('Feijão', 90, 18.0, 30.0, 12.0, 35.0, 20.0, 45.0,
  'Embrapa — Agência de Informação Tecnológica, Feijão / Clima',
  'Limites semanais de chuva derivados do total do ciclo.'),
-('Milho', 120, 18.0, 32.0, 10.0, 35.0, 25.0, 50.0,
- 'A confirmar em publicação da Embrapa',
- 'Valores provisórios para demonstração — não usar sem fonte.'),
-('Soja', 120, 20.0, 30.0, 10.0, 35.0, 25.0, 50.0,
- 'A confirmar em publicação da Embrapa',
- 'Valores provisórios para demonstração — não usar sem fonte.');
+('Milho', 120, 24.0, 30.0, 10.0, 35.0, 29.4, 47.1,
+ 'Embrapa — Agência de Informação Tecnológica, Milho / Clima',
+ 'Limites semanais de chuva derivados do total do ciclo.'),
+('Soja', 120, 20.0, 30.0, 10.0, 35.0, 26.5, 47.1,
+ 'Embrapa — Agência de Informação Tecnológica, Soja / Exigências Climáticas',
+ 'Limites semanais de chuva derivados do total do ciclo.');
 
 -- Classificação mensal do ENSO (NOAA/CPC). Ampliar para a série completa antes do CP-4.
 INSERT INTO fase_enso (ano, mes, fase, intensidade, indice) VALUES
