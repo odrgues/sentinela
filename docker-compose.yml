@@ -10,7 +10,7 @@ services:
       MYSQL_PASSWORD: sentinela_local
       TZ: America/Sao_Paulo
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - sentinela-dados:/var/lib/mysql
     command: --default-time-zone=-03:00
