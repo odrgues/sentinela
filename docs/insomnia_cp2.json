@@ -1,0 +1,106 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-09-30T00:00:00.000Z",
+  "__export_source": "sentinela:cp2",
+  "resources": [
+    {
+      "_id": "wrk_sentinela_cp2",
+      "_type": "workspace",
+      "parentId": null,
+      "name": "Sentinela — CP-2",
+      "description": "Endpoints da API do Sentinela (backend Spring Boot) entregues no CP-2."
+    },
+    {
+      "_id": "env_sentinela_base",
+      "_type": "environment",
+      "parentId": "wrk_sentinela_cp2",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:8080"
+      }
+    },
+    {
+      "_id": "fld_usuario",
+      "_type": "request_group",
+      "parentId": "wrk_sentinela_cp2",
+      "name": "Usuário"
+    },
+    {
+      "_id": "req_usuario_criar",
+      "_type": "request",
+      "parentId": "fld_usuario",
+      "name": "1. Criar usuário (201)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/usuario",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Teste Silva\",\n  \"email\": \"teste.silva@example.com\",\n  \"senha\": \"123456\",\n  \"whatsappNumero\": \"+5534999990001\"\n}"
+      }
+    },
+    {
+      "_id": "req_usuario_consultar",
+      "_type": "request",
+      "parentId": "fld_usuario",
+      "name": "2. Consultar usuário (200)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/usuario/teste.silva@example.com"
+    },
+    {
+      "_id": "req_usuario_atualizar",
+      "_type": "request",
+      "parentId": "fld_usuario",
+      "name": "3. Atualizar usuário (200)",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/api/usuario/teste.silva@example.com",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Teste Silva Atualizado\"\n}"
+      }
+    },
+    {
+      "_id": "req_usuario_deletar",
+      "_type": "request",
+      "parentId": "fld_usuario",
+      "name": "4. Remover usuário (204)",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/api/usuario/teste.silva@example.com"
+    },
+    {
+      "_id": "req_usuario_consultar_404",
+      "_type": "request",
+      "parentId": "fld_usuario",
+      "name": "5. Consultar usuário inexistente (404)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/usuario/nao-existe@example.com"
+    },
+    {
+      "_id": "req_usuario_criar_email_invalido",
+      "_type": "request",
+      "parentId": "fld_usuario",
+      "name": "6. Criar usuário com e-mail inválido (400)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/usuario",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Sem Email Valido\",\n  \"email\": \"nao-e-email\",\n  \"senha\": \"123456\"\n}"
+      }
+    },
+    {
+      "_id": "req_usuario_criar_duplicado",
+      "_type": "request",
+      "parentId": "fld_usuario",
+      "name": "7. Criar usuário com e-mail duplicado (400)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/usuario",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Jessica Rodrigues\",\n  \"email\": \"jessicaRo@gmail.com\",\n  \"senha\": \"123456\"\n}"
+      }
+    }
+  ]
+}

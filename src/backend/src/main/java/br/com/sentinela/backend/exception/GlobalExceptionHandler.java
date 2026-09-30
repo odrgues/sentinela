@@ -30,4 +30,11 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST)
                 .body(mensagem);
     }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<String> handleErroInesperado(Exception ex) {
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Erro interno no servidor.");
+    }
 }

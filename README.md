@@ -5,7 +5,7 @@ Sistema de acompanhamento de cultivos que traduz a previsão do tempo para o que
 Trabalho da disciplina **Projetos Integrados 2 (VIA231)** — Uniube.
 Equipe: **Jessica Rodrigues** e **Larissa Miuki**.
 
-> Este README cobre o que já está pronto no **CP-1 (banco de dados)**. As demais partes (API, front-end, agente no WhatsApp) chegam nos próximos checkpoints.
+> Este README cobre o que já está pronto no **CP-1 (banco de dados)** e no **CP-2 (API backend)**. As demais partes (front-end, agente no WhatsApp) chegam nos próximos checkpoints.
 
 ---
 
@@ -27,6 +27,31 @@ mysql -h127.0.0.1 -P3306 -uroot -proot_local sentinela < database/seeds/02_dados
 ```
 
 As queries de teste usadas na demonstração ficam em `database/queries_demonstracao.sql`.
+
+---
+
+## Como rodar a API (CP-2)
+
+Pré-requisito: banco rodando (passo anterior) e Java 21.
+
+```bash
+cd src/backend
+./mvnw spring-boot:run
+```
+
+A API sobe em `http://localhost:8080`.
+
+### Endpoints disponíveis
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `POST` | `/api/usuario` | Cadastra um usuário |
+| `GET` | `/api/usuario/{email}` | Consulta um usuário pelo e-mail |
+| `PATCH` | `/api/usuario/{email}` | Atualiza campos de um usuário |
+| `DELETE` | `/api/usuario/{email}` | Remove um usuário |
+
+Especificação completa (parâmetros, corpo de requisição/resposta, códigos de status): [`docs/especificacao_api.md`](docs/especificacao_api.md).
+Coleção pronta para testar no Insomnia: [`docs/insomnia_cp2.json`](docs/insomnia_cp2.json).
 
 ---
 

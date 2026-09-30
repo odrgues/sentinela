@@ -7,10 +7,10 @@ Calendário oficial da disciplina, às quintas-feiras.
 
 | Data | Etapa | Entrega técnica | Entrega de gestão |
 |---|---|---|---|
-| 27/08 | Apresentação do escopo | — | Escopo definido em grupo |
-| **03/09** | **CP-1 — Banco de dados** | Diagrama ER · script de criação · script de dados iniciais · banco rodando · README explicando tabelas e relacionamentos | Termo de abertura · cronograma · 2 atas · projeto no GitHub com issues, labels e responsáveis |
-| 10/09 | Mentoria | Laboratório — dúvidas e adiantamento do CP-2 | — |
-| 17/09 | CP-2 — Backend | API com CRUD completo de pelo menos 2 entidades · tratamento de erro com status corretos · coleção do Insomnia · especificação da API em `/docs` | Atas em dia · commits das duas integrantes |
+| 27/08 | Apresentação do escopo | — | Escopo definido em grupo — ✅ concluído |
+| **03/09** | **CP-1 — Banco de dados** | Diagrama ER · script de criação · script de dados iniciais · banco rodando · README explicando tabelas e relacionamentos | Termo de abertura · cronograma · 2 atas · projeto no GitHub com issues, labels e responsáveis — ✅ concluído |
+| 10/09 | Mentoria | Laboratório — dúvidas e adiantamento do CP-2 | — ✅ concluído |
+| ~~17/09~~ **30/09** | **CP-2 — Backend** | CRUD de `Usuario` (4 endpoints: criar, consultar, atualizar, remover) · conexão com o banco do CP-1 · tratamento de erro (400/404/500) · testes manuais documentados · especificação da API em `/docs` | Atas S05 e S06 · commits das duas integrantes — ✅ concluído, entregue com 13 dias de atraso em relação à data original |
 | 24/09 | Mentoria | Laboratório — dúvidas e adiantamento do CP-3 | — |
 | 01/10 | CP-3 — Integração | Frontend consumindo a API · CRUD pela tela · filtros · feedback visual · **sistema hospedado** | Atas em dia · board atualizado |
 | 08/10 | Mentoria | Laboratório — dúvidas e adiantamento do CP-4 | — |
