@@ -3,7 +3,7 @@ USE sentinela;
 
 INSERT INTO usuario (nome, email, senha_hash, whatsapp_numero)
 VALUES
-('Jéssica Rodrigues', 'jessicaRo@gmail.com', 'hashJessica1', '+5534991234501'),
+('Jessica Rodrigues', 'jessicaRo@gmail.com', 'hashJessica1', '+5534991234501'),
 ('Larissa Miuki',     'LarissaMiu@gmail.com', 'hashLarissa1', '+5534991234502'),
 ('João Produtor',     'joao.produtor@exemplo.com', 'hashJoao1',  '+5534991234503');
 
