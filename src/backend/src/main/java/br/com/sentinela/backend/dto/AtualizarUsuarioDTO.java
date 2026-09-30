@@ -13,7 +13,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class AtualizarUsuarioDTO {
 
-    @Size(max = 160, message = "O nome deve ter no máximo 160 caracteres.")
+    @Size(max = 120, message = "O nome deve ter no máximo 120 caracteres.")
     private String nome;
 
     @Email(message = "Insira um e-mail válido")
