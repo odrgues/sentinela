@@ -51,7 +51,7 @@ A API sobe em `http://localhost:8080`.
 | `DELETE` | `/api/usuario/{email}` | Remove um usuário |
 
 Especificação completa (parâmetros, corpo de requisição/resposta, códigos de status): [`docs/especificacao_api.md`](docs/especificacao_api.md).
-Coleção pronta para testar no Insomnia: [`docs/insomnia_cp2.json`](docs/insomnia_cp2.json).
+Coleção pronta para testar no Postman: [`docs/postman_cp2.json`](docs/postman_cp2.json).
 
 ---
 

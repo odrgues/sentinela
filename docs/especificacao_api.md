@@ -97,6 +97,6 @@ Handler global (`GlobalExceptionHandler`) padroniza as respostas de erro:
 
 1. Subir o banco do CP-1: `docker compose up -d` (raiz do repo)
 2. Subir a API: `cd src/backend && ./mvnw spring-boot:run`
-3. Importar `docs/insomnia_cp2.json` no Insomnia (ou usar os exemplos `curl` acima)
+3. Importar `docs/postman_cp2.json` no Postman (ou usar os exemplos `curl` acima)
 
 Evidência dos testes manuais executados em 30/09/2026: ver `docs/atas/ata_S06_2026-09-30.md`.

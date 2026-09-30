@@ -6,7 +6,7 @@ Duração alvo: ~10-12 minutos. Jessica e Larissa podem dividir os blocos como p
 
 - [ ] `docker compose up -d` (raiz do repo) — banco do CP-1 no ar
 - [ ] `cd src/backend && ./mvnw spring-boot:run` — API no ar em `http://localhost:8080`
-- [ ] Insomnia aberto com `docs/insomnia_cp2.json` importado
+- [ ] Postman aberto com `docs/postman_cp2.json` importado
 - [ ] Um cliente MySQL aberto (DBeaver, TablePlus ou `docker exec -it sentinela-mysql mysql -uroot -proot_local sentinela`) para mostrar a tabela `usuario` antes e depois das chamadas
 - [ ] Ter `docs/especificacao_api.md` aberto numa aba, caso peçam para consultar
 
@@ -32,9 +32,9 @@ Controller  →  Service          →  Repository  →  Model (JPA)  →  MySQL
 
 ## 3. Demonstração ao vivo dos endpoints (5-7 min)
 
-Rodar na ordem, pelo Insomnia (pasta "Usuário" da coleção), narrando o status code de cada resposta:
+Rodar na ordem, pelo Postman (pasta "Usuário" da coleção), narrando o status code de cada resposta:
 
-| # | Request no Insomnia | O que mostrar |
+| # | Request no Postman | O que mostrar |
 |---|---|---|
 | 1 | Criar usuário (201) | Corpo da resposta com `id` gerado e `criadoEm`; **a senha não aparece** |
 | 2 | Consultar usuário (200) | Mesmos dados voltando pelo e-mail |

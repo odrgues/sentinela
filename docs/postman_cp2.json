@@ -1,0 +1,118 @@
+{
+  "info": {
+    "_postman_id": "b3f0a6d2-8b1a-4b3a-9b1a-sentinela-cp2",
+    "name": "Sentinela — CP-2",
+    "description": "Endpoints da API do Sentinela (backend Spring Boot) entregues no CP-2.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8080" }
+  ],
+  "item": [
+    {
+      "name": "Usuário",
+      "item": [
+        {
+          "name": "1. Criar usuário (201)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Teste Silva\",\n  \"email\": \"teste.silva@example.com\",\n  \"senha\": \"123456\",\n  \"whatsappNumero\": \"+5534999990001\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/usuario",
+              "host": ["{{base_url}}"],
+              "path": ["api", "usuario"]
+            }
+          }
+        },
+        {
+          "name": "2. Consultar usuário (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/usuario/teste.silva@example.com",
+              "host": ["{{base_url}}"],
+              "path": ["api", "usuario", "teste.silva@example.com"]
+            }
+          }
+        },
+        {
+          "name": "3. Atualizar usuário (200)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Teste Silva Atualizado\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/usuario/teste.silva@example.com",
+              "host": ["{{base_url}}"],
+              "path": ["api", "usuario", "teste.silva@example.com"]
+            }
+          }
+        },
+        {
+          "name": "4. Remover usuário (204)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/usuario/teste.silva@example.com",
+              "host": ["{{base_url}}"],
+              "path": ["api", "usuario", "teste.silva@example.com"]
+            }
+          }
+        },
+        {
+          "name": "5. Consultar usuário inexistente (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/usuario/nao-existe@example.com",
+              "host": ["{{base_url}}"],
+              "path": ["api", "usuario", "nao-existe@example.com"]
+            }
+          }
+        },
+        {
+          "name": "6. Criar usuário com e-mail inválido (400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Sem Email Valido\",\n  \"email\": \"nao-e-email\",\n  \"senha\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/usuario",
+              "host": ["{{base_url}}"],
+              "path": ["api", "usuario"]
+            }
+          }
+        },
+        {
+          "name": "7. Criar usuário com e-mail duplicado (400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Jessica Rodrigues\",\n  \"email\": \"jessicaRo@gmail.com\",\n  \"senha\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/usuario",
+              "host": ["{{base_url}}"],
+              "path": ["api", "usuario"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
