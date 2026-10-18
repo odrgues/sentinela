@@ -33,6 +33,9 @@ public class Usuario {
     @Column(name = "whatsapp_numero", unique = true, length = 20) // Nulo permitido no cadastro web
     private String whatsappNumero;
 
+    @Column(name = "avisos_whatsapp", nullable = false)
+    private Boolean avisosWhatsapp = true;
+
     @CreationTimestamp
     @Column(name = "criado_em", nullable = false, updatable = false)
     private LocalDateTime criadoEm;

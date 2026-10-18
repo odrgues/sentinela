@@ -1,5 +1,6 @@
 package br.com.sentinela.backend.controller;
 
+import br.com.sentinela.backend.dto.AuthResponseDTO;
 import br.com.sentinela.backend.dto.LoginRequestDTO;
 import br.com.sentinela.backend.dto.TokenResponseDTO;
 import br.com.sentinela.backend.service.AuthService;
@@ -19,8 +20,8 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<TokenResponseDTO> login(@Valid @RequestBody LoginRequestDTO dto){
-        TokenResponseDTO response = authService.login(dto);
+    public ResponseEntity<AuthResponseDTO> login(@Valid @RequestBody LoginRequestDTO dto){
+        AuthResponseDTO response = authService.login(dto);
         return ResponseEntity.ok(response);
     }
 

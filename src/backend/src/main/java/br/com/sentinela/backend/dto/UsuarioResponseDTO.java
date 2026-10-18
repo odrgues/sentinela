@@ -1,14 +1,15 @@
 package br.com.sentinela.backend.dto;
 
 import br.com.sentinela.backend.model.Usuario;
-import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record UsuarioResponseDTO(
         Integer id,
         String nome,
         String email,
         String whatsappNumero,
-        LocalDateTime criadoEm
+        Boolean avisosWhatsapp
 ) {
     public UsuarioResponseDTO(Usuario usuario) {
         this(
@@ -16,7 +17,11 @@ public record UsuarioResponseDTO(
                 usuario.getNome(),
                 usuario.getEmail(),
                 usuario.getWhatsappNumero(),
-                usuario.getCriadoEm()
+                usuario.getAvisosWhatsapp()
         );
+    }
+
+    public static UsuarioResponseDTO resumido(Usuario usuario) {
+        return new UsuarioResponseDTO(usuario.getId(), usuario.getNome(), usuario.getEmail(), null, null);
     }
 }

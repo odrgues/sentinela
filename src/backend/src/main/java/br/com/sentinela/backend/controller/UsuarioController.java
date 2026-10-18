@@ -1,45 +1,45 @@
 package br.com.sentinela.backend.controller;
 
-import br.com.sentinela.backend.dto.AtualizarUsuarioDTO;
-import br.com.sentinela.backend.dto.UsuarioRequestDTO;
-import br.com.sentinela.backend.dto.UsuarioResponseDTO;
+import br.com.sentinela.backend.dto.*;
+import br.com.sentinela.backend.model.Usuario;
 import br.com.sentinela.backend.service.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/usuario")
+@RequiredArgsConstructor
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
 
-    @GetMapping("/{email}")
-    public ResponseEntity<UsuarioResponseDTO>consultarUsuario(@PathVariable String email){
-       UsuarioResponseDTO usuarioConsultado = usuarioService.consultarUsuario(email);
-        return  ResponseEntity.ok(usuarioConsultado);
-    }
-
     @PostMapping
-    public ResponseEntity<UsuarioResponseDTO>criarUsuario(@Valid @RequestBody UsuarioRequestDTO dto){
-        UsuarioResponseDTO usuarioCadastrado = usuarioService.criarUsuario(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(usuarioCadastrado);
+    public ResponseEntity<AuthResponseDTO> cadastrar(@Valid @RequestBody UsuarioRequestDTO dto) {
+        AuthResponseDTO response = usuarioService.criarUsuario(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PatchMapping("/{email}")
-    public ResponseEntity<UsuarioResponseDTO>atualizarUsuario(@PathVariable String email,@Valid @RequestBody AtualizarUsuarioDTO dto){
-        UsuarioResponseDTO usuarioAtualizado = usuarioService.atualizarUsuario(email, dto);
-        return ResponseEntity.ok(usuarioAtualizado);
-
+    @GetMapping("/me")
+    public ResponseEntity<UsuarioResponseDTO> meuPerfil(@AuthenticationPrincipal Usuario usuarioLogado) {
+        return ResponseEntity.ok(usuarioService.obterMeuPerfil(usuarioLogado));
     }
 
-    @DeleteMapping("/{email}")
-    public ResponseEntity<Void>deletarUsuario(@PathVariable String email){
-        usuarioService.deletarUsuario(email);
+    @PatchMapping("/me")
+    public ResponseEntity<UsuarioResponseDTO> atualizarPerfil(
+            @AuthenticationPrincipal Usuario usuarioLogado,
+            @RequestBody AtualizarUsuarioDTO dto) {
+        return ResponseEntity.ok(usuarioService.atualizarMeuPerfil(usuarioLogado, dto));
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> excluirConta(
+            @AuthenticationPrincipal Usuario usuarioLogado,
+            @Valid @RequestBody ExcluirContaDTO dto) {
+        usuarioService.excluirMinhaConta(usuarioLogado, dto);
         return ResponseEntity.noContent().build();
     }
-
 }

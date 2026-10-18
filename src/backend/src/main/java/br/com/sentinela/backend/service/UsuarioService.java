@@ -1,10 +1,8 @@
 package br.com.sentinela.backend.service;
 
-import br.com.sentinela.backend.dto.AtualizarUsuarioDTO;
-import br.com.sentinela.backend.dto.UsuarioRequestDTO;
-import br.com.sentinela.backend.dto.UsuarioResponseDTO;
+import br.com.sentinela.backend.dto.*;
 import br.com.sentinela.backend.exception.BusinessRuleException;
-import br.com.sentinela.backend.exception.RecursoNaoEncontradoException;
+import br.com.sentinela.backend.exception.RecursoConflitoException;
 import br.com.sentinela.backend.model.Usuario;
 import br.com.sentinela.backend.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,86 +12,81 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final BCryptPasswordEncoder passwordEncoder;
-
-    private Usuario buscarPorEmail (String email){
-        return usuarioRepository.findByEmail(email)
-                .orElseThrow(()-> new RecursoNaoEncontradoException("Usuário não encontrado com o e-mail: " + email));
-    }
+    private final TokenService tokenService;
 
     @Transactional
-    public UsuarioResponseDTO criarUsuario(UsuarioRequestDTO dto){
-        if(usuarioRepository.existsByEmail(dto.email())){
-            throw new BusinessRuleException("Email já cadastrado no sistema.");
+    public AuthResponseDTO criarUsuario(UsuarioRequestDTO dto) {
+        if (usuarioRepository.existsByEmail(dto.email())) {
+            throw new RecursoConflitoException("E-mail já cadastrado no sistema.");
         }
-        if(dto.whatsappNumero() != null && !dto.whatsappNumero().isBlank()) {
-            if (usuarioRepository.existsByWhatsappNumero(dto.whatsappNumero())) {
-                throw new BusinessRuleException("O número de WhatsApp já existe.");
-            }
+
+        String whatsappFormatado = normalizarWhatsapp(dto.whatsappNumero());
+        if (whatsappFormatado != null && usuarioRepository.existsByWhatsappNumero(whatsappFormatado)) {
+            throw new RecursoConflitoException("O número de WhatsApp já está em uso.");
         }
 
         Usuario usuario = new Usuario();
         usuario.setNome(dto.nome());
         usuario.setEmail(dto.email());
         usuario.setSenhaHash(passwordEncoder.encode(dto.senha()));
-        usuario.setWhatsappNumero(dto.whatsappNumero());
+        usuario.setWhatsappNumero(whatsappFormatado);
+        usuario.setAvisosWhatsapp(true);
+
         Usuario usuarioSalvo = usuarioRepository.save(usuario);
+        String token = tokenService.gerarToken(usuarioSalvo);
 
-        return new UsuarioResponseDTO(usuarioSalvo);
-
+        return new AuthResponseDTO(token, new UsuarioResponseDTO(usuarioSalvo));
     }
 
     @Transactional(readOnly = true)
-    public UsuarioResponseDTO consultarUsuario (String email){
-
-        Usuario usuario = buscarPorEmail(email);
+    public UsuarioResponseDTO obterMeuPerfil(Usuario usuario) {
         return new UsuarioResponseDTO(usuario);
     }
 
     @Transactional
-    public UsuarioResponseDTO atualizarUsuario (String email, AtualizarUsuarioDTO dto){
-        Usuario usuario = buscarPorEmail(email);
-
-        if(dto.nome() != null) {
+    public UsuarioResponseDTO atualizarMeuPerfil(Usuario usuario, AtualizarUsuarioDTO dto) {
+        if (dto.nome() != null && !dto.nome().isBlank()) {
             usuario.setNome(dto.nome());
         }
 
-        String novoEmail = dto.email();
-
-        if(novoEmail != null && !novoEmail.equals(usuario.getEmail())){
-            if(usuarioRepository.existsByEmail(novoEmail)){
-                throw new BusinessRuleException("E-mail já cadastrado");
+        if (dto.whatsappNumero() != null) {
+            if (dto.whatsappNumero().isBlank()) {
+                usuario.setWhatsappNumero(null);
+            } else {
+                String novoWhatsapp = normalizarWhatsapp(dto.whatsappNumero());
+                if (!novoWhatsapp.equals(usuario.getWhatsappNumero()) && usuarioRepository.existsByWhatsappNumero(novoWhatsapp)) {
+                    throw new RecursoConflitoException("Número de WhatsApp já cadastrado.");
+                }
+                usuario.setWhatsappNumero(novoWhatsapp);
             }
-            usuario.setEmail(novoEmail);
         }
 
-        String novoWhatsappNumero = dto.whatsappNumero();
-
-        if(novoWhatsappNumero != null && !novoWhatsappNumero.equals(usuario.getWhatsappNumero())){
-            if(usuarioRepository.existsByWhatsappNumero(novoWhatsappNumero)){
-                throw new BusinessRuleException("Número já cadastrado.");
-            }
-            usuario.setWhatsappNumero(novoWhatsappNumero);
-        }
-
-        if(dto.senha() != null){
+        if (dto.senha() != null && !dto.senha().isBlank()) {
             usuario.setSenhaHash(passwordEncoder.encode(dto.senha()));
         }
 
-        Usuario usuarioAtualizado = usuarioRepository.save(usuario);
-        return new UsuarioResponseDTO(usuarioAtualizado);
+        Usuario atualizado = usuarioRepository.save(usuario);
+        return new UsuarioResponseDTO(atualizado);
     }
 
     @Transactional
-    public void deletarUsuario(String email){
-        Usuario usuario = buscarPorEmail(email);
+    public void excluirMinhaConta(Usuario usuario, ExcluirContaDTO dto) {
+        if (!passwordEncoder.matches(dto.senha(), usuario.getSenhaHash())) {
+            throw new BusinessRuleException("Senha incorreta.");
+        }
         usuarioRepository.delete(usuario);
     }
 
-
-
+    private String normalizarWhatsapp(String numero) {
+        if (numero == null || numero.isBlank()) {
+            return null;
+        }
+        String apenasNumeros = numero.replaceAll("\\D", "");
+        if (apenasNumeros.isEmpty()) return null;
+        return apenasNumeros.startsWith("55") ? "+" + apenasNumeros : "+55" + apenasNumeros;
+    }
 }
