@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final BCryptPasswordEncoder passwordEncoder;
 
     private Usuario buscarPorEmail (String email){
         return usuarioRepository.findByEmail(email)
@@ -27,20 +27,20 @@ public class UsuarioService {
 
     @Transactional
     public UsuarioResponseDTO criarUsuario(UsuarioRequestDTO dto){
-        if(usuarioRepository.existsByEmail(dto.getEmail())){
+        if(usuarioRepository.existsByEmail(dto.email())){
             throw new BusinessRuleException("Email já cadastrado no sistema.");
         }
-        if(dto.getWhatsappNumero() != null && !dto.getWhatsappNumero().isBlank()) {
-            if (usuarioRepository.existsByWhatsappNumero(dto.getWhatsappNumero())) {
+        if(dto.whatsappNumero() != null && !dto.whatsappNumero().isBlank()) {
+            if (usuarioRepository.existsByWhatsappNumero(dto.whatsappNumero())) {
                 throw new BusinessRuleException("O número de WhatsApp já existe.");
             }
         }
 
         Usuario usuario = new Usuario();
-        usuario.setNome(dto.getNome());
-        usuario.setEmail(dto.getEmail());
-        usuario.setSenhaHash(passwordEncoder.encode(dto.getSenha()));
-        usuario.setWhatsappNumero(dto.getWhatsappNumero());
+        usuario.setNome(dto.nome());
+        usuario.setEmail(dto.email());
+        usuario.setSenhaHash(passwordEncoder.encode(dto.senha()));
+        usuario.setWhatsappNumero(dto.whatsappNumero());
         Usuario usuarioSalvo = usuarioRepository.save(usuario);
 
         return new UsuarioResponseDTO(usuarioSalvo);
@@ -58,11 +58,11 @@ public class UsuarioService {
     public UsuarioResponseDTO atualizarUsuario (String email, AtualizarUsuarioDTO dto){
         Usuario usuario = buscarPorEmail(email);
 
-        if(dto.getNome() != null) {
-            usuario.setNome(dto.getNome());
+        if(dto.nome() != null) {
+            usuario.setNome(dto.nome());
         }
 
-        String novoEmail = dto.getEmail();
+        String novoEmail = dto.email();
 
         if(novoEmail != null && !novoEmail.equals(usuario.getEmail())){
             if(usuarioRepository.existsByEmail(novoEmail)){
@@ -71,7 +71,7 @@ public class UsuarioService {
             usuario.setEmail(novoEmail);
         }
 
-        String novoWhatsappNumero = dto.getWhatsappNumero();
+        String novoWhatsappNumero = dto.whatsappNumero();
 
         if(novoWhatsappNumero != null && !novoWhatsappNumero.equals(usuario.getWhatsappNumero())){
             if(usuarioRepository.existsByWhatsappNumero(novoWhatsappNumero)){
@@ -80,8 +80,8 @@ public class UsuarioService {
             usuario.setWhatsappNumero(novoWhatsappNumero);
         }
 
-        if(dto.getSenha() != null){
-            usuario.setSenhaHash(passwordEncoder.encode(dto.getSenha()));
+        if(dto.senha() != null){
+            usuario.setSenhaHash(passwordEncoder.encode(dto.senha()));
         }
 
         Usuario usuarioAtualizado = usuarioRepository.save(usuario);
