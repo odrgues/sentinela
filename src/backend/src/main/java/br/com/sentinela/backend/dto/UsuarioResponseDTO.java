@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record UsuarioResponseDTO(
-        Integer id,
+        Long id,
         String nome,
         String email,
         String whatsappNumero,
