@@ -30,7 +30,7 @@ public class Usuario {
     @Column(name = "senha_hash", nullable = false, length = 255)
     private String senhaHash;
 
-    @Column(name = "whatsapp_numero", unique = true, length = 20) // Nulo permitido no cadastro web
+    @Column(name = "whatsapp_numero", unique = true, length = 20)
     private String whatsappNumero;
 
     @Column(name = "avisos_whatsapp", nullable = false)

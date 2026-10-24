@@ -56,8 +56,10 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(erro);
     }
 
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErroResponseDTO> handleErroInesperado(Exception ex) {
+        ex.printStackTrace();
         ErroResponseDTO erro = new ErroResponseDTO(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Erro interno no servidor."
