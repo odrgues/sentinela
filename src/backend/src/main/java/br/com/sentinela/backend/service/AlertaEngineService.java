@@ -22,6 +22,7 @@ public class AlertaEngineService {
     private final CultivoRepository cultivoRepository;
     private final AlertaRepository alertaRepository;
     private final ClimaService climaService;
+    private final WhatsAppService whatsAppService;
 
     @Transactional
     public List<Alerta> processarAlertasParaCultivo(Long cultivoId) {
@@ -31,11 +32,9 @@ public class AlertaEngineService {
         Cultura cultura = cultivo.getCultura();
         List<Alerta> alertasGerados = new ArrayList<>();
 
-        // 1. Verificação Diária (Geada e Calor Extremo)
         for (ClimaResponseDTO.PrevisaoDiariaDTO dia : clima.previsaoDiaria()) {
             LocalDate dataPrevista = LocalDate.parse(dia.data());
 
-            // Regra: Geada (Temp Mínima < Temp Crítica Baixa)
             if (dia.tempMin() < cultura.getTempCriticaBaixaC()) {
                 salvarSeNaoExistir(
                         cultivo, "geada", "critico",
@@ -45,7 +44,6 @@ public class AlertaEngineService {
                 );
             }
 
-            // Regra: Calor Extremo (Temp Máxima > Temp Crítica Alta)
             if (dia.tempMax() > cultura.getTempCriticaAltaC()) {
                 salvarSeNaoExistir(
                         cultivo, "calor", "critico",
@@ -56,7 +54,6 @@ public class AlertaEngineService {
             }
         }
 
-        // 2. Verificação Semanal (Chuva Acumulada x Exigência da Cultura)
         LocalDate dataHoje = LocalDate.now();
 
         if (clima.chuvaAcumuladaSemanaMm() > cultura.getChuvaSemMaxMm()) {
@@ -75,7 +72,6 @@ public class AlertaEngineService {
             );
         }
 
-        // 3. Se nenhuma condição crítica/atenção foi atingida, registra status favorável
         if (alertasGerados.isEmpty()) {
             salvarSeNaoExistir(
                     cultivo, "favoravel", "info",
@@ -102,6 +98,8 @@ public class AlertaEngineService {
 
             Alerta salvo = alertaRepository.save(alerta);
             listaSaida.add(salvo);
+
+            whatsAppService.notificarAlertaSeHabilitado(salvo);
         }
     }
 }
