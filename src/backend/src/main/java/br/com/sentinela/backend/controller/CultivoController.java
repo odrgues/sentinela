@@ -12,6 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/cultivos")
@@ -46,5 +47,16 @@ public class CultivoController {
             @AuthenticationPrincipal Usuario usuario) {
         cultivoService.deletar(id, usuario);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<CultivoResponseDTO> atualizarStatus(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> payload,
+            @AuthenticationPrincipal Usuario usuario) {
+
+        String novoStatus = payload.get("status");
+        CultivoResponseDTO dto = cultivoService.atualizarStatus(id, usuario.getId(), novoStatus);
+        return ResponseEntity.ok(dto);
     }
 }

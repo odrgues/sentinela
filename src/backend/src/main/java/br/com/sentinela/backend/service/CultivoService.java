@@ -70,4 +70,19 @@ public class CultivoService {
         return cultivoRepository.findByIdAndUsuarioId(id, usuarioId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Cultivo não encontrado ou não pertence ao usuário."));
     }
+
+    @Transactional
+    public CultivoResponseDTO atualizarStatus(Long cultivoId, Long usuarioId, String novoStatus) {
+        Cultivo cultivo = cultivoRepository.findByIdAndUsuarioId(cultivoId, usuarioId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Cultivo não encontrado com ID: " + cultivoId));
+
+        String statusFormatado = novoStatus.toLowerCase();
+        if (!List.of("em_andamento", "colhido", "perdido").contains(statusFormatado)) {
+            throw new IllegalArgumentException("Status inválido. Use: em_andamento, colhido ou perdido.");
+        }
+
+        cultivo.setStatus(statusFormatado);
+        Cultivo atualizado = cultivoRepository.save(cultivo);
+        return new CultivoResponseDTO(atualizado);
+    }
 }
