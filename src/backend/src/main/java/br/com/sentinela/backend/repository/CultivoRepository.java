@@ -13,4 +13,5 @@ public interface CultivoRepository extends JpaRepository<Cultivo, Long> {
     List<Cultivo> findByUsuarioId(Long usuarioId);
 
     Optional<Cultivo> findByIdAndUsuarioId(Long id, Long usuarioId);
+    List<Cultivo> findByStatus(String status);
 }
