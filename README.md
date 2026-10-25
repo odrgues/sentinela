@@ -5,7 +5,12 @@ Sistema de acompanhamento de cultivos que traduz a previsão do tempo para o que
 Trabalho da disciplina **Projetos Integrados 2 (VIA231)** — Uniube.
 Equipe: **Jessica Rodrigues** e **Larissa Miuki**.
 
-> Este README cobre o que já está pronto no **CP-1 (banco de dados)** e no **CP-2 (API backend)**. As demais partes (front-end, agente no WhatsApp) chegam nos próximos checkpoints.
+> Este README cobre o **CP-1 (banco de dados)**, o **CP-2 (API backend)** e o **front-end**. O agente no WhatsApp chega nos próximos checkpoints.
+
+```
+src/backend/    API em Spring Boot
+src/frontend/   site em Vite + React + TypeScript
+```
 
 ---
 
@@ -52,6 +57,20 @@ A API sobe em `http://localhost:8080`.
 
 Especificação completa (parâmetros, corpo de requisição/resposta, códigos de status): [`docs/especificacao_api.md`](docs/especificacao_api.md).
 Coleção pronta para testar no Postman: [`docs/postman_cp2.json`](docs/postman_cp2.json).
+
+---
+
+## Como rodar o front
+
+Pré-requisito: Node 22.22 ou mais novo.
+
+```bash
+cd src/frontend
+npm install
+npm run dev
+```
+
+Em desenvolvimento, o front responde com uma API de mentira e repassa o resto de `/api` para o backend local. Detalhes em [`src/frontend/README.md`](src/frontend/README.md).
 
 ---
 
