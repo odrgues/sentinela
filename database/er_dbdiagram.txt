@@ -4,6 +4,17 @@ Table usuario {
   email varchar(160) [unique]
   senha_hash varchar(255)
   whatsapp_numero varchar(20) [unique, note: 'número do WhatsApp vinculado, formato E.164']
+  avisos_whatsapp boolean [note: 'comandos PARAR e VOLTAR do bot']
+  papel varchar(10) [note: 'produtor ou admin']
+  criado_em timestamp
+}
+
+Table redefinicao_senha {
+  id int [pk, increment]
+  usuario_id int [ref: > usuario.id, note: 'ON DELETE CASCADE']
+  token_hash char(64) [unique, note: 'SHA-256 do código do link']
+  expira_em timestamp
+  usado_em timestamp [null]
   criado_em timestamp
 }
 
@@ -13,20 +24,50 @@ Table municipio {
   uf char(2)
   latitude decimal(9,6)
   longitude decimal(9,6)
+
+  indexes {
+    (nome, uf) [unique]
+  }
 }
 
 Table cultura {
   id int [pk, increment]
   nome varchar(80) [unique]
+  tipo_ciclo varchar(10) [note: 'anual, cana, perene ou continua']
   ciclo_dias int
+  inicio_colheita_dias int [null, note: 'só na colheita contínua']
+  mes_inicio_colheita int [null, note: 'só na perene com safra (café)']
+  mes_fim_colheita int [null]
   temp_min_ideal_c decimal(4,1)
   temp_max_ideal_c decimal(4,1)
   temp_critica_baixa_c decimal(4,1)
   temp_critica_alta_c decimal(4,1)
   chuva_sem_min_mm decimal(5,1)
   chuva_sem_max_mm decimal(5,1)
-  fonte varchar(200)
+  fonte varchar(300)
   observacao text
+}
+
+Table recomendacao {
+  id int [pk, increment]
+  cultura_id int [null, ref: > cultura.id, note: 'nulo = vale para todas as culturas']
+  tipo_alerta varchar(25)
+  texto text [note: 'o "O que fazer" do aviso']
+  fonte varchar(300)
+}
+
+Table fase_cultura {
+  id int [pk, increment]
+  cultura_id int [ref: > cultura.id]
+  nome varchar(60)
+  dia_inicio int
+  dia_fim int
+  orientacao text
+  fonte varchar(300)
+
+  indexes {
+    (cultura_id, nome) [unique]
+  }
 }
 
 Table fase_enso {
@@ -36,34 +77,66 @@ Table fase_enso {
   fase varchar(10)
   intensidade varchar(15)
   indice decimal(4,2)
+
+  indexes {
+    (ano, mes) [unique]
+  }
 }
 
 Table cultivo {
   id int [pk, increment]
-  usuario_id int [ref: > usuario.id]
+  usuario_id int [ref: > usuario.id, note: 'ON DELETE CASCADE']
   municipio_id int [ref: > municipio.id]
   cultura_id int [ref: > cultura.id]
   apelido varchar(80)
-  area_ha decimal(10,2)
+  area_ha decimal(10,4) [null]
+  latitude decimal(9,6) [note: 'ponto exato marcado no mapa']
+  longitude decimal(9,6)
   data_plantio date
   data_colheita_prevista date
   status varchar(20)
+  previsao_disponivel boolean
+  previsao_atualizada_em timestamp [null]
   criado_em timestamp
+
+  indexes {
+    (usuario_id, apelido) [unique]
+    (usuario_id, status)
+  }
+}
+
+Table previsao_diaria {
+  id int [pk, increment]
+  cultivo_id int [ref: > cultivo.id, note: 'ON DELETE CASCADE']
+  data date
+  temp_min_c decimal(4,1)
+  temp_max_c decimal(4,1)
+  chuva_mm decimal(5,1)
+  codigo_tempo int [note: 'weather_code da Open-Meteo']
+  atualizado_em timestamp
+
+  indexes {
+    (cultivo_id, data) [unique]
+  }
 }
 
 Table alerta {
   id int [pk, increment]
-  cultivo_id int [ref: > cultivo.id]
+  cultivo_id int [ref: > cultivo.id, note: 'ON DELETE CASCADE']
   tipo varchar(25)
   severidade varchar(10)
   mensagem text
   data_prevista date
   gerado_em timestamp
+
+  indexes {
+    (cultivo_id, tipo, data_prevista) [unique]
+  }
 }
 
 Table mensagem {
   id int [pk, increment]
-  usuario_id int [ref: > usuario.id, note: 'nulo quando o chat não é cadastrado']
+  usuario_id int [null, ref: > usuario.id, note: 'ON DELETE SET NULL']
   chat_id varchar(32)
   direcao varchar(10)
   conteudo text
