@@ -38,7 +38,17 @@ type Props = {
   inicio?: Ponto
 }
 
-export function MapaDoGoogle({ chave, aoMudarLocal, topo, rodape, inicio }: Props) {
+// O APIProvider carrega o Google; tudo que usa as bibliotecas dele (o Geocoder do
+// useLocalDoPonto, a busca) precisa ficar dentro dele, no ConteudoDoMapa.
+export function MapaDoGoogle({ chave, ...resto }: Props) {
+  return (
+    <APIProvider apiKey={chave} language="pt-BR" region="BR">
+      <ConteudoDoMapa {...resto} />
+    </APIProvider>
+  )
+}
+
+function ConteudoDoMapa({ aoMudarLocal, topo, rodape, inicio }: Omit<Props, 'chave'>) {
   const [camera, setCamera] = useState<Camera | null>(null)
   const [destino, setDestino] = useState<Destino | null>(null)
 
@@ -54,39 +64,35 @@ export function MapaDoGoogle({ chave, aoMudarLocal, topo, rodape, inicio }: Prop
   else if (local === null) instrucao = 'Não achamos o município deste ponto. Mova um pouco o mapa.'
 
   return (
-    <APIProvider apiKey={chave} language="pt-BR" region="BR">
-      <S.Area>
-        <Map
-          defaultCenter={
-            inicio ? { lat: inicio.latitude, lng: inicio.longitude } : CENTRO_DO_BRASIL
-          }
-          defaultZoom={inicio ? ZOOM_DO_GPS : ZOOM_DO_BRASIL}
-          mapTypeId="hybrid"
-          disableDefaultUI
-          zoomControl
-          gestureHandling="greedy"
-          style={{ position: 'absolute', inset: 0 }}
-          onIdle={({ map }) => {
-            const centro = map.getCenter()
-            if (!centro) return
-            setCamera({
-              ponto: { latitude: centro.lat(), longitude: centro.lng() },
-              zoom: map.getZoom() ?? 0,
-            })
-          }}
-        />
-        <IrPara destino={destino} />
-        <S.CartaoDeCima>
-          {topo}
-          <BuscaDeEndereco aoEscolher={(ponto) => setDestino({ ...ponto, zoom: ZOOM_DA_BUSCA })} />
-        </S.CartaoDeCima>
-        <Marcador />
-        <S.CartaoDeBaixo>
-          <S.Instrucao>{instrucao}</S.Instrucao>
-          <MinhaLocalizacao aoAchar={(ponto) => setDestino({ ...ponto, zoom: ZOOM_DO_GPS })} />
-          {rodape}
-        </S.CartaoDeBaixo>
-      </S.Area>
-    </APIProvider>
+    <S.Area>
+      <Map
+        defaultCenter={inicio ? { lat: inicio.latitude, lng: inicio.longitude } : CENTRO_DO_BRASIL}
+        defaultZoom={inicio ? ZOOM_DO_GPS : ZOOM_DO_BRASIL}
+        mapTypeId="hybrid"
+        disableDefaultUI
+        zoomControl
+        gestureHandling="greedy"
+        style={{ position: 'absolute', inset: 0 }}
+        onIdle={({ map }) => {
+          const centro = map.getCenter()
+          if (!centro) return
+          setCamera({
+            ponto: { latitude: centro.lat(), longitude: centro.lng() },
+            zoom: map.getZoom() ?? 0,
+          })
+        }}
+      />
+      <IrPara destino={destino} />
+      <S.CartaoDeCima>
+        {topo}
+        <BuscaDeEndereco aoEscolher={(ponto) => setDestino({ ...ponto, zoom: ZOOM_DA_BUSCA })} />
+      </S.CartaoDeCima>
+      <Marcador />
+      <S.CartaoDeBaixo>
+        <S.Instrucao>{instrucao}</S.Instrucao>
+        <MinhaLocalizacao aoAchar={(ponto) => setDestino({ ...ponto, zoom: ZOOM_DO_GPS })} />
+        {rodape}
+      </S.CartaoDeBaixo>
+    </S.Area>
   )
 }

@@ -19,13 +19,16 @@ export function BuscaDeEndereco({ aoEscolher }: { aoEscolher: (ponto: Ponto) => 
   const places = useMapsLibrary('places')
   const [texto, setTexto] = useState('')
   const [sugestoes, setSugestoes] = useState<Sugestao[]>([])
+  // O texto da sugestão escolhida: com ele no campo, a lista não abre de novo.
+  const [escolhido, setEscolhido] = useState<string | null>(null)
   // Uma sessão vai das letras digitadas até a escolha: o Google cobra as duas juntas.
   const sessao = useRef<google.maps.places.AutocompleteSessionToken | null>(null)
 
-  const buscando = texto.trim().length >= MINIMO_DE_LETRAS
+  const buscando = texto.trim().length >= MINIMO_DE_LETRAS && texto !== escolhido
 
   useEffect(() => {
     if (!places || !buscando) return
+    let valendo = true
     const relogio = setTimeout(async () => {
       sessao.current ??= new places.AutocompleteSessionToken()
       try {
@@ -35,16 +38,22 @@ export function BuscaDeEndereco({ aoEscolher }: { aoEscolher: (ponto: Ponto) => 
           includedRegionCodes: ['br'],
           language: 'pt-BR',
         })
-        setSugestoes(suggestions.flatMap(({ placePrediction }) => placePrediction ?? []))
+        if (valendo) {
+          setSugestoes(suggestions.flatMap(({ placePrediction }) => placePrediction ?? []))
+        }
       } catch {
-        setSugestoes([])
+        if (valendo) setSugestoes([])
       }
     }, ESPERA_AO_DIGITAR)
-    return () => clearTimeout(relogio)
+    return () => {
+      valendo = false
+      clearTimeout(relogio)
+    }
   }, [places, texto, buscando])
 
   async function escolher(sugestao: Sugestao) {
     setTexto(sugestao.text.text)
+    setEscolhido(sugestao.text.text)
     setSugestoes([])
     const lugar = sugestao.toPlace()
     await lugar.fetchFields({ fields: ['location'] })
