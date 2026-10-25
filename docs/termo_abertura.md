@@ -20,7 +20,7 @@ O resultado é que a informação existe, mas não chega em formato acionável.
 
 ## 3. Objetivo
 
-Desenvolver um sistema web que relacione a previsão do tempo de um município com as exigências climáticas da cultura plantada, gerando alertas em linguagem direta sobre riscos como geada, calor excessivo, chuva acima do tolerado e déficit hídrico — acessível pelo site e por um agente de conversa no WhatsApp.
+Desenvolver um sistema web que relacione a previsão do tempo do ponto exato da lavoura com as exigências climáticas da cultura plantada, gerando alertas em linguagem direta sobre riscos como geada, calor excessivo, chuva acima do tolerado e déficit hídrico, junto com o que fazer em cada caso — acessível pelo site e por um agente de conversa no WhatsApp.
 
 ## 4. Público-alvo
 
@@ -31,24 +31,28 @@ Produtor rural de pequeno e médio porte que hoje consulta a previsão do tempo 
 ### 5.1 Incluído
 
 **Cadastro (pelo site)**
-- Cadastro, edição e exclusão de cultivos: cultura, município e data de plantio
-- Busca de município por nome, com obtenção automática de coordenadas
+- Cadastro, edição e exclusão de cultivos: cultura, local, data de plantio e área (em hectares ou m²)
+- Marcação da lavoura no mapa (Google Maps), com o município identificado automaticamente pelo ponto marcado
 - Cadastro de culturas e suas faixas ideais e críticas, com a fonte registrada
 - Autenticação de usuários
+- Recuperação de senha por link enviado ao e-mail
 
 **Consulta (pelo site e pelo WhatsApp)**
 - Previsão de 7 dias por cultivo
 - Alertas gerados pela comparação entre previsão e faixas da cultura
 - Histórico de alertas com filtros
+- Orientação de manejo ("O que fazer") em cada alerta, com a fonte técnica
+- Fase do ciclo em que a lavoura está e o que ela pede, com a fonte técnica
 - Fase do El Niño / La Niña vigente no período do cultivo
 - Agente de conversa no WhatsApp, que responde perguntas em linguagem natural
+- Avisos automáticos no WhatsApp para riscos críticos, com opção de parar de receber
 
 ### 5.2 Excluído, com justificativa
 
 | Fora do escopo | Por quê |
 |---|---|
 | Modelo preditivo próprio | Previsão meteorológica já é resolvida pelos modelos das agências internacionais |
-| Treinamento de modelo de IA | O agente usa um modelo de linguagem pronto, apenas para redigir a resposta |
+| Treinamento de modelo de IA | O agente usa um modelo de linguagem pronto para interpretar a pergunta e redigir a resposta, sempre a partir dos dados calculados pelo sistema |
 | Estatística sobre séries históricas | O problema identificado não é ausência de dado, é ausência de tradução |
 | Gestão financeira, estoque e maquinário | Outro produto, com outro usuário e outro ciclo de uso |
 | Aplicativo móvel nativo | O front responsivo atende o caso de uso e cabe no prazo |
@@ -63,7 +67,7 @@ O site concentra todo o cadastro e edição. O WhatsApp é canal de consulta ape
 O projeto é considerado pronto quando todos os cenários abaixo funcionarem de ponta a ponta:
 
 **CA-1 — Cadastro de cultivo**
-Dado um usuário autenticado, quando ele cadastra um cultivo informando cultura, município e data de plantio, então o sistema salva o cultivo e calcula automaticamente a data prevista de colheita somando o ciclo da cultura à data de plantio.
+Dado um usuário autenticado, quando ele cadastra um cultivo informando cultura, ponto no mapa e data de plantio, então o sistema salva o cultivo e calcula automaticamente a data prevista de colheita pelo tipo de ciclo da cultura (anual: plantio + ciclo; cana; colheita contínua; perene).
 
 **CA-2 — Alerta de temperatura crítica**
 Dado um cultivo de feijão em Uberlândia, quando a previsão de 7 dias indicar mínima abaixo de 12 °C, então o sistema gera um alerta do tipo `geada`, severidade `critico`, com a data e o valor previsto na mensagem.
@@ -78,7 +82,7 @@ Dado um cultivo, quando nenhum limite da cultura for ultrapassado na semana, ent
 Dado um cultivo já avaliado hoje, quando o usuário solicitar nova avaliação no mesmo dia, então o sistema não cria alertas duplicados para o mesmo tipo e a mesma data.
 
 **CA-6 — Contexto climático**
-Dado um cultivo, quando o usuário abrir seu detalhe, então o sistema exibe a fase do El Niño / La Niña vigente no mês do plantio.
+Dado um cultivo, quando o usuário abrir seu detalhe, então o sistema exibe a fase do El Niño / La Niña vigente no mês do plantio (nas perenes, e quando a NOAA ainda não publicou o mês do plantio, a do último mês medido).
 
 **CA-7 — Agente no WhatsApp**
 Dado um produtor com o WhatsApp vinculado à sua conta, quando ele enviar uma mensagem perguntando sobre sua lavoura, então o sistema responde em português com os cultivos e os alertas dele, e registra as duas mensagens no banco.
@@ -89,6 +93,12 @@ Dado que a API de clima esteja indisponível, quando o usuário acessar o sistem
 **CA-9 — Sistema publicado**
 O sistema está acessível por uma URL pública, com banco em produção.
 
+**CA-10 — O que fazer**
+Dado um alerta, quando o usuário abrir o detalhe do cultivo, então o sistema mostra junto do alerta a orientação de manejo para aquele tipo de risco, da cultura ou genérica, com a fonte registrada.
+
+**CA-11 — Fase do ciclo**
+Dado um cultivo de cultura com fases cadastradas, quando o usuário abrir o detalhe, então o sistema mostra em que fase do ciclo a lavoura está, o que essa fase pede e a fonte.
+
 ## 7. Premissas
 
 O projeto assume que estas condições se mantêm. Se alguma mudar, o plano precisa ser revisto.
@@ -97,7 +107,7 @@ O projeto assume que estas condições se mantêm. Se alguma mudar, o plano prec
 - A WhatsApp Business Platform continua gratuita para o volume de teste do projeto (até 5 destinatários no número de teste).
 - A API do modelo de linguagem permanece disponível dentro do custo previsto.
 - O MySQL utilizado é versão 8.0.16 ou superior, necessária para que as restrições CHECK sejam aplicadas.
-- As faixas climáticas das culturas provêm de publicações públicas da Embrapa e do MAPA.
+- As faixas climáticas das culturas, as orientações de manejo e as fases do ciclo provêm de publicações públicas, preferencialmente da Embrapa e do MAPA; quando elas não trazem o número, de outras instituições técnicas (EPAMIG, IAC, Epagri, FAO), sempre registradas na coluna `fonte`.
 - As duas integrantes permanecem no grupo até o fim do semestre.
 
 ## 8. Restrições
@@ -136,18 +146,20 @@ Principais riscos identificados:
 | Backend | Java 21 + Spring Boot 3 |
 | Persistência | Spring Data JPA |
 | Banco de dados | MySQL 8 |
-| Frontend | React 18 + Vite |
+| Frontend | React 19 + Vite + TypeScript |
 | Versionamento | Git + GitHub |
 
 ## 11. Fontes de dados externas
 
 | Fonte | Uso | Licença |
 |---|---|---|
-| Open-Meteo | Coordenadas de municípios e previsão de 7 dias | CC BY 4.0 |
+| Open-Meteo | Previsão de 7 dias pelo ponto da lavoura | CC BY 4.0 |
 | WhatsApp Business Platform | Canal de conversa do agente | Gratuita (nível de teste) |
-| API de modelo de linguagem | Redação das respostas do agente | Conforme provedor |
+| API de modelo de linguagem | Interpretação das perguntas e redação das respostas do agente | Conforme provedor |
+| Google Maps Platform | Mapa, busca de endereço e identificação do município | Cota gratuita mensal, exige conta de faturamento |
 | NOAA / CPC | Classificação mensal das fases do ENSO | Domínio público |
-| Embrapa / MAPA | Faixas climáticas de referência das culturas | Publicação pública |
+| Embrapa / MAPA (ZARC) | Faixas climáticas das culturas, orientações de manejo e fases do ciclo | Publicação pública |
+| EPAMIG, IAC, Epagri, FAO (Ecocrop) | Números que a Embrapa e o MAPA não trazem (ex.: limite de calor de algumas hortaliças) | Publicação pública |
 
 ## 12. Divisão de responsabilidades
 
