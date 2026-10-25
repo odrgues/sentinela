@@ -1,6 +1,5 @@
 package br.com.sentinela.backend.controller;
 
-import br.com.sentinela.backend.model.Mensagem;
 import br.com.sentinela.backend.model.Usuario;
 import br.com.sentinela.backend.repository.MensagemRepository;
 import br.com.sentinela.backend.service.WhatsAppService;
@@ -9,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -17,12 +17,19 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class WhatsAppController {
 
+    public record MensagemDTO(Long id, String chatId, String direcao, String conteudo, String intencao,
+                              LocalDateTime registradoEm) {}
+
     private final MensagemRepository mensagemRepository;
     private final WhatsAppService whatsAppService;
 
     @GetMapping("/historico")
-    public ResponseEntity<List<Mensagem>> listarHistoricoDoUsuario(@AuthenticationPrincipal Usuario usuario) {
-        List<Mensagem> historico = mensagemRepository.findByUsuarioIdOrderByRegistradoEmDesc(usuario.getId());
+    public ResponseEntity<List<MensagemDTO>> listarHistoricoDoUsuario(@AuthenticationPrincipal Usuario usuario) {
+        List<MensagemDTO> historico = mensagemRepository.findByUsuarioIdOrderByRegistradoEmDesc(usuario.getId())
+                .stream()
+                .map(m -> new MensagemDTO(m.getId(), m.getChatId(), m.getDirecao(), m.getConteudo(),
+                        m.getIntencao(), m.getRegistradoEm()))
+                .toList();
         return ResponseEntity.ok(historico);
     }
 

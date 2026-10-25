@@ -31,7 +31,7 @@ public class UsuarioController {
     @PatchMapping("/me")
     public ResponseEntity<UsuarioResponseDTO> atualizarPerfil(
             @AuthenticationPrincipal Usuario usuarioLogado,
-            @RequestBody AtualizarUsuarioDTO dto) {
+            @Valid @RequestBody AtualizarUsuarioDTO dto) {
         return ResponseEntity.ok(usuarioService.atualizarMeuPerfil(usuarioLogado, dto));
     }
 

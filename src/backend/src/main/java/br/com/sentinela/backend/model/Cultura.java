@@ -22,10 +22,22 @@ public class Cultura {
     private String nome;
 
     @Column(name = "tipo_ciclo", nullable = false, length = 10)
-    private String tipoCiclo = "anual"; // 'anual', 'cana', 'perene'
+    private String tipoCiclo = "anual"; // 'anual', 'cana', 'perene', 'continua'
 
+    // Anual: até a colheita. Contínua: até o fim da colheita. Perene: até a primeira colheita.
     @Column(name = "ciclo_dias", nullable = false)
     private Integer cicloDias;
+
+    // Só na colheita contínua (morango, chuchu): quando a colheita começa.
+    @Column(name = "inicio_colheita_dias")
+    private Integer inicioColheitaDias;
+
+    // Só na perene com safra (café): de que mês a que mês vai a colheita.
+    @Column(name = "mes_inicio_colheita")
+    private Integer mesInicioColheita;
+
+    @Column(name = "mes_fim_colheita")
+    private Integer mesFimColheita;
 
     @Column(name = "temp_min_ideal_c")
     private Double tempMinIdealC;

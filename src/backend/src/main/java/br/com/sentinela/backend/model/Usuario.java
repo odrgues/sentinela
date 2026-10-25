@@ -36,6 +36,10 @@ public class Usuario {
     @Column(name = "avisos_whatsapp", nullable = false)
     private Boolean avisosWhatsapp = true;
 
+    // 'produtor' ou 'admin'. Só o admin cadastra e altera culturas.
+    @Column(nullable = false, length = 10)
+    private String papel = "produtor";
+
     @CreationTimestamp
     @Column(name = "criado_em", nullable = false, updatable = false)
     private LocalDateTime criadoEm;

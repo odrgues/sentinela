@@ -1,7 +1,11 @@
 package br.com.sentinela.backend.service;
 
-import br.com.sentinela.backend.dto.*;
-import br.com.sentinela.backend.exception.BusinessRuleException;
+import br.com.sentinela.backend.dto.AtualizarUsuarioDTO;
+import br.com.sentinela.backend.dto.AuthResponseDTO;
+import br.com.sentinela.backend.dto.ExcluirContaDTO;
+import br.com.sentinela.backend.dto.UsuarioRequestDTO;
+import br.com.sentinela.backend.dto.UsuarioResponseDTO;
+import br.com.sentinela.backend.exception.AcessoNegadoException;
 import br.com.sentinela.backend.exception.RecursoConflitoException;
 import br.com.sentinela.backend.model.Usuario;
 import br.com.sentinela.backend.repository.UsuarioRepository;
@@ -21,12 +25,12 @@ public class UsuarioService {
     @Transactional
     public AuthResponseDTO criarUsuario(UsuarioRequestDTO dto) {
         if (usuarioRepository.existsByEmail(dto.email())) {
-            throw new RecursoConflitoException("E-mail já cadastrado no sistema.");
+            throw new RecursoConflitoException("Este e-mail já tem uma conta.", "email");
         }
 
         String whatsappFormatado = normalizarWhatsapp(dto.whatsappNumero());
         if (whatsappFormatado != null && usuarioRepository.existsByWhatsappNumero(whatsappFormatado)) {
-            throw new RecursoConflitoException("O número de WhatsApp já está em uso.");
+            throw new RecursoConflitoException("Este WhatsApp já está em outra conta.", "whatsappNumero");
         }
 
         Usuario usuario = new Usuario();
@@ -47,46 +51,47 @@ public class UsuarioService {
         return new UsuarioResponseDTO(usuario);
     }
 
+    // O e-mail não muda. Trocar a senha passa pelo link de nova senha.
     @Transactional
     public UsuarioResponseDTO atualizarMeuPerfil(Usuario usuario, AtualizarUsuarioDTO dto) {
-        if (dto.nome() != null && !dto.nome().isBlank()) {
-            usuario.setNome(dto.nome());
+        if (dto.getNome() != null && !dto.getNome().isBlank()) {
+            usuario.setNome(dto.getNome().trim());
         }
 
-        if (dto.whatsappNumero() != null) {
-            if (dto.whatsappNumero().isBlank()) {
-                usuario.setWhatsappNumero(null);
-            } else {
-                String novoWhatsapp = normalizarWhatsapp(dto.whatsappNumero());
-                if (!novoWhatsapp.equals(usuario.getWhatsappNumero()) && usuarioRepository.existsByWhatsappNumero(novoWhatsapp)) {
-                    throw new RecursoConflitoException("Número de WhatsApp já cadastrado.");
-                }
-                usuario.setWhatsappNumero(novoWhatsapp);
+        if (dto.isWhatsappInformado()) {
+            String novoWhatsapp = normalizarWhatsapp(dto.getWhatsappNumero());
+            if (novoWhatsapp != null && !novoWhatsapp.equals(usuario.getWhatsappNumero())
+                    && usuarioRepository.existsByWhatsappNumero(novoWhatsapp)) {
+                throw new RecursoConflitoException("Este WhatsApp já está em outra conta.", "whatsappNumero");
             }
+            usuario.setWhatsappNumero(novoWhatsapp);
         }
 
-        if (dto.senha() != null && !dto.senha().isBlank()) {
-            usuario.setSenhaHash(passwordEncoder.encode(dto.senha()));
+        if (dto.getAvisosWhatsapp() != null) {
+            usuario.setAvisosWhatsapp(dto.getAvisosWhatsapp());
         }
 
-        Usuario atualizado = usuarioRepository.save(usuario);
-        return new UsuarioResponseDTO(atualizado);
+        return new UsuarioResponseDTO(usuarioRepository.save(usuario));
     }
 
+    // Os cultivos e os alertas saem junto (ON DELETE CASCADE); as mensagens ficam sem dono.
     @Transactional
     public void excluirMinhaConta(Usuario usuario, ExcluirContaDTO dto) {
         if (!passwordEncoder.matches(dto.senha(), usuario.getSenhaHash())) {
-            throw new BusinessRuleException("Senha incorreta.");
+            throw new AcessoNegadoException("Senha incorreta.");
         }
         usuarioRepository.delete(usuario);
     }
 
-    private String normalizarWhatsapp(String numero) {
+    // "(34) 99999-9999" vira "+5534999999999" (formato E.164).
+    public static String normalizarWhatsapp(String numero) {
         if (numero == null || numero.isBlank()) {
             return null;
         }
         String apenasNumeros = numero.replaceAll("\\D", "");
         if (apenasNumeros.isEmpty()) return null;
-        return apenasNumeros.startsWith("55") ? "+" + apenasNumeros : "+55" + apenasNumeros;
+        return apenasNumeros.startsWith("55") && apenasNumeros.length() > 11
+                ? "+" + apenasNumeros
+                : "+55" + apenasNumeros;
     }
 }

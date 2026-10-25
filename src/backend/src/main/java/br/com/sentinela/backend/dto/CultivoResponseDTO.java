@@ -2,31 +2,40 @@ package br.com.sentinela.backend.dto;
 
 import br.com.sentinela.backend.model.Cultivo;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 
+// Resposta do POST e do PATCH de /api/cultivos.
 public record CultivoResponseDTO(
         Long id,
         String apelido,
-        BigDecimal areaHa,
+        String cultura,
+        Long culturaId,
         LocalDate dataPlantio,
-        LocalDate dataColheitaPrevista,
-        String status,
-        String municipioNome,
-        String uf,
-        String culturaNome
+        LocalDate colheitaPrevista,
+        Double areaHa,
+        Double latitude,
+        Double longitude,
+        String municipio,
+        String status
 ) {
     public CultivoResponseDTO(Cultivo cultivo) {
         this(
                 cultivo.getId(),
                 cultivo.getApelido(),
-                cultivo.getAreaHa(),
+                cultivo.getCultura().getNome(),
+                cultivo.getCultura().getId(),
                 cultivo.getDataPlantio(),
                 cultivo.getDataColheitaPrevista(),
-                cultivo.getStatus(),
-                cultivo.getMunicipio().getNome(),
-                cultivo.getMunicipio().getUf(),
-                cultivo.getCultura().getNome()
+                cultivo.getAreaHa() == null ? null : cultivo.getAreaHa().doubleValue(),
+                cultivo.getLatitude(),
+                cultivo.getLongitude(),
+                nomeDoMunicipio(cultivo),
+                cultivo.getStatus()
         );
+    }
+
+    // "Uberaba – MG"
+    public static String nomeDoMunicipio(Cultivo cultivo) {
+        return cultivo.getMunicipio().getNome() + " – " + cultivo.getMunicipio().getUf();
     }
 }

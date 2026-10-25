@@ -14,10 +14,11 @@ public record AlertaResponseDTO(
         String tipo,
         String severidade,
         String mensagem,
+        String oQueFazer,
         LocalDate dataPrevista,
         LocalDateTime geradoEm
 ) {
-    public AlertaResponseDTO(Alerta alerta) {
+    public AlertaResponseDTO(Alerta alerta, String oQueFazer) {
         this(
                 alerta.getId(),
                 alerta.getCultivo().getId(),
@@ -27,6 +28,7 @@ public record AlertaResponseDTO(
                 alerta.getTipo(),
                 alerta.getSeveridade(),
                 alerta.getMensagem(),
+                oQueFazer,
                 alerta.getDataPrevista(),
                 alerta.getGeradoEm()
         );

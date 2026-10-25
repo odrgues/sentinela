@@ -1,105 +1,57 @@
 package br.com.sentinela.backend.service;
 
-import br.com.sentinela.backend.dto.ClimaResponseDTO;
-import br.com.sentinela.backend.exception.RecursoNaoEncontradoException;
+import br.com.sentinela.backend.dto.DiaPrevistoDTO;
 import br.com.sentinela.backend.model.Alerta;
 import br.com.sentinela.backend.model.Cultivo;
-import br.com.sentinela.backend.model.Cultura;
 import br.com.sentinela.backend.repository.AlertaRepository;
-import br.com.sentinela.backend.repository.CultivoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AlertaEngineService {
 
-    private final CultivoRepository cultivoRepository;
     private final AlertaRepository alertaRepository;
-    private final ClimaService climaService;
-    private final WhatsAppService whatsAppService;
+    private final PrevisaoService previsaoService;
 
+    // Refaz os avisos de hoje em diante com a previsão salva. Devolve só os críticos que não
+    // existiam antes, para o WhatsApp não repetir o mesmo aviso todo dia.
     @Transactional
-    public List<Alerta> processarAlertasParaCultivo(Long cultivoId) {
-        Cultivo cultivo = cultivoRepository.findById(cultivoId)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Cultivo não encontrado com ID: " + cultivoId));
-        ClimaResponseDTO clima = climaService.buscarPrevisaoPorMunicipio(cultivo.getMunicipio().getId());
-        Cultura cultura = cultivo.getCultura();
-        List<Alerta> alertasGerados = new ArrayList<>();
+    public List<Alerta> reclassificar(Cultivo cultivo) {
+        List<DiaPrevistoDTO> dias = previsaoService.semana(cultivo.getId());
+        if (dias.isEmpty()) return List.of();
 
-        for (ClimaResponseDTO.PrevisaoDiariaDTO dia : clima.previsaoDiaria()) {
-            LocalDate dataPrevista = LocalDate.parse(dia.data());
+        LocalDate hoje = Agora.hoje();
+        Set<String> jaAvisados = alertaRepository.findByCultivoIdAndDataPrevistaBetween(cultivo.getId(), hoje, hoje.plusDays(6))
+                .stream()
+                .map(a -> a.getTipo() + "|" + a.getSeveridade() + "|" + a.getDataPrevista())
+                .collect(Collectors.toSet());
 
-            if (dia.tempMin() < cultura.getTempCriticaBaixaC()) {
-                salvarSeNaoExistir(
-                        cultivo, "geada", "critico",
-                        String.format("Mínima de %.1f °C prevista. O %s sofre dano térmico abaixo de %.1f °C.",
-                                dia.tempMin(), cultura.getNome(), cultura.getTempCriticaBaixaC()),
-                        dataPrevista, alertasGerados
-                );
-            }
+        alertaRepository.apagarAPartirDe(cultivo.getId(), hoje);
+        alertaRepository.flush();
 
-            if (dia.tempMax() > cultura.getTempCriticaAltaC()) {
-                salvarSeNaoExistir(
-                        cultivo, "calor", "critico",
-                        String.format("Máxima de %.1f °C prevista, acima do limite térmico de %.1f °C para %s.",
-                                dia.tempMax(), cultura.getTempCriticaAltaC(), cultura.getNome()),
-                        dataPrevista, alertasGerados
-                );
-            }
-        }
+        List<Alerta> salvos = ClassificadorDeAlertas.classificar(cultivo.getCultura(), dias).stream()
+                .map(novo -> {
+                    Alerta alerta = new Alerta();
+                    alerta.setCultivo(cultivo);
+                    alerta.setTipo(novo.tipo());
+                    alerta.setSeveridade(novo.severidade());
+                    alerta.setMensagem(novo.mensagem());
+                    alerta.setDataPrevista(novo.data());
+                    alerta.setGeradoEm(Agora.agora());
+                    return alertaRepository.save(alerta);
+                })
+                .toList();
 
-        LocalDate dataHoje = LocalDate.now();
-
-        if (clima.chuvaAcumuladaSemanaMm() > cultura.getChuvaSemMaxMm()) {
-            salvarSeNaoExistir(
-                    cultivo, "chuva_excessiva", "atencao",
-                    String.format("%.1f mm acumulados previstos para os próximos 7 dias, acima do limite máximo de %.1f mm para %s.",
-                            clima.chuvaAcumuladaSemanaMm(), cultura.getChuvaSemMaxMm(), cultura.getNome()),
-                    dataHoje, alertasGerados
-            );
-        } else if (clima.chuvaAcumuladaSemanaMm() < cultura.getChuvaSemMinMm()) {
-            salvarSeNaoExistir(
-                    cultivo, "deficit_hidrico", "atencao",
-                    String.format("%.1f mm previstos na semana, abaixo do mínimo exigido de %.1f mm para %s.",
-                            clima.chuvaAcumuladaSemanaMm(), cultura.getChuvaSemMinMm(), cultura.getNome()),
-                    dataHoje, alertasGerados
-            );
-        }
-
-        if (alertasGerados.isEmpty()) {
-            salvarSeNaoExistir(
-                    cultivo, "favoravel", "info",
-                    String.format("Previsão semanal favorável para %s em %s. Chuva e temperatura dentro dos padrões ideais.",
-                            cultura.getNome(), cultivo.getMunicipio().getNome()),
-                    dataHoje, alertasGerados
-            );
-        }
-
-        return alertasGerados;
-    }
-
-    private void salvarSeNaoExistir(Cultivo cultivo, String tipo, String severidade, String mensagem,
-                                    LocalDate dataPrevista, List<Alerta> listaSaida) {
-        boolean existe = alertaRepository.existsByCultivoIdAndTipoAndDataPrevista(cultivo.getId(), tipo, dataPrevista);
-
-        if (!existe) {
-            Alerta alerta = new Alerta();
-            alerta.setCultivo(cultivo);
-            alerta.setTipo(tipo);
-            alerta.setSeveridade(severidade);
-            alerta.setMensagem(mensagem);
-            alerta.setDataPrevista(dataPrevista);
-
-            Alerta salvo = alertaRepository.save(alerta);
-            listaSaida.add(salvo);
-
-            whatsAppService.notificarAlertaSeHabilitado(salvo);
-        }
+        return salvos.stream()
+                .filter(a -> "critico".equals(a.getSeveridade()))
+                .filter(a -> !jaAvisados.contains(a.getTipo() + "|" + a.getSeveridade() + "|" + a.getDataPrevista()))
+                .toList();
     }
 }

@@ -3,6 +3,7 @@ package br.com.sentinela.backend.service;
 import br.com.sentinela.backend.dto.CulturaDetalheResponseDTO;
 import br.com.sentinela.backend.dto.CulturaListaResponseDTO;
 import br.com.sentinela.backend.dto.CulturaRequestDTO;
+import br.com.sentinela.backend.exception.AcessoNegadoException;
 import br.com.sentinela.backend.exception.BusinessRuleException;
 import br.com.sentinela.backend.exception.RecursoConflitoException;
 import br.com.sentinela.backend.exception.RecursoNaoEncontradoException;
@@ -33,6 +34,13 @@ public class CulturaService {
     public CulturaDetalheResponseDTO obterPorId(Long id) {
         Cultura cultura = buscarPorId(id);
         return new CulturaDetalheResponseDTO(cultura);
+    }
+
+    // Só o admin cadastra e altera culturas; é o único 403 da API.
+    public void exigirAdmin(Usuario usuario) {
+        if (!"admin".equals(usuario.getPapel())) {
+            throw new AcessoNegadoException("Só o administrador pode cadastrar ou alterar culturas.");
+        }
     }
 
     @Transactional
@@ -72,6 +80,13 @@ public class CulturaService {
     }
 
     private void validarFaixasEValores(CulturaRequestDTO dto) {
+        if (dto.tipoCiclo() != null && !List.of("anual", "cana", "perene", "continua").contains(dto.tipoCiclo())) {
+            throw new BusinessRuleException("Tipo de ciclo inválido. Use anual, cana, perene ou continua.");
+        }
+        if ("continua".equals(dto.tipoCiclo()) && (dto.inicioColheitaDias() == null || dto.cicloDias() == null
+                || dto.inicioColheitaDias() < 1 || dto.inicioColheitaDias() > dto.cicloDias())) {
+            throw new BusinessRuleException("Na colheita contínua, informe em que dia a colheita começa (entre 1 e o ciclo).");
+        }
         if (dto.tempMinIdealC() != null && dto.tempMaxIdealC() != null && dto.tempMinIdealC() >= dto.tempMaxIdealC()) {
             throw new BusinessRuleException("A temperatura mínima ideal deve ser menor que a máxima ideal.");
         }
@@ -90,6 +105,9 @@ public class CulturaService {
         if (dto.nome() != null) cultura.setNome(dto.nome());
         if (dto.tipoCiclo() != null) cultura.setTipoCiclo(dto.tipoCiclo());
         if (dto.cicloDias() != null) cultura.setCicloDias(dto.cicloDias());
+        if (dto.inicioColheitaDias() != null) cultura.setInicioColheitaDias(dto.inicioColheitaDias());
+        if (dto.mesInicioColheita() != null) cultura.setMesInicioColheita(dto.mesInicioColheita());
+        if (dto.mesFimColheita() != null) cultura.setMesFimColheita(dto.mesFimColheita());
         if (dto.tempMinIdealC() != null) cultura.setTempMinIdealC(dto.tempMinIdealC());
         if (dto.tempMaxIdealC() != null) cultura.setTempMaxIdealC(dto.tempMaxIdealC());
         if (dto.tempCriticaBaixaC() != null) cultura.setTempCriticaBaixaC(dto.tempCriticaBaixaC());

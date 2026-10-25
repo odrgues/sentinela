@@ -8,27 +8,37 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.format.DateTimeFormatter;
-
+// Envio pelo WhatsApp. Enquanto a conta da Meta não está ligada, a mensagem é gravada na tabela
+// mensagem e aparece no log, com o mesmo texto dos modelos aviso_critico e resumo_semana.
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class WhatsAppService {
 
     private final MensagemRepository mensagemRepository;
+    private final OrientacaoService orientacaoService;
 
+    // Só avisos críticos, só para quem tem WhatsApp e não mandou PARAR.
     public void notificarAlertaSeHabilitado(Alerta alerta) {
         Usuario usuario = alerta.getCultivo().getUsuario();
+        if (!podeReceberAvisos(usuario) || !"critico".equals(alerta.getSeveridade())) return;
 
-        if (usuario.getWhatsappNumero() != null && !usuario.getWhatsappNumero().isBlank()) {
+        String texto = "⚠️ Aviso do Sentinela para " + alerta.getCultivo().getApelido() + ": "
+                + alerta.getMensagem() + " Responda AVISOS para ver os detalhes ou PARAR para não receber mais avisos.";
 
-            if ("critico".equalsIgnoreCase(alerta.getSeveridade())
-                    || "atencao".equalsIgnoreCase(alerta.getSeveridade())) {
-
-                String textoMensagem = montarTextoNotificacao(alerta);
-                enviarEManterHistorico(usuario, usuario.getWhatsappNumero(), textoMensagem, "consulta_alertas");
-            }
+        String oQueFazer = orientacaoService.oQueFazer(alerta.getCultivo().getCultura(), alerta.getTipo());
+        if (oQueFazer != null) {
+            texto += "\n\nO que fazer: " + oQueFazer;
         }
+        enviarEManterHistorico(usuario, texto, "consulta_alertas");
+    }
+
+    // Nas segundas: a frase da semana de cada lavoura numa linha só (regra dos modelos da Meta).
+    public void enviarResumoDaSemana(Usuario usuario, String resumo) {
+        if (!podeReceberAvisos(usuario)) return;
+        String texto = "Bom dia, " + usuario.getNome() + "! Sua semana no Sentinela: " + resumo
+                + " Responda 1 para ver cada lavoura ou PARAR para não receber mais avisos.";
+        enviarEManterHistorico(usuario, texto, "consulta_cultivos");
     }
 
     public void registrarMensagemRecebida(Usuario usuario, String chatId, String conteudo, String intencao) {
@@ -43,42 +53,22 @@ public class WhatsAppService {
         log.info("Mensagem via WhatsApp recebida de chatId {} e gravada no MySQL.", chatId);
     }
 
-    private void enviarEManterHistorico(Usuario usuario, String chatId, String textoMensagem, String intencao) {
+    private boolean podeReceberAvisos(Usuario usuario) {
+        return usuario.getWhatsappNumero() != null && !usuario.getWhatsappNumero().isBlank()
+                && Boolean.TRUE.equals(usuario.getAvisosWhatsapp());
+    }
+
+    private void enviarEManterHistorico(Usuario usuario, String textoMensagem, String intencao) {
         Mensagem mensagem = new Mensagem();
         mensagem.setUsuario(usuario);
-        mensagem.setChatId(chatId);
+        mensagem.setChatId(usuario.getWhatsappNumero());
         mensagem.setConteudo(textoMensagem);
         mensagem.setDirecao("enviada");
         mensagem.setIntencao(intencao);
+        mensagem.setRegistradoEm(Agora.agora());
 
         mensagemRepository.save(mensagem);
 
-        log.info("==================================================================");
-        log.info(" [WHATSAPP DISPARADO] ChatId: {} | Usuário: {}", chatId, usuario.getNome());
-        log.info(" Conteúdo:\n{}", textoMensagem);
-        log.info("==================================================================");
-    }
-
-    private String montarTextoNotificacao(Alerta alerta) {
-        String icone = "critico".equalsIgnoreCase(alerta.getSeveridade()) ? "🚨" : "⚠️";
-        String dataFormatada = alerta.getDataPrevista().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-
-        return String.format(
-                "%s *ALERTA AGROCLIMÁTICO SENTINELA* %s\n\n" +
-                        "*Lavoura:* %s (%s)\n" +
-                        "*Município:* %s\n" +
-                        "*Risco:* %s (%s)\n" +
-                        "*Data Prevista:* %s\n\n" +
-                        "*Detalhes:* %s\n\n" +
-                        "_Acesse o painel Sentinela para recomendações de manejo._",
-                icone, icone,
-                alerta.getCultivo().getApelido(),
-                alerta.getCultivo().getCultura().getNome(),
-                alerta.getCultivo().getMunicipio().getNome(),
-                alerta.getTipo().toUpperCase(),
-                alerta.getSeveridade().toUpperCase(),
-                dataFormatada,
-                alerta.getMensagem()
-        );
+        log.info("[WHATSAPP] Para {} ({}):\n{}", usuario.getNome(), usuario.getWhatsappNumero(), textoMensagem);
     }
 }

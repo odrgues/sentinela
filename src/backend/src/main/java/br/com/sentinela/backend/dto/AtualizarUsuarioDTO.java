@@ -1,22 +1,33 @@
 package br.com.sentinela.backend.dto;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
+import lombok.Getter;
 
+// PATCH /api/usuario/me: só os campos que vieram mudam. É uma classe (e não um record) para
+// diferenciar "whatsappNumero": null (desvincular) de o campo nem ter vindo (deixar como está).
+@Getter
+public class AtualizarUsuarioDTO {
 
-public record AtualizarUsuarioDTO (
+    @Size(min = 1, max = 120, message = "O nome deve ter de 1 a 120 caracteres.")
+    private String nome;
 
-    @Size(max = 120, message = "O nome deve ter no máximo 120 caracteres.")
-    String nome,
+    @Size(max = 20, message = "O número de WhatsApp deve ter no máximo 20 caracteres.")
+    private String whatsappNumero;
 
-    @Email(message = "Insira um e-mail válido")
-    @Size(max = 160, message = "O e-mail deve ter no máximo 160 caracteres")
-    String email,
+    private boolean whatsappInformado;
 
-    @Size(min = 6, message = "A senha deve ter no mínimo 6 caracteres.")
-    String senha,
+    private Boolean avisosWhatsapp;
 
-    @Size(max = 20, message = "O número de WhatsApp deve ter no máximo 20 caracteres")
-    String whatsappNumero
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
 
-) {}
+    public void setWhatsappNumero(String whatsappNumero) {
+        this.whatsappNumero = whatsappNumero;
+        this.whatsappInformado = true;
+    }
+
+    public void setAvisosWhatsapp(Boolean avisosWhatsapp) {
+        this.avisosWhatsapp = avisosWhatsapp;
+    }
+}
