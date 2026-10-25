@@ -1,0 +1,5 @@
+dist
+docs
+*.md
+package-lock.json
+public/mockServiceWorker.js

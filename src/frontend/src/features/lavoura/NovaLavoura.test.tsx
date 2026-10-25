@@ -1,0 +1,202 @@
+import { screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { http, HttpResponse } from 'msw'
+import { afterEach, describe, expect, it } from 'vitest'
+import { APELIDO_REPETIDO } from '../../mocks/lavoura'
+import { servidor } from '../../mocks/servidor'
+import { abrirApp } from '../../test/abrirApp'
+import { jaEntrou } from '../../test/sessao'
+import { telaDeComputador } from '../../test/tela'
+
+afterEach(() => {
+  servidor.events.removeAllListeners()
+})
+
+function guardarCorpoDoPost() {
+  const corpos: unknown[] = []
+  servidor.events.on('request:start', async ({ request }) => {
+    if (request.method === 'POST') corpos.push(await request.clone().json())
+  })
+  return corpos
+}
+
+async function confirmarLocal() {
+  await screen.findByRole('heading', { level: 1, name: 'Onde fica sua lavoura?' })
+  await userEvent.click(screen.getByRole('button', { name: 'Confirmar local' }))
+  await screen.findByRole('heading', { level: 1, name: 'O que você plantou?' })
+}
+
+async function preencher({ cultura = 'Soja', apelido = 'Roça nova', data = '2026-08-27' } = {}) {
+  await userEvent.click(await screen.findByRole('radio', { name: cultura }))
+  if (apelido) await userEvent.type(screen.getByLabelText('Nome para esta lavoura'), apelido)
+  if (data) await userEvent.type(screen.getByLabelText('Quando plantou?'), data)
+}
+
+describe('Nova lavoura no celular', () => {
+  it('sem a chave do Google, avisa e marca o ponto de exemplo', async () => {
+    jaEntrou()
+    abrirApp('/lavouras/nova')
+
+    expect(await screen.findByText('Mapa desligado')).toBeInTheDocument()
+    expect(screen.getByText('Passo 1 de 2')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Confirmar local' })).toBeEnabled()
+  })
+
+  it('salva com o ponto, o município e o que a pessoa preencheu, e volta para o painel', async () => {
+    jaEntrou()
+    const corpos = guardarCorpoDoPost()
+    const roteador = abrirApp('/lavouras/nova')
+
+    await confirmarLocal()
+    expect(screen.getByText('Uberaba – MG')).toBeInTheDocument()
+    await preencher()
+    await userEvent.type(screen.getByLabelText('Tamanho em hectares (opcional)'), '12,5')
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar e ver minha lavoura' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: /, João$/ })).toBeInTheDocument()
+    expect(roteador.state.location.pathname).toBe('/')
+    expect(screen.getByRole('status', { name: '' })).toHaveTextContent('Lavoura salva!')
+    expect(corpos[0]).toEqual({
+      culturaId: 3,
+      apelido: 'Roça nova',
+      dataPlantio: '2026-08-27',
+      areaHa: 12.5,
+      latitude: -19.747812,
+      longitude: -47.931804,
+      cidade: 'Uberaba',
+      uf: 'MG',
+    })
+  })
+
+  it('volta do passo 2 para o mapa pelo "Trocar" e pela seta', async () => {
+    jaEntrou()
+    abrirApp('/lavouras/nova')
+    await confirmarLocal()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Trocar o local no mapa' }))
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Onde fica sua lavoura?' }),
+    ).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar local' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Voltar para o mapa' }))
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Onde fica sua lavoura?' }),
+    ).toBeInTheDocument()
+  })
+
+  it('sem preencher, avisa embaixo de cada campo e não chama a API', async () => {
+    jaEntrou()
+    const corpos = guardarCorpoDoPost()
+    abrirApp('/lavouras/nova')
+    await confirmarLocal()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar e ver minha lavoura' }))
+
+    expect(screen.getByRole('group', { name: 'Cultura' })).toHaveAccessibleDescription(
+      'Escolha o que você plantou.',
+    )
+    expect(screen.getByLabelText('Nome para esta lavoura')).toBeInvalid()
+    expect(screen.getByLabelText('Quando plantou?')).toBeInvalid()
+    expect(corpos).toEqual([])
+  })
+
+  it('com o nome repetido, avisa embaixo do nome', async () => {
+    jaEntrou()
+    abrirApp('/lavouras/nova')
+    await confirmarLocal()
+
+    await preencher({ apelido: APELIDO_REPETIDO })
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar e ver minha lavoura' }))
+
+    expect(await screen.findByText('Você já tem uma lavoura com esse nome.')).toBeInTheDocument()
+    expect(screen.getByLabelText('Nome para esta lavoura')).toBeInvalid()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('no café, pergunta desde quando a lavoura existe', async () => {
+    jaEntrou()
+    abrirApp('/lavouras/nova')
+    await confirmarLocal()
+
+    await userEvent.click(await screen.findByRole('radio', { name: 'Café' }))
+
+    expect(screen.getByLabelText('Desde quando a lavoura existe?')).toHaveAccessibleDescription(
+      'No café, a colheita prevista é sempre a próxima, a partir de maio.',
+    )
+  })
+
+  it('procura a cultura sem ligar para acento', async () => {
+    jaEntrou()
+    abrirApp('/lavouras/nova')
+    await confirmarLocal()
+
+    await userEvent.type(await screen.findByLabelText('Procurar cultura'), 'algodao')
+
+    const lista = screen.getByRole('group', { name: 'Cultura' })
+    expect(within(lista).getAllByRole('radio')).toHaveLength(1)
+    expect(within(lista).getByRole('radio', { name: 'Algodão' })).toBeInTheDocument()
+
+    await userEvent.clear(screen.getByLabelText('Procurar cultura'))
+    await userEvent.type(screen.getByLabelText('Procurar cultura'), 'uva')
+    expect(within(lista).getByText('Nenhuma cultura com esse nome.')).toBeInTheDocument()
+  })
+
+  it('mostra a descrição do ciclo de cada cultura', async () => {
+    jaEntrou()
+    abrirApp('/lavouras/nova')
+    await confirmarLocal()
+
+    expect(await screen.findByRole('radio', { name: 'Soja' })).toHaveAccessibleDescription(
+      'Ciclo de 120 dias',
+    )
+    expect(screen.getByRole('radio', { name: 'Café' })).toHaveAccessibleDescription(
+      'Perene · colheita de maio a agosto',
+    )
+    expect(screen.getByRole('radio', { name: 'Cana-de-açúcar' })).toHaveAccessibleDescription(
+      'Ciclo de 12 ou 18 meses',
+    )
+  })
+})
+
+describe('Nova lavoura no computador', () => {
+  it('mostra o mapa e o formulário juntos, com a barra do topo', async () => {
+    telaDeComputador()
+    jaEntrou()
+    abrirApp('/lavouras/nova')
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Nova lavoura' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Mapa desligado')).toBeInTheDocument()
+    expect(screen.getByText('Uberaba – MG')).toBeInTheDocument()
+    expect(screen.queryByText('Passo 1 de 2')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Nova lavoura' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+  })
+
+  it('salva direto, sem os passos', async () => {
+    telaDeComputador()
+    jaEntrou()
+    abrirApp('/lavouras/nova')
+
+    await preencher()
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar e ver minha lavoura' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: /, João$/ })).toBeInTheDocument()
+  })
+
+  it('sem conexão, mostra a caixa de erro', async () => {
+    telaDeComputador()
+    jaEntrou()
+    servidor.use(http.post('/api/cultivos', () => HttpResponse.error()))
+    abrirApp('/lavouras/nova')
+
+    await preencher()
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar e ver minha lavoura' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Sem conexão com o servidor')
+  })
+})
