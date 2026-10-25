@@ -1,4 +1,4 @@
-import { dataCompleta, diaEMes } from '../../../../shared/formato/data'
+import { dataCompleta, diaEMes, hoje } from '../../../../shared/formato/data'
 import { porcentagemDoCiclo } from '../../detalhe'
 import type { DetalheDaLavoura } from '../../tipos'
 import * as S from './Detalhe.styles'
@@ -9,13 +9,18 @@ export function Ciclo({ lavoura }: { lavoura: DetalheDaLavoura }) {
 
   if (diaAtual !== null && cicloDias !== null) {
     const feito = porcentagemDoCiclo(diaAtual, cicloDias)
+    // Na colheita contínua (morango, chuchu), a data é quando a colheita começa.
+    const colheita =
+      lavoura.tipoCiclo === 'continua'
+        ? `Colheita a partir de ${diaEMes(colheitaPrevista)}`
+        : `Colheita prevista: ${diaEMes(colheitaPrevista)}`
     return (
       <S.Ciclo>
         <S.LinhaDoCiclo>
           <strong>
             Dia {diaAtual} de {cicloDias}
           </strong>
-          <span>Colheita prevista: {diaEMes(colheitaPrevista)}</span>
+          <span>{colheita}</span>
         </S.LinhaDoCiclo>
         <S.Barra role="img" aria-label={`${feito}% do ciclo concluído`}>
           <S.Preenchida style={{ width: `${feito}%` }} />
@@ -24,17 +29,20 @@ export function Ciclo({ lavoura }: { lavoura: DetalheDaLavoura }) {
     )
   }
 
+  // Perene sem safra (banana, goiaba): depois da primeira colheita, produz direto.
+  const jaProduz = !safra && colheitaPrevista <= hoje()
+
   return (
     <S.Ciclo>
       <S.LinhaDoCiclo>
         <strong>{safra ? `Safra ${safra}` : lavoura.cultura}</strong>
-        <span>Colheita a partir de {dataCompleta(colheitaPrevista)}</span>
+        <span>
+          {jaProduz
+            ? `Produzindo desde ${dataCompleta(colheitaPrevista)}`
+            : `Colheita a partir de ${dataCompleta(colheitaPrevista)}`}
+        </span>
       </S.LinhaDoCiclo>
-      {lavoura.tipoCiclo === 'perene' && (
-        <S.Explicacao>
-          Primavera é a época da florada. A colheita vai de maio a agosto.
-        </S.Explicacao>
-      )}
+      {lavoura.explicacaoCiclo && <S.Explicacao>{lavoura.explicacaoCiclo}</S.Explicacao>}
     </S.Ciclo>
   )
 }

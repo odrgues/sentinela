@@ -12,7 +12,13 @@ import * as S from './NovaLavoura.styles'
 import type { DadosDaLavoura, Local } from './tipos'
 import { areaEmHectares, validarLavoura, type ErrosDaLavoura } from './validacao'
 
-const SEM_DADOS: DadosDaLavoura = { culturaId: null, apelido: '', dataPlantio: '', area: '' }
+const SEM_DADOS: DadosDaLavoura = {
+  culturaId: null,
+  apelido: '',
+  dataPlantio: '',
+  area: '',
+  unidade: 'ha',
+}
 
 // No celular, dois passos: onde fica (o mapa) e o que plantou (o formulário).
 // No computador, os dois juntos.
@@ -52,7 +58,7 @@ export function NovaLavoura() {
       culturaId: dados.culturaId,
       apelido: dados.apelido.trim(),
       dataPlantio: dados.dataPlantio,
-      areaHa: areaEmHectares(dados.area),
+      areaHa: areaEmHectares(dados.area, dados.unidade),
     })
   }
 

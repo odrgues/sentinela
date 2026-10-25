@@ -122,7 +122,7 @@ describe('Nova lavoura no celular', () => {
     await userEvent.click(await screen.findByRole('radio', { name: 'Café' }))
 
     expect(screen.getByLabelText('Desde quando a lavoura existe?')).toHaveAccessibleDescription(
-      'No café, a colheita prevista é sempre a próxima, a partir de maio.',
+      'Se a lavoura já produz, pode ser uma data aproximada.',
     )
   })
 

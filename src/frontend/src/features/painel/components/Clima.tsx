@@ -16,7 +16,7 @@ export function Clima({ hoje }: { hoje: Painel['hoje'] }) {
         <Icone size={tema.icone.clima} aria-hidden />
       </S.IconeDoClima>
       <div>
-        <S.Temperatura>{Math.round(hoje.tempC)}°</S.Temperatura>
+        {hoje.tempC !== null && <S.Temperatura>{Math.round(hoje.tempC)}°</S.Temperatura>}
         <S.OndeEComo>
           Hoje em {hoje.cidade} · {hoje.condicaoTexto}
         </S.OndeEComo>

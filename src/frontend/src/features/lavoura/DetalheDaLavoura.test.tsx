@@ -75,6 +75,84 @@ describe('Detalhe da lavoura', () => {
     ).toBeInTheDocument()
   })
 
+  it('o aviso mostra o que fazer, quando a API manda', async () => {
+    responderDetalhe({
+      alertas: [
+        {
+          tipo: 'deficit_hidrico',
+          severidade: 'atencao',
+          data: '2026-10-25',
+          mensagem: 'Pouca chuva: só 22 mm previstos na semana.',
+          porque: 'A lavoura de soja precisa de 26,5 a 47,1 mm de chuva por semana.',
+          oQueFazer: 'Se puder, irrigue. Adie a adubação de cobertura até a chuva voltar.',
+        },
+        {
+          tipo: 'favoravel',
+          severidade: 'info',
+          data: '2026-10-25',
+          mensagem: 'Tudo certo esta semana.',
+          porque: 'Dentro da faixa ideal.',
+          oQueFazer: null,
+        },
+      ],
+    })
+    await abrirTalhao()
+
+    expect(screen.getByText('O que fazer')).toBeInTheDocument()
+    expect(
+      screen.getByText('Se puder, irrigue. Adie a adubação de cobertura até a chuva voltar.'),
+    ).toBeInTheDocument()
+    expect(screen.getAllByText('O que fazer')).toHaveLength(1)
+  })
+
+  it('mostra a fase do ciclo, com o que ela pede e a fonte', async () => {
+    responderDetalhe({
+      fase: {
+        nome: 'Floração',
+        diaInicio: 35,
+        diaFim: 50,
+        orientacao: 'Fase mais sensível à falta de água.',
+        fonte: 'Embrapa Arroz e Feijão (500 Perguntas Feijão, p. 41)',
+      },
+    })
+    await abrirTalhao()
+
+    expect(screen.getByText('Floração · dias 35 a 50')).toBeInTheDocument()
+    expect(screen.getByText('Fase mais sensível à falta de água.')).toBeInTheDocument()
+    expect(
+      screen.getByText('Fonte: Embrapa Arroz e Feijão (500 Perguntas Feijão, p. 41)'),
+    ).toBeInTheDocument()
+  })
+
+  it('na colheita contínua, mostra quando a colheita começa', async () => {
+    responderDetalhe({
+      cultura: 'Morango',
+      tipoCiclo: 'continua',
+      diaAtual: 160,
+      cicloDias: 220,
+      colheitaPrevista: '2026-07-07',
+    })
+    await abrirTalhao()
+
+    expect(screen.getByText('Dia 160 de 220')).toBeInTheDocument()
+    expect(screen.getByText('Colheita a partir de 07/07')).toBeInTheDocument()
+  })
+
+  it('na perene sem safra que já produz, diz desde quando', async () => {
+    responderDetalhe({
+      cultura: 'Banana',
+      tipoCiclo: 'perene',
+      dataPlantio: '2023-01-10',
+      diaAtual: null,
+      cicloDias: null,
+      safra: null,
+      colheitaPrevista: '2024-07-03',
+    })
+    await abrirTalhao()
+
+    expect(screen.getByText('Produzindo desde 03/07/2024')).toBeInTheDocument()
+  })
+
   it('sem aviso na semana, diz que está tudo certo', async () => {
     responderDetalhe({ alertas: [] })
     await abrirTalhao()

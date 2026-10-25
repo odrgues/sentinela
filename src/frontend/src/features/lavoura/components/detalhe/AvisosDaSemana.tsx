@@ -24,6 +24,12 @@ function Aviso({ alerta }: { alerta: AlertaDaSemana }) {
           <S.CorpoDoAviso $nivel={nivel}>{alerta.mensagem}</S.CorpoDoAviso>
         </div>
       </S.TopoDoAviso>
+      {alerta.oQueFazer && (
+        <S.OQueFazer $nivel={nivel}>
+          <strong>O que fazer</strong>
+          {alerta.oQueFazer}
+        </S.OQueFazer>
+      )}
       {alerta.porque && (
         <>
           <S.PorQue

@@ -8,8 +8,9 @@ import '@fontsource/figtree/700.css'
 import '@fontsource/figtree/800.css'
 
 // Só em desenvolvimento: no build, o import.meta.env.DEV vira false e o MSW nem entra no pacote.
+// Com `npm run dev:api`, fica desligada e tudo vai para o backend de verdade.
 async function ligarApiDeMentira() {
-  if (!import.meta.env.DEV) return
+  if (!import.meta.env.DEV || import.meta.env.VITE_API_DE_MENTIRA === 'desligada') return
   const { worker } = await import('./mocks/navegador')
   await worker.start({ onUnhandledRequest: 'bypass' })
 }

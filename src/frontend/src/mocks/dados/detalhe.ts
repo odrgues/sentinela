@@ -2,6 +2,7 @@ import type {
   AvisoDoHistorico,
   DetalheDaLavoura,
   DiaDePrevisao,
+  FaseDoCiclo,
 } from '../../features/lavoura/tipos'
 import { hoje } from '../../shared/formato/data'
 import { culturas } from './culturas'
@@ -61,6 +62,35 @@ function previsao(): DiaDePrevisao[] {
   return semana.map((dia, i) => ({ ...dia, data: datas[i] }))
 }
 
+// As fases em que as lavouras do painel estão, com os textos do seed (03_orientacoes.sql).
+const FASES: Record<string, FaseDoCiclo> = {
+  Soja: {
+    nome: 'Desenvolvimento vegetativo',
+    diaInicio: 10,
+    diaFim: 47,
+    orientacao:
+      'A soja tolera melhor a falta de água nesta fase, mas calor forte adianta a floração e deixa a planta baixa. Plantio direto e rotação guardam mais água no solo para as fases críticas.',
+    fonte:
+      'Embrapa Pesca e Aquicultura (Boletim de Pesquisa 18, ZARC soja, 2017, p. 18); Embrapa Soja (Sistemas de Produção 17, 2020, p. 40, 44 e 47)',
+  },
+  Milho: {
+    nome: 'Vegetativo (V4 a V17)',
+    diaInicio: 15,
+    diaFim: 55,
+    orientacao:
+      'Por volta de 5 folhas a planta define quantos grãos pode ter, e falta de água deixa plantas menores e colmos finos. Encharcamento por mais de cinco dias causa prejuízo.',
+    fonte: 'Embrapa Milho e Sorgo (Circular Técnica 22, Fisiologia do Milho, 2002, p. 8-10)',
+  },
+  Feijão: {
+    nome: 'Germinação e emergência (V0-V2)',
+    diaInicio: 0,
+    diaFim: 16,
+    orientacao:
+      'Falta de água faz a semente apodrecer ou a plantinha não romper o solo, e frio atrasa a emergência. Semeie com o solo úmido e dentro da época do zoneamento (ZARC).',
+    fonte: 'Embrapa Arroz e Feijão (Conhecendo a fenologia do feijoeiro, 2018, p. 45, 46 e 48)',
+  },
+}
+
 export function detalhe(id: number): DetalheDaLavoura | null {
   const doPainel = painel().cultivos.find((lavoura) => lavoura.id === id)
   if (!doPainel) return null
@@ -75,15 +105,19 @@ export function detalhe(id: number): DetalheDaLavoura | null {
       mensagem: `Calor de 36 °C. Passa do limite que a ${doPainel.cultura.toLowerCase()} aguenta.`,
       porque:
         'A soja se desenvolve bem com média entre 20 °C e 30 °C e começa a sofrer acima de 35 °C. Fonte: Embrapa.',
+      oQueFazer:
+        'Na soja, calor acima de 38 °C, principalmente com falta de água, derruba flores e vagens. Se puder irrigar, não deixe faltar água na floração e no enchimento de grãos.',
     })
   }
   if (doPainel.aviso.severidade !== 'info') {
     alertas.push({
-      tipo: 'seca',
+      tipo: 'deficit_hidrico',
       severidade: 'atencao',
       data: datas[0],
       mensagem: 'Pouca chuva: só 22 mm previstos na semana.',
       porque: 'A lavoura precisa de 27 a 47 mm de chuva por semana. Fonte: Embrapa.',
+      oQueFazer:
+        'Se tiver irrigação, priorize a floração e o enchimento de grãos, que são as fases que mais sofrem com a falta de água. Palhada sobre o solo segura a umidade.',
     })
   }
 
@@ -103,6 +137,7 @@ export function detalhe(id: number): DetalheDaLavoura | null {
     diaAtual: doPainel.diaAtual,
     cicloDias: doPainel.cicloDias,
     safra: null,
+    explicacaoCiclo: null,
     previsaoDisponivel: true,
     previsaoAtualizadaEm: `${hoje()}T07:00:00-03:00`,
     enso: {
@@ -113,6 +148,7 @@ export function detalhe(id: number): DetalheDaLavoura | null {
       frase:
         'Você plantou em agosto de 2026, durante um El Niño muito forte. Em anos assim, o tempo pode fugir do normal da região: vale acompanhar os avisos de perto.',
     },
+    fase: FASES[doPainel.cultura] ?? null,
     alertas,
     previsao: previsao(),
   }
@@ -127,7 +163,7 @@ export function historico(): AvisoDoHistorico[] {
       mensagem: 'Calor forte: 36 °C previstos. A soja aguenta até 35 °C.',
     },
     {
-      tipo: 'seca',
+      tipo: 'deficit_hidrico',
       severidade: 'atencao',
       mensagem: 'Pouca chuva: 22 mm na semana. O ideal é de 27 a 47 mm.',
     },
@@ -137,7 +173,7 @@ export function historico(): AvisoDoHistorico[] {
       mensagem: 'Semana boa: temperatura e chuva dentro do ideal.',
     },
     {
-      tipo: 'chuva',
+      tipo: 'chuva_excessiva',
       severidade: 'atencao',
       mensagem: 'Chuva demais: 52 mm na semana. O máximo para a soja é 47 mm.',
     },

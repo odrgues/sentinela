@@ -14,6 +14,12 @@ export function tituloDoEnso(enso: Enso, perene: boolean) {
   return `${fase} ${enso.intensidade} ${quando}`
 }
 
+// Horta pequena em m² ("300 m²"); lavoura em hectares ("12 ha").
+export function areaParaLer(areaHa: number) {
+  if (areaHa < 1) return `${Math.round(areaHa * 10000).toLocaleString('pt-BR')} m²`
+  return `${areaHa.toLocaleString('pt-BR')} ha`
+}
+
 // "Soja · plantada em 27/08 · 12 ha", ou "Café · lavoura desde 2019 · 8 ha" na perene.
 export function resumoDaLavoura(lavoura: DetalheDaLavoura, comMunicipio = false) {
   const plantio =
@@ -21,7 +27,7 @@ export function resumoDaLavoura(lavoura: DetalheDaLavoura, comMunicipio = false)
       ? `lavoura desde ${lavoura.dataPlantio.slice(0, 4)}`
       : `plantada em ${diaEMes(lavoura.dataPlantio)}`
   const partes = [lavoura.cultura, plantio]
-  if (lavoura.areaHa !== null) partes.push(`${lavoura.areaHa.toLocaleString('pt-BR')} ha`)
+  if (lavoura.areaHa !== null) partes.push(areaParaLer(lavoura.areaHa))
   if (comMunicipio) partes.push(lavoura.municipio)
   return partes.join(' · ')
 }

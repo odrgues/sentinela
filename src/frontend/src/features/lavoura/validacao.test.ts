@@ -54,4 +54,9 @@ describe('areaEmHectares', () => {
     expect(areaEmHectares('12.5')).toBe(12.5)
     expect(areaEmHectares(' ')).toBeUndefined()
   })
+
+  it('em m², converte para hectares', () => {
+    expect(areaEmHectares('500', 'm2')).toBe(0.05)
+    expect(areaEmHectares('12,5', 'ha')).toBe(12.5)
+  })
 })

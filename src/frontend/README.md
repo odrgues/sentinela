@@ -15,6 +15,7 @@ Precisa do Node 22.22 ou mais novo.
 ```sh
 npm install
 npm run dev       # abre o app, com a API de mentira ligada
+npm run dev:api   # abre o app sem a API de mentira, falando só com o backend da porta 8080
 npm test          # roda os testes
 npm run build     # verifica os tipos e gera o build
 npm run lint      # regras de código

@@ -1,7 +1,7 @@
 import type { Cultura } from '../../shared/api/tipos/cultura'
 import type { MudancasNaLavoura } from './api'
 import type { DadosDaLavoura, DetalheDaLavoura, Local } from './tipos'
-import { areaEmHectares } from './validacao'
+import { areaEmHectares, areaNoCampo } from './validacao'
 
 // O detalhe traz o município junto ("Uberaba – MG"); a edição precisa da cidade e da UF.
 export function localDaLavoura(lavoura: DetalheDaLavoura): Local {
@@ -17,7 +17,7 @@ export function dadosDaLavoura(lavoura: DetalheDaLavoura, culturas: Cultura[]): 
     culturaId,
     apelido: lavoura.apelido,
     dataPlantio: lavoura.dataPlantio,
-    area: lavoura.areaHa === null ? '' : lavoura.areaHa.toLocaleString('pt-BR'),
+    ...areaNoCampo(lavoura.areaHa),
   }
 }
 
@@ -27,8 +27,8 @@ type Situacao = { dados: DadosDaLavoura; local: Local }
 export function oQueMudou(antes: Situacao, depois: Situacao): MudancasNaLavoura {
   const mudancas: MudancasNaLavoura = {}
   const apelido = depois.dados.apelido.trim()
-  const areaAntes = areaEmHectares(antes.dados.area) ?? null
-  const areaDepois = areaEmHectares(depois.dados.area) ?? null
+  const areaAntes = areaEmHectares(antes.dados.area, antes.dados.unidade) ?? null
+  const areaDepois = areaEmHectares(depois.dados.area, depois.dados.unidade) ?? null
 
   if (depois.dados.culturaId !== null && depois.dados.culturaId !== antes.dados.culturaId) {
     mudancas.culturaId = depois.dados.culturaId

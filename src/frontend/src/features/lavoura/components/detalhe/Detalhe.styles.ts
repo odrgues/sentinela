@@ -80,6 +80,40 @@ export const Enso = styled.div`
   }
 `
 
+// A fase do ciclo em que a lavoura está, com o que ela pede.
+export const Fase = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.espaco[6]};
+  padding: ${({ theme }) => theme.espaco[8]};
+  background: ${({ theme }) => theme.cores.destaque.suave};
+  border-radius: ${({ theme }) => theme.raio.cartao};
+  color: ${({ theme }) => theme.cores.destaque.sobreSuave};
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  strong {
+    display: block;
+    margin-bottom: ${({ theme }) => theme.espaco[2]};
+    font-size: ${({ theme }) => theme.fonte.tamanho.corpo};
+    font-weight: ${({ theme }) => theme.fonte.peso.extra};
+  }
+
+  p {
+    margin: 0;
+    font-size: ${({ theme }) => theme.fonte.tamanho.apoio};
+    line-height: ${({ theme }) => theme.fonte.alturaLinha.solta};
+  }
+`
+
+export const Fonte = styled.small`
+  display: block;
+  margin-top: ${({ theme }) => theme.espaco[3]};
+  font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
+  opacity: 0.85;
+`
+
 export const Secao = styled.section`
   display: flex;
   flex-direction: column;
@@ -121,6 +155,23 @@ export const CorpoDoAviso = styled.span<{ $nivel: NivelDoTema }>`
   font-size: ${({ theme }) => theme.fonte.tamanho.corpo};
   line-height: ${({ theme }) => theme.fonte.alturaLinha.media};
   color: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].corpo};
+`
+
+// "O que fazer": sempre aberto, embaixo da mensagem, alinhado com o texto.
+export const OQueFazer = styled.div<{ $nivel: NivelDoTema }>`
+  margin-left: ${({ theme }) => theme.espaco[13]};
+  padding: ${({ theme }) => theme.espaco[5]} ${({ theme }) => theme.espaco[6]};
+  background: ${({ theme }) => theme.cores.fundo.cartao};
+  border-radius: ${({ theme }) => theme.raio.campo};
+  font-size: ${({ theme }) => theme.fonte.tamanho.apoio};
+  line-height: ${({ theme }) => theme.fonte.alturaLinha.solta};
+  color: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].corpo};
+
+  strong {
+    display: block;
+    margin-bottom: ${({ theme }) => theme.espaco[1]};
+    font-weight: ${({ theme }) => theme.fonte.peso.forte};
+  }
 `
 
 // Alinhado com o texto, depois do ícone.

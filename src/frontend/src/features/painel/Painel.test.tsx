@@ -40,9 +40,9 @@ describe('Painel', () => {
     const lista = await screen.findByRole('list')
     const lavouras = within(lista).getAllByRole('link')
     expect(lavouras.map((link) => link.textContent)).toEqual([
-      'Talhão do fundoSoja · dia 45 de 120Calor forte na quinta',
-      'Roça da baixadaMilho · dia 20 de 120Pouca chuva na semana',
-      'Feijão da hortaFeijão · dia 12 de 90Tudo certo esta semana',
+      'Talhão do fundoSoja · dia 45 de 120 · Desenvolvimento vegetativoCalor forte na quinta',
+      'Roça da baixadaMilho · dia 20 de 120 · Vegetativo (V4 a V17)Pouca chuva na semana',
+      'Feijão da hortaFeijão · dia 12 de 90 · Germinação e emergência (V0-V2)Tudo certo esta semana',
     ])
 
     await userEvent.click(lavouras[0])
@@ -61,6 +61,7 @@ describe('Painel', () => {
           diaAtual: null,
           cicloDias: null,
           safra: '2026/27',
+          fase: null,
         },
       ],
     })

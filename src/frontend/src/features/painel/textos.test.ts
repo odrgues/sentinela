@@ -35,6 +35,10 @@ describe('andamento', () => {
     ).toBe('Café · safra 2026/27')
   })
 
+  it('com a fase do ciclo, ela vem no fim', () => {
+    expect(andamento({ ...soja, fase: 'Floração' })).toBe('Soja · dia 45 de 120 · Floração')
+  })
+
   it('sem dia nem safra, só a cultura', () => {
     expect(andamento({ ...soja, diaAtual: null, cicloDias: null })).toBe('Soja')
   })

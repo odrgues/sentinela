@@ -19,6 +19,8 @@ export type LavouraNoPainel = {
   safra?: string | null
   latitude: number
   longitude: number
+  // O nome da fase do ciclo ("Floração"), quando a cultura tem fases cadastradas.
+  fase?: string | null
   aviso: Aviso
 }
 
@@ -27,7 +29,8 @@ export type Painel = {
   hoje: {
     cidade: string
     uf: string
-    tempC: number
+    // Nulo quando a previsão de hoje não chegou.
+    tempC: number | null
     condicao: Condicao
     condicaoTexto: string
   }

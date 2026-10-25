@@ -39,6 +39,12 @@ describe('resumoDaLavoura', () => {
     expect(resumoDaLavoura(soja, true)).toBe('Soja · plantada em 27/08 · 12 ha · Uberaba – MG')
   })
 
+  it('horta menor que 1 hectare aparece em m²', () => {
+    expect(resumoDaLavoura({ ...soja, cultura: 'Chuchu', areaHa: 0.03 })).toBe(
+      'Chuchu · plantada em 27/08 · 300 m²',
+    )
+  })
+
   it('na perene, diz desde quando existe, e sem área não mostra a área', () => {
     expect(
       resumoDaLavoura({

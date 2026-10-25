@@ -34,7 +34,13 @@ describe('dadosDaLavoura', () => {
       apelido: 'Talhão do fundo',
       dataPlantio: '2026-08-27',
       area: '12,5',
+      unidade: 'ha',
     })
+  })
+
+  it('mostra em m² a área de horta, menor que 1 hectare', () => {
+    const horta = dadosDaLavoura({ ...lavoura, areaHa: 0.05 }, culturas)
+    expect(horta).toMatchObject({ area: '500', unidade: 'm2' })
   })
 
   it('usa o culturaId quando a API manda', () => {

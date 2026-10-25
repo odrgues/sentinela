@@ -7,11 +7,14 @@ export function saudacao(hora: number) {
   return 'Boa noite'
 }
 
-// A linha embaixo do nome da lavoura: "Soja · dia 45 de 120" ou "Café · safra 2026/27".
+// A linha embaixo do nome da lavoura: "Soja · dia 45 de 120 · Floração" ou "Café · safra 2026/27".
 export function andamento(lavoura: LavouraNoPainel) {
+  const partes = [lavoura.cultura]
   if (lavoura.diaAtual !== null && lavoura.cicloDias !== null) {
-    return `${lavoura.cultura} · dia ${lavoura.diaAtual} de ${lavoura.cicloDias}`
+    partes.push(`dia ${lavoura.diaAtual} de ${lavoura.cicloDias}`)
+  } else if (lavoura.safra) {
+    partes.push(`safra ${lavoura.safra}`)
   }
-  if (lavoura.safra) return `${lavoura.cultura} · safra ${lavoura.safra}`
-  return lavoura.cultura
+  if (lavoura.fase) partes.push(lavoura.fase)
+  return partes.join(' · ')
 }

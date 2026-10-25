@@ -1,7 +1,9 @@
 import type { Cultura } from '../../shared/api/tipos/cultura'
 
-// A linha embaixo do nome de cada cultura, na lista de "O que você plantou?".
+// A linha embaixo do nome de cada cultura, na lista de "O que você plantou?". O backend já
+// manda pronta; as regras abaixo só valem se ela não vier.
 export function descricaoDoCiclo(cultura: Cultura) {
+  if (cultura.descricaoCiclo) return cultura.descricaoCiclo
   if (cultura.tipoCiclo === 'perene') return 'Perene · colheita de maio a agosto'
   if (cultura.tipoCiclo === 'cana') return 'Ciclo de 12 ou 18 meses'
   return `Ciclo de ${cultura.cicloDias} dias`

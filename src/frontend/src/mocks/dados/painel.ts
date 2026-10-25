@@ -26,6 +26,7 @@ export function painel(): Painel {
         safra: null,
         latitude: -19.747812,
         longitude: -47.931804,
+        fase: 'Desenvolvimento vegetativo',
         aviso: { tipo: 'calor', severidade: 'critico', mensagem: 'Calor forte na quinta' },
       },
       {
@@ -38,7 +39,12 @@ export function painel(): Painel {
         safra: null,
         latitude: -19.775104,
         longitude: -47.901772,
-        aviso: { tipo: 'seca', severidade: 'atencao', mensagem: 'Pouca chuva na semana' },
+        fase: 'Vegetativo (V4 a V17)',
+        aviso: {
+          tipo: 'deficit_hidrico',
+          severidade: 'atencao',
+          mensagem: 'Pouca chuva na semana',
+        },
       },
       {
         id: 3,
@@ -50,6 +56,7 @@ export function painel(): Painel {
         safra: null,
         latitude: -19.761002,
         longitude: -47.915233,
+        fase: 'Germinação e emergência (V0-V2)',
         aviso: { tipo: 'favoravel', severidade: 'info', mensagem: 'Tudo certo esta semana' },
       },
     ],

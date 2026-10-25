@@ -14,6 +14,7 @@ import { useLavoura } from './api'
 import { AvisosDaSemana } from './components/detalhe/AvisosDaSemana'
 import { CartaoDoEnso } from './components/detalhe/CartaoDoEnso'
 import { Ciclo } from './components/detalhe/Ciclo'
+import { FaseDoCiclo } from './components/detalhe/FaseDoCiclo'
 import * as D from './components/detalhe/Detalhe.styles'
 import { Escolha } from './components/detalhe/Escolha'
 import { Historico } from './components/detalhe/Historico'
@@ -54,6 +55,7 @@ function Conteudo({
         </S.Encerrada>
       )}
       <Ciclo lavoura={lavoura} />
+      {emAndamento && lavoura.fase && <FaseDoCiclo fase={lavoura.fase} />}
       {lavoura.enso && <CartaoDoEnso enso={lavoura.enso} perene={lavoura.tipoCiclo === 'perene'} />}
       {emAndamento && <AvisosDaSemana alertas={lavoura.alertas} />}
     </>
