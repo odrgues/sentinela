@@ -147,6 +147,12 @@ export function detalhe(id: number): DetalheDaLavoura | null {
       mesPlantio: '2026-08',
       frase:
         'Você plantou em agosto de 2026, durante um El Niño muito forte. Em anos assim, o tempo pode fugir do normal da região: vale acompanhar os avisos de perto.',
+      efeito:
+        'Em estudo da Embrapa com chuvas de 1980 a 2013, o El Niño não mudou o início do plantio em Goiás, vizinho do Triângulo.',
+      oQueFazer:
+        'Siga a janela do ZARC normalmente. Escolha cultivar adaptada à região e de produção estável.',
+      fonte:
+        'Embrapa Arroz e Feijão, Boletim de Pesquisa e Desenvolvimento 70 (2026), p. 8-10 e 14; Embrapa, Nota Técnica El Niño 2026/2027, p. 78 e 83',
     },
     fase: FASES[doPainel.cultura] ?? null,
     alertas,

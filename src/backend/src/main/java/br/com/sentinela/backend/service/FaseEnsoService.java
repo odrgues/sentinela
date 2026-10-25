@@ -3,8 +3,11 @@ package br.com.sentinela.backend.service;
 import br.com.sentinela.backend.dto.DetalheCultivoDTO;
 import br.com.sentinela.backend.exception.RecursoNaoEncontradoException;
 import br.com.sentinela.backend.model.Cultivo;
+import br.com.sentinela.backend.model.Cultura;
 import br.com.sentinela.backend.model.FaseEnso;
+import br.com.sentinela.backend.model.OrientacaoEnso;
 import br.com.sentinela.backend.repository.FaseEnsoRepository;
+import br.com.sentinela.backend.repository.OrientacaoEnsoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +20,7 @@ import java.util.Optional;
 public class FaseEnsoService {
 
     private final FaseEnsoRepository faseEnsoRepository;
+    private final OrientacaoEnsoRepository orientacaoEnsoRepository;
 
     public FaseEnso buscarFaseAtual() {
         LocalDate hoje = Agora.hoje();
@@ -41,28 +45,35 @@ public class FaseEnsoService {
         LocalDate plantio = cultivo.getDataPlantio();
         Optional<FaseEnso> ultimo = faseEnsoRepository.findFirstByOrderByAnoDescMesDesc();
 
+        Cultura cultura = cultivo.getCultura();
         if (perene) {
-            return ultimo.map(fase -> paraDto(fase, fraseUltimoMes(fase))).orElse(null);
+            return ultimo.map(fase -> paraDto(fase, fraseUltimoMes(fase), cultura)).orElse(null);
         }
 
         Optional<FaseEnso> doPlantio = faseEnsoRepository.findByAnoAndMes(plantio.getYear(), plantio.getMonthValue());
         if (doPlantio.isPresent()) {
-            return paraDto(doPlantio.get(), fraseDoPlantio(doPlantio.get()));
+            return paraDto(doPlantio.get(), fraseDoPlantio(doPlantio.get()), cultura);
         }
         return ultimo
                 .filter(fase -> LocalDate.of(fase.getAno(), fase.getMes(), 1).isBefore(plantio))
                 .map(fase -> paraDto(fase, "Você plantou em " + Textos.mesPorExtenso(plantio.getYear(), plantio.getMonthValue())
-                        + ", e a NOAA ainda não publicou esse mês. " + fraseUltimoMes(fase)))
+                        + ", e a NOAA ainda não publicou esse mês. " + fraseUltimoMes(fase), cultura))
                 .orElse(null);
     }
 
-    private static DetalheCultivoDTO.EnsoDTO paraDto(FaseEnso fase, String frase) {
+    // O que a fase costuma trazer e o que fazer: primeiro o texto da cultura, senão o que vale para todas.
+    private DetalheCultivoDTO.EnsoDTO paraDto(FaseEnso fase, String frase, Cultura cultura) {
+        Optional<OrientacaoEnso> orientacao = orientacaoEnsoRepository.findFirstByFaseAndCulturaId(fase.getFase(), cultura.getId())
+                .or(() -> orientacaoEnsoRepository.findFirstByFaseAndCulturaIsNull(fase.getFase()));
         return new DetalheCultivoDTO.EnsoDTO(
                 fase.getFase(),
                 fase.getIntensidade(),
                 fase.getIndice(),
                 String.format("%d-%02d", fase.getAno(), fase.getMes()),
-                frase
+                frase,
+                orientacao.map(OrientacaoEnso::getEfeito).orElse(null),
+                orientacao.map(OrientacaoEnso::getTexto).orElse(null),
+                orientacao.map(OrientacaoEnso::getFonte).orElse(null)
         );
     }
 

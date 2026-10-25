@@ -52,6 +52,26 @@ describe('Detalhe da lavoura', () => {
     expect(screen.getByText('El Niño muito forte agora')).toBeInTheDocument()
   })
 
+  it('o cartão do El Niño mostra o efeito na região e o que fazer, com a fonte', async () => {
+    responderDetalhe({
+      enso: {
+        fase: 'El Nino',
+        intensidade: 'forte',
+        indice: 1.8,
+        mesPlantio: '2026-07',
+        frase: 'Você plantou em julho de 2026, durante um El Niño forte.',
+        efeito: 'Na região, o verão tende a ser mais quente.',
+        oQueFazer: 'Acompanhe os avisos e planeje a irrigação.',
+        fonte: 'CPTEC/INPE',
+      },
+    })
+    await abrirTalhao()
+
+    expect(screen.getByText('Na região, o verão tende a ser mais quente.')).toBeInTheDocument()
+    expect(screen.getByText('Acompanhe os avisos e planeje a irrigação.')).toBeInTheDocument()
+    expect(screen.getByText('Fonte: CPTEC/INPE')).toBeInTheDocument()
+  })
+
   it('sem El Niño nem La Niña registrados, esconde o cartão', async () => {
     responderDetalhe({ enso: null })
     await abrirTalhao()
@@ -98,11 +118,15 @@ describe('Detalhe da lavoura', () => {
     })
     await abrirTalhao()
 
-    expect(screen.getByText('O que fazer')).toBeInTheDocument()
+    const avisos = screen.getByRole('heading', { level: 2, name: 'Avisos desta semana' })
+      .parentElement as HTMLElement
     expect(
-      screen.getByText('Se puder, irrigue. Adie a adubação de cobertura até a chuva voltar.'),
+      within(avisos).getByText(
+        'Se puder, irrigue. Adie a adubação de cobertura até a chuva voltar.',
+      ),
     ).toBeInTheDocument()
-    expect(screen.getAllByText('O que fazer')).toHaveLength(1)
+    // Só o aviso que tem texto mostra o "O que fazer".
+    expect(within(avisos).getAllByText('O que fazer')).toHaveLength(1)
   })
 
   it('mostra a fase do ciclo, com o que ela pede e a fonte', async () => {

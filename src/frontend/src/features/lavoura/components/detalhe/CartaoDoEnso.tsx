@@ -14,6 +14,14 @@ export function CartaoDoEnso({ enso, perene }: { enso: Enso; perene: boolean }) 
       <div>
         <strong>{tituloDoEnso(enso, perene)}</strong>
         <p>{enso.frase}</p>
+        {enso.efeito && <S.EfeitoDoEnso>{enso.efeito}</S.EfeitoDoEnso>}
+        {enso.oQueFazer && (
+          <S.EfeitoDoEnso>
+            <strong>O que fazer</strong>
+            {enso.oQueFazer}
+          </S.EfeitoDoEnso>
+        )}
+        {enso.fonte && <S.Fonte>Fonte: {enso.fonte}</S.Fonte>}
       </div>
     </S.Enso>
   )

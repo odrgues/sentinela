@@ -27,7 +27,7 @@ Sobe um MySQL 8.0 na porta **3307**, com o banco `sentinela` já criado (usuári
 
 ```bash
 M="docker exec -i sentinela-mysql mysql -uroot -proot_local --default-character-set=utf8mb4 sentinela"
-$M < database/schema/01_ddl.sql            # as 11 tabelas
+$M < database/schema/01_ddl.sql            # as 12 tabelas
 $M < database/seeds/02_dados_iniciais.sql  # municípios, 19 culturas, série do El Niño, administrador
 $M < database/seeds/03_orientacoes.sql     # "O que fazer" de cada aviso e as fases do ciclo
 $M < database/seeds/04_demonstracao.sql    # conta de demonstração com 4 lavouras
@@ -140,7 +140,7 @@ Geada: a mínima do ar abaixo de 3 °C (medida a 2 m, como na previsão) indica 
 
 ---
 
-## As 11 tabelas
+## As 12 tabelas
 
 | Tabela | O que guarda |
 |---|---|
@@ -151,6 +151,7 @@ Geada: a mínima do ar abaixo de 3 °C (medida a 2 m, como na previsão) indica 
 | `recomendacao` | O "O que fazer" de cada tipo de aviso, por cultura ou genérico (`cultura_id` nulo), com fonte. |
 | `fase_cultura` | As fases do ciclo de cada cultura, em dias desde o plantio, com a orientação e a fonte. |
 | `fase_enso` | Classificação mensal do El Niño / La Niña (série oficial ONI da NOAA). |
+| `orientacao_enso` | O que cada fase do El Niño / La Niña costuma trazer para a região e o que fazer, geral ou por cultura, com fonte. |
 | `cultivo` | O registro central: quem plantou o quê, onde (ponto exato no mapa), quando, e se a última previsão deu certo. |
 | `previsao_diaria` | Os 7 dias de previsão de cada cultivo, guardados pela rotina. O painel lê daqui. |
 | `alerta` | Os avisos gerados para cada cultivo e dia. |
@@ -164,6 +165,7 @@ municipio 1───N  cultivo
 cultura   1───N  cultivo
 cultura   1───N  recomendacao       (cultura_id nulo = vale para todas)
 cultura   1───N  fase_cultura
+cultura   1───N  orientacao_enso    (cultura_id nulo = vale para todas)
 cultivo   1───N  alerta             (ON DELETE CASCADE)
 cultivo   1───N  previsao_diaria    (ON DELETE CASCADE)
 ```

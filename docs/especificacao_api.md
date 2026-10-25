@@ -167,7 +167,7 @@ GET /api/cultivos/1
 
 - `alertas`: os avisos da semana, do mais grave para o mais leve. `oQueFazer` é o texto da cultura para aquele tipo de aviso ou, sem ele, o genérico; `null` se não houver.
 - `fase`: a fase do ciclo em que `diaAtual` cai; `null` nas culturas sem fases cadastradas e nas perenes.
-- `enso`: a fase do mês do plantio; nas perenes, e quando a NOAA ainda não publicou o mês do plantio, a do último mês medido; `null` se o plantio for anterior a 2015.
+- `enso`: a fase do mês do plantio; nas perenes, e quando a NOAA ainda não publicou o mês do plantio, a do último mês medido; `null` se o plantio for anterior a 2015. `efeito` (o que a fase costuma trazer para a região), `oQueFazer` e `fonte` vêm da tabela `orientacao_enso`: primeiro o texto da cultura, senão o geral da fase; `null` se não houver.
 - Perene: `diaAtual` e `cicloDias` vêm `null`; com safra (café), `safra` traz `"2026/27"` e `explicacaoCiclo` traz "A colheita vai de maio a agosto.".
 - `previsao`: até 7 dias, de hoje em diante. `condicao`: `sol`, `sol_nuvens`, `nublado`, `chuva` ou `tempestade`. `nivel`: `ok`, `atencao` ou `critico`.
 

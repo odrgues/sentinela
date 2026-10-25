@@ -83,6 +83,15 @@ Table fase_enso {
   }
 }
 
+Table orientacao_enso {
+  id int [pk, increment]
+  fase varchar(10) [note: 'El Nino, La Nina ou Neutro']
+  cultura_id int [null, ref: > cultura.id, note: 'nulo = vale para todas as culturas']
+  efeito text [note: 'o que a fase costuma trazer para a região']
+  texto text [note: 'o "O que fazer"']
+  fonte varchar(300)
+}
+
 Table cultivo {
   id int [pk, increment]
   usuario_id int [ref: > usuario.id, note: 'ON DELETE CASCADE']

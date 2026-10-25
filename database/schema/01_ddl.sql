@@ -99,6 +99,19 @@ CREATE TABLE fase_enso (
     CHECK (fase IN ('El Nino', 'La Nina', 'Neutro'))
 );
 
+-- O que cada fase do El Niño / La Niña costuma trazer para a região e o que fazer.
+-- cultura_id nulo = vale para todas as culturas.
+CREATE TABLE orientacao_enso (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    fase        VARCHAR(10) NOT NULL,
+    cultura_id  INT NULL,
+    efeito      TEXT NOT NULL,
+    texto       TEXT NOT NULL,
+    fonte       VARCHAR(300) NOT NULL,
+    FOREIGN KEY (cultura_id) REFERENCES cultura(id),
+    CHECK (fase IN ('El Nino', 'La Nina', 'Neutro'))
+);
+
 CREATE TABLE cultivo (
     id                      INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id              INT NOT NULL,

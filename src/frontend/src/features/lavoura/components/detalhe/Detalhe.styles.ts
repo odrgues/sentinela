@@ -80,6 +80,20 @@ export const Enso = styled.div`
   }
 `
 
+// O efeito da fase do El Niño e o que fazer, embaixo da frase do cartão.
+export const EfeitoDoEnso = styled.p`
+  && {
+    margin-top: ${({ theme }) => theme.espaco[4]};
+  }
+
+  strong {
+    display: block;
+    margin-bottom: ${({ theme }) => theme.espaco[1]};
+    font-size: ${({ theme }) => theme.fonte.tamanho.apoio};
+    font-weight: ${({ theme }) => theme.fonte.peso.forte};
+  }
+`
+
 // A fase do ciclo em que a lavoura está, com o que ela pede.
 export const Fase = styled.div`
   display: flex;

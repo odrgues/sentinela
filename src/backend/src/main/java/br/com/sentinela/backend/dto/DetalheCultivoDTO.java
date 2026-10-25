@@ -30,7 +30,9 @@ public record DetalheCultivoDTO(
         List<AlertaDaSemanaDTO> alertas,
         List<DiaDaPrevisaoDTO> previsao
 ) {
-    public record EnsoDTO(String fase, String intensidade, BigDecimal indice, String mesPlantio, String frase) {}
+    // efeito e oQueFazer vêm da tabela orientacao_enso (nulos se a fase não tiver orientação com fonte).
+    public record EnsoDTO(String fase, String intensidade, BigDecimal indice, String mesPlantio, String frase,
+                          String efeito, String oQueFazer, String fonte) {}
 
     // A fase do ciclo em que a lavoura está e o que ela pede.
     public record FaseDTO(String nome, int diaInicio, int diaFim, String orientacao, String fonte) {}

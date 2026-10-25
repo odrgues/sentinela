@@ -70,6 +70,10 @@ export type Enso = {
   indice: number
   mesPlantio: string
   frase: string
+  // O que essa fase costuma trazer para a região e o que fazer, com a fonte. Nulos sem orientação.
+  efeito?: string | null
+  oQueFazer?: string | null
+  fonte?: string | null
 }
 
 // GET /api/cultivos/{id}
