@@ -57,6 +57,10 @@ npm run dev       # o site com a API de mentira, sem precisar do backend
 
 Abre em `http://localhost:5173`. Sem `VITE_GOOGLE_MAPS_KEY`, as telas de mapa mostram "Mapa desligado" e a nova lavoura é marcada em Uberaba – MG. Detalhes em [`src/frontend/README.md`](src/frontend/README.md).
 
+### Deploy
+
+Backend e banco no Azure, front no Cloudflare Pages: passo a passo e variáveis em [`docs/deploy.md`](docs/deploy.md).
+
 ### Contas
 
 | Conta | Senha | Para quê |
@@ -68,7 +72,7 @@ Abre em `http://localhost:5173`. Sem `VITE_GOOGLE_MAPS_KEY`, as telas de mapa mo
 
 ## Roteiro da apresentação
 
-1. Na manhã da apresentação, rode de novo `database/seeds/04_demonstracao.sql`. Ele recria o João com a previsão e os avisos fixos a partir do dia de hoje, para o painel mostrar um aviso crítico, dois de atenção e um "tudo certo" sem depender do clima do dia. A rotina das 6h e editar uma lavoura trocam esses dados pela previsão de verdade.
+1. Na manhã da apresentação, depois das 6h, rode de novo `database/seeds/04_demonstracao.sql` no banco de produção (comando em [`docs/deploy.md`](docs/deploy.md)). Ele recria o João com a previsão e os avisos fixos a partir do dia de hoje, para o painel mostrar um aviso crítico, dois de atenção e um "tudo certo" sem depender do clima do dia. A rotina das 6h e editar uma lavoura trocam esses dados pela previsão de verdade.
 2. Entre como João: o painel mostra a frase da semana, o tempo de hoje e as 4 lavouras com a fase do ciclo e o aviso principal.
 3. Abra o **Talhão do fundo** (soja): fase do ciclo com a fonte, El Niño, o aviso crítico de calor com **O que fazer** e **Por quê?**, a previsão de 7 dias e o histórico.
 4. Abra o **Canteiro de morango**: hortaliça de colheita contínua, já na fase de colheita, com orientações próprias do morango.
