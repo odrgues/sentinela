@@ -25,6 +25,7 @@ export function Ciclo({ lavoura }: { lavoura: DetalheDaLavoura }) {
         <S.Barra role="img" aria-label={`${feito}% do ciclo concluído`}>
           <S.Preenchida style={{ width: `${feito}%` }} />
         </S.Barra>
+        <S.Explicacao>Plantada em {diaEMes(lavoura.dataPlantio)}</S.Explicacao>
       </S.Ciclo>
     )
   }

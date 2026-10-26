@@ -15,12 +15,15 @@ function Aviso({ alerta }: { alerta: AlertaDaSemana }) {
 
   return (
     <S.Aviso $nivel={nivel}>
+      {/* O dia do aviso em destaque: "quarta" e "28/10". */}
+      <S.DiaDoAviso $nivel={nivel}>
+        <span>{diaDaSemana(alerta.data)}</span>
+        <strong>{diaEMes(alerta.data)}</strong>
+      </S.DiaDoAviso>
       <S.TopoDoAviso>
         <Icone size={tema.icone.avisoDoDetalhe} aria-hidden />
         <div>
-          <strong>
-            {NOME_DO_NIVEL[nivel]} · {diaDaSemana(alerta.data)}, {diaEMes(alerta.data)}
-          </strong>
+          <strong>{NOME_DO_NIVEL[nivel]}</strong>
           <S.CorpoDoAviso $nivel={nivel}>{alerta.mensagem}</S.CorpoDoAviso>
         </div>
       </S.TopoDoAviso>

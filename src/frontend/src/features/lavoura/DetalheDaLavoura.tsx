@@ -1,4 +1,4 @@
-import { ChevronLeft } from 'lucide-react'
+import { Sprout } from 'lucide-react'
 import { useState } from 'react'
 import { useLocation, useParams } from 'react-router'
 import { useTheme } from 'styled-components'
@@ -7,6 +7,7 @@ import { quandoFoi } from '../../shared/formato/data'
 import { useNoComputador } from '../../shared/layout/useNoComputador'
 import { AvisoDeErro } from '../../shared/ui/AvisoDeErro'
 import { Botao, BotaoLink } from '../../shared/ui/Botao'
+import { Logo } from '../../shared/ui/Logo'
 import { Mensagem } from '../../shared/ui/Mensagem'
 import { SemPrevisao } from '../../shared/ui/SemPrevisao'
 import { Voltar } from '../../shared/ui/Voltar'
@@ -40,26 +41,24 @@ function Conteudo({
   lavoura: Lavoura
   noComputador: boolean
 }) {
+  const tema = useTheme()
   const [aba, setAba] = useState<Aba>('previsao')
   const emAndamento = lavoura.status === 'em_andamento'
   const atualizada = (
     <D.Atualizada>Previsão atualizada {quandoFoi(lavoura.previsaoAtualizadaEm)}</D.Atualizada>
   )
 
-  const resumo = (
-    <>
-      {!emAndamento && (
-        <S.Encerrada>
-          Esta lavoura foi {lavoura.status === 'colhido' ? 'colhida' : 'perdida'} e não recebe mais
-          avisos.
-        </S.Encerrada>
-      )}
-      <Ciclo lavoura={lavoura} />
-      {emAndamento && lavoura.fase && <FaseDoCiclo fase={lavoura.fase} />}
-      {lavoura.enso && <CartaoDoEnso enso={lavoura.enso} perene={lavoura.tipoCiclo === 'perene'} />}
-      {emAndamento && <AvisosDaSemana alertas={lavoura.alertas} />}
-    </>
+  const encerrada = !emAndamento && (
+    <S.Encerrada>
+      Esta lavoura foi {lavoura.status === 'colhido' ? 'colhida' : 'perdida'} e não recebe mais
+      avisos.
+    </S.Encerrada>
   )
+  const fase = emAndamento && lavoura.fase && <FaseDoCiclo fase={lavoura.fase} />
+  const enso = lavoura.enso && (
+    <CartaoDoEnso enso={lavoura.enso} perene={lavoura.tipoCiclo === 'perene'} />
+  )
+  const avisos = emAndamento && <AvisosDaSemana alertas={lavoura.alertas} />
 
   const abas = (
     <>
@@ -79,7 +78,7 @@ function Conteudo({
             <SemPrevisao atualizadaEm={lavoura.previsaoAtualizadaEm} />
           )}
           {!noComputador && lavoura.previsaoDisponivel && atualizada}
-          <PrevisaoDaSemana previsao={lavoura.previsao} emCartoes={noComputador} />
+          <PrevisaoDaSemana previsao={lavoura.previsao} />
         </D.Secao>
       ) : (
         <Historico id={id} emTabela={noComputador} />
@@ -96,32 +95,54 @@ function Conteudo({
     </S.Acoes>
   )
 
+  // A faixa do alto, com a foto das folhas: a cultura numa etiqueta, o nome da lavoura em
+  // destaque e o resumo.
+  const heroi = (
+    <S.Heroi>
+      <S.TextosDoHeroi>
+        <S.EtiquetaDaCultura>
+          <Sprout size={tema.icone.selo} aria-hidden />
+          {lavoura.cultura}
+        </S.EtiquetaDaCultura>
+        <h1>{lavoura.apelido}</h1>
+        <span>{resumoDaLavoura(lavoura, noComputador)}</span>
+      </S.TextosDoHeroi>
+      {noComputador && acoes}
+    </S.Heroi>
+  )
+
   if (noComputador) {
     return (
       <>
-        <S.Cabecalho>
-          <S.NomeGrande>
-            <h1>{lavoura.apelido}</h1>
-            <span>{resumoDaLavoura(lavoura, true)}</span>
-          </S.NomeGrande>
-          {acoes}
-        </S.Cabecalho>
-        <S.Colunas>
-          <S.ColunaDaEsquerda>{resumo}</S.ColunaDaEsquerda>
-          <S.ColunaDaDireita>{abas}</S.ColunaDaDireita>
-        </S.Colunas>
+        {heroi}
+        {/* A previsão em gráfico e, ao lado, em que ponto do ciclo a lavoura está. */}
+        <S.PrevisaoECiclo>
+          <S.Previsao>{abas}</S.Previsao>
+          <S.LadoDoCiclo>
+            {encerrada}
+            <Ciclo lavoura={lavoura} />
+          </S.LadoDoCiclo>
+        </S.PrevisaoECiclo>
+        {(fase || enso) && (
+          <S.FaseEEnso>
+            {fase}
+            {enso}
+          </S.FaseEEnso>
+        )}
+        {avisos && <S.AvisosLargos>{avisos}</S.AvisosLargos>}
       </>
     )
   }
 
   return (
     <>
-      <S.Nome>
-        <h1>{lavoura.apelido}</h1>
-        <span>{resumoDaLavoura(lavoura)}</span>
-      </S.Nome>
-      {resumo}
+      {heroi}
+      {encerrada}
       {abas}
+      <Ciclo lavoura={lavoura} />
+      {fase}
+      {enso}
+      {avisos}
       {acoes}
     </>
   )
@@ -129,7 +150,6 @@ function Conteudo({
 
 // /lavouras/:id
 export function DetalheDaLavoura() {
-  const tema = useTheme()
   const { id = '' } = useParams()
   const noComputador = useNoComputador()
   const lavoura = useLavoura(id)
@@ -144,13 +164,11 @@ export function DetalheDaLavoura() {
   } else if (lavoura.error?.status === 404) {
     // A API devolve 404 também para a lavoura de outra pessoa.
     conteudo = (
-      <>
-        <S.Nome>
-          <h1>Lavoura não encontrada</h1>
-          <span>Ela pode ter sido excluída, ou o endereço está errado.</span>
-        </S.Nome>
+      <S.NaoEncontrada>
+        <h1>Lavoura não encontrada</h1>
+        <span>Ela pode ter sido excluída, ou o endereço está errado.</span>
         <BotaoLink to="/">Ir para o painel</BotaoLink>
-      </>
+      </S.NaoEncontrada>
     )
   } else if (lavoura.error) {
     conteudo = (
@@ -169,10 +187,6 @@ export function DetalheDaLavoura() {
     return (
       <S.PaginaDoComputador>
         {mensagem && <Mensagem texto={mensagem} />}
-        <S.VoltarAoPainel to="/">
-          <ChevronLeft size={tema.icone.botao} strokeWidth={tema.tracoDoIcone.forte} aria-hidden />
-          Painel
-        </S.VoltarAoPainel>
         {conteudo}
       </S.PaginaDoComputador>
     )
@@ -181,9 +195,10 @@ export function DetalheDaLavoura() {
   return (
     <S.PaginaDoCelular>
       {mensagem && <Mensagem texto={mensagem} />}
-      <div>
+      <S.TopoDoCelular>
         <Voltar para="/" rotulo="Voltar para o painel" />
-      </div>
+        <Logo pequeno animado={false} />
+      </S.TopoDoCelular>
       {conteudo}
     </S.PaginaDoCelular>
   )

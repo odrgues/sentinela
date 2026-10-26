@@ -14,6 +14,18 @@ export function tituloDoEnso(enso: Enso, perene: boolean) {
   return `${fase} ${enso.intensidade} ${quando}`
 }
 
+// O que o El Niño ou a La Niña quer dizer, em linguagem do dia a dia. Os detalhes (o índice, o
+// mês medido) ficam no "Saiba mais" do cartão.
+export function explicacaoDoEnso(enso: Enso) {
+  if (enso.fase === 'El Nino') {
+    return 'O mar do Pacífico está mais quente que o normal. Isso pode mudar o calor e a chuva na sua região.'
+  }
+  if (enso.fase === 'La Nina') {
+    return 'O mar do Pacífico está mais frio que o normal. Isso pode mudar o calor e a chuva na sua região.'
+  }
+  return 'O mar do Pacífico está no normal. O tempo deve seguir o jeito de sempre da região.'
+}
+
 // Horta pequena em m² ("300 m²"); lavoura em hectares ("12 ha").
 export function areaParaLer(areaHa: number) {
   if (areaHa < 1) return `${Math.round(areaHa * 10000).toLocaleString('pt-BR')} m²`

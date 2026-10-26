@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { porcentagemDoCiclo, resumoDaLavoura, tituloDoEnso } from './detalhe'
+import { explicacaoDoEnso, porcentagemDoCiclo, resumoDaLavoura, tituloDoEnso } from './detalhe'
 import type { DetalheDaLavoura } from './tipos'
 
 const enso = {
@@ -62,5 +62,15 @@ describe('porcentagemDoCiclo', () => {
   it('fica entre 0 e 100', () => {
     expect(porcentagemDoCiclo(45, 120)).toBe(38)
     expect(porcentagemDoCiclo(130, 120)).toBe(100)
+  })
+})
+
+describe('explicacaoDoEnso', () => {
+  const enso = { intensidade: 'forte', indice: 1.8, mesPlantio: '2026-07', frase: '' }
+
+  it('explica o El Niño, a La Niña e o neutro sem termo técnico', () => {
+    expect(explicacaoDoEnso({ ...enso, fase: 'El Nino' })).toMatch(/mais quente que o normal/)
+    expect(explicacaoDoEnso({ ...enso, fase: 'La Nina' })).toMatch(/mais frio que o normal/)
+    expect(explicacaoDoEnso({ ...enso, fase: 'Neutro' })).toMatch(/está no normal/)
   })
 })
