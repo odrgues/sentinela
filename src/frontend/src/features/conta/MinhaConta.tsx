@@ -134,10 +134,10 @@ function Conta({ usuario }: { usuario: Usuario }) {
 }
 
 // Fecha a janela: primeiro ela sai animada, depois volta para a página de onde veio (ou para o
-// painel, se a pessoa abriu /conta direto).
+// painel, se a pessoa abriu /conta direto; ou tira o ?conta do endereço).
 function useFechar() {
   const navegar = useNavigate()
-  const { key } = useLocation()
+  const { key, pathname } = useLocation()
   const [fechando, setFechando] = useState(false)
   const relogio = useRef<ReturnType<typeof setTimeout>>(undefined)
 
@@ -149,8 +149,10 @@ function useFechar() {
     const semMovimento = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
     relogio.current = setTimeout(
       () => {
-        if (key === 'default') navegar('/', { replace: true, viewTransition: false })
-        else navegar(-1)
+        if (key !== 'default') navegar(-1)
+        // Aberta direto pelo endereço: tira o ?conta (ou sai de /conta para o painel).
+        else if (pathname === '/conta') navegar('/', { replace: true, viewTransition: false })
+        else navegar(pathname, { replace: true, viewTransition: false })
       },
       semMovimento ? 0 : S.DURACAO_DA_SAIDA,
     )
@@ -217,7 +219,8 @@ function Janela({ children }: { children: ReactNode }) {
   )
 }
 
-// /conta: abre por cima do painel.
+// A janela da conta: com ?conta no endereço, abre por cima da página atual (na Casca); em /conta,
+// por cima do painel.
 export function MinhaConta() {
   const usuario = useUsuario()
 

@@ -30,7 +30,7 @@ export const rotas: RouteObject[] = [
     element: <SoQuemEntrou />,
     children: [
       {
-        element: <Casca />,
+        element: <Casca janelaDaConta={<MinhaConta />} />,
         children: [
           {
             // Se uma tela quebrar, o erro aparece dentro da Casca, com a barra do topo.

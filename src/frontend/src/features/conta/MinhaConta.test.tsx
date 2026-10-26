@@ -169,4 +169,24 @@ describe('Minha conta', () => {
       'page',
     )
   })
+
+  it('pelo link do topo, abre por cima da página atual e o X volta para ela', async () => {
+    telaDeComputador()
+    jaEntrou()
+    const roteador = abrirApp('/lavouras/1')
+    await screen.findByRole('heading', { level: 1, name: 'Talhão do fundo' })
+
+    await userEvent.click(screen.getByRole('link', { name: 'Minha conta' }))
+
+    const janela = await screen.findByRole('dialog', { name: 'Minha conta' })
+    expect(roteador.state.location.pathname).toBe('/lavouras/1')
+    expect(screen.getByRole('heading', { level: 1, name: 'Talhão do fundo' })).toBeInTheDocument()
+
+    await userEvent.click(within(janela).getByRole('button', { name: 'Fechar' }))
+
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Minha conta' })).not.toBeInTheDocument(),
+    )
+    expect(roteador.state.location.pathname).toBe('/lavouras/1')
+  })
 })

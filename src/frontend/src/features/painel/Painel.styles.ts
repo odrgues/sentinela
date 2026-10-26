@@ -3,7 +3,7 @@ import styled from 'styled-components'
 import * as TelaComMapa from '../../shared/layout/TelaComMapa.styles'
 import * as Lavoura from './components/CartaoDaLavoura.styles'
 import type { NivelDoTema } from '../../shared/ui/nivel'
-import { Lista, Temperatura } from './components/Painel.styles'
+import { CabecalhoDaLista, IconeDoClima, Lista, Temperatura } from './components/Painel.styles'
 
 // No computador, a tela de mapa compartilhada com a nova lavoura (TelaComMapa.styles.ts); aqui
 // fica só o que é do painel: os cartões do resumo e os quadrinhos das lavouras.
@@ -34,7 +34,7 @@ export const Coluna = styled(TelaComMapa.Coluna)`
     border-radius: ${({ theme }) => theme.raio.cartaoGrande};
     background: ${({ theme }) => theme.cores.fundo.cartaoNoVidro};
     backdrop-filter: blur(${({ theme }) => theme.desfoque.cartao});
-    box-shadow: ${({ theme }) => theme.sombra.flutuante};
+    box-shadow: ${({ theme }) => theme.sombra.cartaoNoMapa};
     transition:
       transform 200ms ease,
       box-shadow 200ms ease;
@@ -43,7 +43,7 @@ export const Coluna = styled(TelaComMapa.Coluna)`
     &:hover {
       border-color: ${({ theme }) => theme.cores.fundo.bordaNoVidro};
       transform: translateY(-${({ theme }) => theme.espaco[1]});
-      box-shadow: ${({ theme }) => theme.sombra.cartaoNoMapa};
+      box-shadow: ${({ theme }) => theme.sombra.mensagem};
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -113,7 +113,7 @@ export const CartaoDoClima = styled(TelaComMapa.Cartao)`
   padding: ${({ theme }) => theme.espaco[5]} ${({ theme }) => theme.espaco[7]};
 
   ${Temperatura} {
-    font-size: ${({ theme }) => theme.fonte.tamanho.titulo};
+    font-size: ${({ theme }) => theme.fonte.tamanho.numero};
   }
 `
 
@@ -203,19 +203,21 @@ export const TopoFlutuante = styled.div`
   }
 `
 
+// A bolinha da conta, no verde da marca para se destacar em cima do mapa.
 export const BotaoDaConta = styled(Link)`
-  width: ${({ theme }) => theme.altura.botaoRedondo};
-  height: ${({ theme }) => theme.altura.botaoRedondo};
+  width: ${({ theme }) => theme.altura.avatar};
+  height: ${({ theme }) => theme.altura.avatar};
   display: flex;
   align-items: center;
   justify-content: center;
-  background: ${({ theme }) => theme.cores.fundo.cartao};
+  background: ${({ theme }) => theme.cores.destaque.base};
   border-radius: ${({ theme }) => theme.raio.circulo};
   box-shadow: ${({ theme }) => theme.sombra.flutuante};
-  color: ${({ theme }) => theme.cores.texto.principal};
+  color: ${({ theme }) => theme.cores.texto.sobreDestaque};
 
   &:hover {
-    color: ${({ theme }) => theme.cores.texto.principal};
+    background: ${({ theme }) => theme.cores.destaque.hover};
+    color: ${({ theme }) => theme.cores.texto.sobreDestaque};
   }
 `
 
@@ -226,12 +228,64 @@ export const Folha = styled.main`
   margin-top: ${({ theme }) => theme.altura.inicioDaFolha};
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.espaco[8]};
-  padding: ${({ theme }) => theme.espaco[5]} ${({ theme }) => theme.espaco[10]}
-    ${({ theme }) => theme.espaco[10]};
+  gap: ${({ theme }) => theme.espaco[4]};
+  padding: ${({ theme }) => theme.espaco[4]} ${({ theme }) => theme.espaco[8]}
+    ${({ theme }) => theme.espaco[8]};
   background: ${({ theme }) => theme.cores.fundo.pagina};
   border-radius: ${({ theme }) => theme.raio.folha} ${({ theme }) => theme.raio.folha} 0 0;
   box-shadow: ${({ theme }) => theme.sombra.folha};
+
+  /* Compacta, como o painel do computador: o clima, o título da lista e os cartões menores. */
+  ${Temperatura} {
+    font-size: ${({ theme }) => theme.fonte.tamanho.secao};
+  }
+
+  ${IconeDoClima} svg {
+    width: ${({ theme }) => theme.espaco[10]};
+    height: ${({ theme }) => theme.espaco[10]};
+  }
+
+  ${CabecalhoDaLista} h2 {
+    font-size: ${({ theme }) => theme.fonte.tamanho.nomeDaLavoura};
+  }
+
+  ${CabecalhoDaLista} a {
+    padding-top: ${({ theme }) => theme.espaco[2]};
+    padding-bottom: ${({ theme }) => theme.espaco[2]};
+    font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
+  }
+
+  ${Lista} {
+    gap: ${({ theme }) => theme.espaco[3]};
+  }
+
+  ${Lavoura.Cartao} {
+    gap: ${({ theme }) => theme.espaco[4]};
+    padding: ${({ theme }) => theme.espaco[4]} ${({ theme }) => theme.espaco[5]}
+      ${({ theme }) => theme.espaco[4]} ${({ theme }) => theme.espaco[6]};
+    border-radius: ${({ theme }) => theme.raio.cartao};
+
+    > svg {
+      width: ${({ theme }) => theme.espaco[8]};
+      height: ${({ theme }) => theme.espaco[8]};
+    }
+  }
+
+  ${Lavoura.Textos} {
+    gap: ${({ theme }) => theme.espaco[1]};
+  }
+
+  ${Lavoura.Selo} {
+    padding: ${({ theme }) => theme.espaco[1]} ${({ theme }) => theme.espaco[4]};
+  }
+
+  ${Lavoura.Nome} {
+    font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
+  }
+
+  ${Lavoura.Cultura}, ${Lavoura.Fase}, ${Lavoura.Andamento}, ${Lavoura.Selo} {
+    font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
+  }
 `
 
 export const Alca = styled.div`

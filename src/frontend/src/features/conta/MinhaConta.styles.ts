@@ -1,6 +1,5 @@
 import styled, { css, keyframes } from 'styled-components'
 import { Botao } from '../../shared/ui/Botao.styles'
-import { Dica, Entrada, Grupo, Rotulo } from '../../shared/ui/Campo.styles'
 import * as Chave from '../../shared/ui/Chave.styles'
 import folhas from '../../assets/folhas.jpg'
 import { noCelular, noComputador } from '../../styles/midia'
@@ -203,29 +202,10 @@ export const Fechar = styled.button`
   }
 `
 
-// O formulário compacto, como nas telas de acesso: rótulo, campo e botão menores.
 export const Formulario = styled.form`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.espaco[5]};
-
-  ${Grupo} {
-    gap: ${({ theme }) => theme.espaco[2]};
-  }
-
-  ${Rotulo} {
-    font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
-  }
-
-  ${Entrada} {
-    height: ${({ theme }) => theme.altura.campoDeAcesso};
-    padding: 0 ${({ theme }) => theme.espaco[7]};
-    font-size: ${({ theme }) => theme.fonte.tamanho.apoio};
-  }
-
-  ${Dica} {
-    font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
-  }
 
   /* "Receber avisos automáticos": o quadro e a explicação menores, no computador e no celular. */
   ${Chave.Linha} {
@@ -236,9 +216,9 @@ export const Formulario = styled.form`
     font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
   }
 
+  /* Na janela, o Salvar fica da altura do Sair. */
   ${Botao} {
-    min-height: ${({ theme }) => theme.altura.filtro};
-    font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
+    min-height: ${({ theme }) => theme.altura.botaoSecundario};
   }
 `
 
@@ -254,7 +234,7 @@ export const LinhaDosBotoes = styled.div`
 `
 
 export const LinkDeTexto = styled.button`
-  min-height: ${({ theme }) => theme.altura.toque};
+  min-height: ${({ theme }) => theme.altura.botaoSecundario};
   padding: 0 ${({ theme }) => theme.espaco[2]};
   border: none;
   background: none;
@@ -299,7 +279,7 @@ export const Rodape = styled.div`
 `
 
 export const Excluir = styled.button`
-  min-height: ${({ theme }) => theme.altura.toque};
+  min-height: ${({ theme }) => theme.altura.botaoSecundario};
   padding: 0 ${({ theme }) => theme.espaco[2]};
   border: none;
   background: none;

@@ -86,7 +86,7 @@ export const ItemDoMenu = styled(NavLink)`
   }
 `
 
-export const LinkDaConta = styled(NavLink)`
+export const LinkDaConta = styled(Link)`
   ${pilula}
   gap: ${({ theme }) => theme.espaco[5]};
   padding: 0 ${({ theme }) => theme.espaco[8]} 0 ${({ theme }) => theme.espaco[3]};

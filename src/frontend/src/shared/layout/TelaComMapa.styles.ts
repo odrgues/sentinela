@@ -1,8 +1,7 @@
 import styled from 'styled-components'
-import folhas from '../../assets/folhas.jpg'
 
 // As telas de mapa do computador (o painel e a nova lavoura): o mapa ocupa a tela toda e, por
-// cima dele, ficam as pílulas do topo (Casca) e uma coluna de cartões à esquerda, num vidro verde.
+// cima dele, ficam as pílulas do topo (Casca) e uma coluna de cartões à esquerda, num vidro claro.
 export const Tela = styled.main`
   position: relative;
   flex-grow: 1;
@@ -13,8 +12,9 @@ export const LadoDoMapa = styled.div`
   inset: 0;
 `
 
-// O fundo da coluna, de cima a baixo, que divide a tela: à esquerda, a foto das folhas bem
-// desfocada com um verde por cima e os cartões em cima de tudo; à direita, o mapa.
+// O vidro fosco por cima do mapa, de cima a baixo: à esquerda, o mapa borrado (com as cores um
+// pouco mais vivas, como num vidro de verdade) e os cartões em cima; à direita, o mapa nítido.
+// A sombra para o lado do mapa faz o vidro flutuar.
 export const Vidro = styled.div`
   position: absolute;
   top: 0;
@@ -22,25 +22,9 @@ export const Vidro = styled.div`
   left: 0;
   z-index: 1;
   width: ${({ theme }) => theme.largura.colunaDoPainel};
-  overflow: hidden;
-  border-right: ${({ theme }) => theme.espessura.linha} solid
-    ${({ theme }) => theme.cores.vidro.borda};
-
-  /* A foto passa um pouco das bordas, para o desfoque não clarear os cantos. */
-  &::before {
-    content: '';
-    position: absolute;
-    inset: -${({ theme }) => theme.espaco[14]};
-    background: ${({ theme }) => theme.cores.fundo.mapa} url(${folhas}) center / cover no-repeat;
-    filter: blur(${({ theme }) => theme.desfoque.foto});
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: ${({ theme }) => theme.cores.vidro.fundo};
-  }
+  background: ${({ theme }) => theme.cores.vidro.fundo};
+  backdrop-filter: blur(${({ theme }) => theme.desfoque.vidro}) saturate(140%);
+  box-shadow: ${({ theme }) => theme.sombra.vidro};
 `
 
 // Os cartões, por cima do vidro. A coluna começa embaixo das pílulas do topo: numa tela baixa,
@@ -75,5 +59,5 @@ export const Cartao = styled.div`
   border: ${({ theme }) => theme.espessura.linha} solid
     ${({ theme }) => theme.cores.fundo.bordaNoVidro};
   border-radius: ${({ theme }) => theme.raio.cartaoGrande};
-  box-shadow: ${({ theme }) => theme.sombra.flutuante};
+  box-shadow: ${({ theme }) => theme.sombra.cartaoNoMapa};
 `

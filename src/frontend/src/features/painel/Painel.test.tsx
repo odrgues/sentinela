@@ -74,7 +74,7 @@ describe('Painel', () => {
     const roteador = abrirApp('/')
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Onde fica sua lavoura?' }),
+      await screen.findByRole('heading', { level: 1, name: 'Nova lavoura' }),
     ).toBeInTheDocument()
     expect(roteador.state.location.pathname).toBe('/lavouras/nova')
   })

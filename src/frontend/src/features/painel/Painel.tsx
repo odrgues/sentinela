@@ -1,5 +1,5 @@
 import { CalendarCheck, Plus, UserRound } from 'lucide-react'
-import { Link, Navigate, Outlet, useLocation, useMatch } from 'react-router'
+import { Link, Navigate, Outlet, useLocation, useMatch, useSearchParams } from 'react-router'
 import { useTheme } from 'styled-components'
 import { erroPassageiro } from '../../shared/api/erros'
 import { quandoFoi } from '../../shared/formato/data'
@@ -126,8 +126,10 @@ export function Painel() {
   // "Lavoura salva!" depois de cadastrar uma lavoura.
   const mensagem = typeof state?.mensagem === 'string' ? state.mensagem : null
 
-  // A janela da conta (/conta) abre por cima do painel, pelo <Outlet />.
-  const comAConta = useMatch('/conta') !== null
+  // A janela da conta abre por cima do painel: pelo endereço /conta (no <Outlet />) ou com
+  // ?conta (na Casca).
+  const [busca] = useSearchParams()
+  const comAConta = useMatch('/conta') !== null || busca.has('conta')
 
   // Sem nenhuma lavoura, o painel não tem o que mostrar: vai marcar a primeira. Com a conta
   // aberta, fica: a pessoa pode querer mexer na conta antes de ter lavoura.
@@ -187,8 +189,12 @@ export function Painel() {
       <S.TopoFlutuante>
         {/* A saudação não aparece: fica só para o leitor de tela. */}
         <SoParaLeitor as="h1">{titulo}</SoParaLeitor>
-        <S.BotaoDaConta to="/conta" aria-label="Minha conta" viewTransition={false}>
-          <UserRound size={tema.icone.topo} aria-hidden />
+        <S.BotaoDaConta
+          to={{ pathname: '/', search: '?conta' }}
+          aria-label="Minha conta"
+          viewTransition={false}
+        >
+          <UserRound size={tema.icone.botao} aria-hidden />
         </S.BotaoDaConta>
       </S.TopoFlutuante>
       <S.Folha>
