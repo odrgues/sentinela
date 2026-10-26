@@ -1,23 +1,26 @@
 import type { ReactNode } from 'react'
+import { Logo } from '../../../shared/ui/Logo'
+import { FaixaComFoto } from './FaixaComFoto'
 import * as S from './TelaDividida.styles'
 
-type Props = {
-  // A faixa verde do computador, ao lado do formulário.
-  faixa: ReactNode
-  // No celular a faixa some, e cada tela põe no alto o que precisa.
-  topoNoCelular: ReactNode
-  children: ReactNode
-}
-
-// Login e cadastro: a faixa verde de um lado e o formulário do outro.
-export function TelaDividida({ faixa, topoNoCelular, children }: Props) {
+// Login, cadastro e esqueci a senha: um cartão no meio da tela, com o formulário à esquerda e a
+// foto das folhas à direita. No celular, a foto vira uma faixa fina no alto.
+export function TelaDividida({ children }: { children: ReactNode }) {
   return (
     <S.Tela>
-      <S.LadoDaFaixa>{faixa}</S.LadoDaFaixa>
-      <S.TopoNoCelular>{topoNoCelular}</S.TopoNoCelular>
-      <S.LadoDoFormulario>
-        <S.Coluna>{children}</S.Coluna>
-      </S.LadoDoFormulario>
+      <S.Cartao>
+        <S.LadoDoFormulario>
+          <S.Coluna>
+            <S.LogoDoFormulario>
+              <Logo />
+            </S.LogoDoFormulario>
+            {children}
+          </S.Coluna>
+        </S.LadoDoFormulario>
+        <S.LadoDaFoto>
+          <FaixaComFoto />
+        </S.LadoDaFoto>
+      </S.Cartao>
     </S.Tela>
   )
 }

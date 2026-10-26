@@ -58,7 +58,6 @@ export function EmailEnviado({ email, aoVoltar }: { email: string; aoVoltar: () 
         <Botao variante="neutro" onClick={pedirDeNovo} disabled={esperando || pedirLink.isPending}>
           {esperando ? 'Enviamos de novo. Aguarde 1 minuto para pedir outro.' : 'Enviar de novo'}
         </Botao>
-        <S.Espaco />
         <BotaoLink to="/entrar" variante="contorno">
           Voltar para o login
         </BotaoLink>

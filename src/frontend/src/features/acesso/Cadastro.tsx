@@ -4,20 +4,11 @@ import { erroGeral } from '../../shared/api/erros'
 import { AvisoDeErro } from '../../shared/ui/AvisoDeErro'
 import { Botao } from '../../shared/ui/Botao'
 import { Campo } from '../../shared/ui/Campo'
-import { Marca } from '../../shared/ui/Marca'
 import * as S from './acesso.styles'
 import { useCadastrar } from './api'
-import { FaixaVerde } from './components/FaixaVerde'
 import { TelaDividida } from './components/TelaDividida'
-import { Topo } from './components/Topo'
 
 const TAMANHO_MINIMO_DA_SENHA = 6
-
-const PASSOS = [
-  'Crie sua conta',
-  'Marque sua lavoura no mapa e diga o que plantou',
-  'Receba os avisos aqui e no WhatsApp',
-]
 
 type Erros = { nome?: string; email?: string; senha?: string }
 
@@ -56,35 +47,14 @@ export function Cadastro() {
     })
   }
 
-  const faixa = (
-    <FaixaVerde>
-      <Marca sobreVerde grande />
-      <S.CartaoDaFaixa>
-        <S.ChamadaDaFaixa>Como funciona</S.ChamadaDaFaixa>
-        <S.ListaDaFaixa>
-          {PASSOS.map((passo, i) => (
-            <S.ItemDaFaixa key={passo}>
-              <S.NumeroDoPasso aria-hidden>{i + 1}</S.NumeroDoPasso>
-              {passo}
-            </S.ItemDaFaixa>
-          ))}
-        </S.ListaDaFaixa>
-      </S.CartaoDaFaixa>
-    </FaixaVerde>
-  )
-
-  const topoNoCelular = (
-    <S.TopoDoCelular>
-      <Topo voltar={{ para: '/entrar', rotulo: 'Voltar para o login' }} comMarca />
-    </S.TopoDoCelular>
-  )
-
   return (
-    <TelaDividida faixa={faixa} topoNoCelular={topoNoCelular}>
+    <TelaDividida>
       <S.Formulario onSubmit={enviar} noValidate>
         <S.Cabecalho>
           <S.Titulo>Criar conta</S.Titulo>
-          <S.Texto>Leva menos de um minuto. Depois você marca a sua lavoura no mapa.</S.Texto>
+          <S.Explicacao>
+            Leva menos de um minuto. Depois você marca a sua lavoura no mapa.
+          </S.Explicacao>
         </S.Cabecalho>
         <Campo
           rotulo="Seu nome"
@@ -97,7 +67,7 @@ export function Cadastro() {
         <Campo
           rotulo="E-mail"
           type="email"
-          placeholder="seuemail@exemplo.com"
+          placeholder="email@exemplo.com"
           autoComplete="email"
           value={email}
           onChange={(evento) => setEmail(evento.target.value)}
@@ -106,7 +76,7 @@ export function Cadastro() {
         <Campo
           rotulo="Senha"
           type="password"
-          placeholder="Crie uma senha"
+          placeholder="*********"
           autoComplete="new-password"
           dica="Pelo menos 6 caracteres."
           value={senha}
@@ -119,7 +89,7 @@ export function Cadastro() {
           type="tel"
           placeholder="(34) 99999-9999"
           autoComplete="tel"
-          dica="Para receber os avisos da sua lavoura direto no WhatsApp."
+          dica="Para receber os avisos no WhatsApp."
           value={whatsapp}
           onChange={(evento) => setWhatsapp(evento.target.value)}
           erro={camposDaApi.whatsappNumero}
@@ -128,7 +98,6 @@ export function Cadastro() {
         <Botao type="submit" disabled={cadastrar.isPending}>
           {cadastrar.isPending ? 'Criando a conta…' : 'Criar conta'}
         </Botao>
-        <S.Espaco />
         <S.Rodape>
           <span>Já tem conta?</span>
           <Link to="/entrar">Entrar</Link>
