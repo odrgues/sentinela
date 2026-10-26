@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 import { SENHA_DE_TESTE } from '../../mocks/dados/usuario'
@@ -143,12 +143,27 @@ describe('Minha conta', () => {
     expect(lerToken()).toBeNull()
   })
 
-  it('no computador, Sair e Excluir ficam em faixas próprias', async () => {
+  it('abre numa janela por cima do painel, e o X fecha e volta para o painel', async () => {
+    const roteador = await abrirConta()
+
+    const janela = screen.getByRole('dialog', { name: 'Minha conta' })
+    expect(within(janela).getByLabelText('Nome')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Suas lavouras' })).toBeInTheDocument()
+
+    await userEvent.click(within(janela).getByRole('button', { name: 'Fechar' }))
+
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Minha conta' })).not.toBeInTheDocument(),
+    )
+    expect(roteador.state.location.pathname).toBe('/')
+  })
+
+  it('no computador, o link "Minha conta" do topo fica marcado', async () => {
     telaDeComputador()
     await abrirConta()
 
-    expect(screen.getByText('Sair desta conta')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Excluir conta' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Sair' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Excluir minha conta' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Minha conta' })).toHaveAttribute(
       'aria-current',
       'page',

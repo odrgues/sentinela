@@ -1,24 +1,32 @@
-import { LogOut } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { LogOut, X } from 'lucide-react'
+import {
+  useEffect,
+  useEffectEvent,
+  useId,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from 'react'
+import { createPortal } from 'react-dom'
+import { useLocation, useNavigate } from 'react-router'
 import { useTheme } from 'styled-components'
 import { erroGeral, erroPassageiro } from '../../shared/api/erros'
 import type { Usuario } from '../../shared/api/tipos/usuario'
 import { useUsuario } from '../../shared/api/useUsuario'
 import { telefone } from '../../shared/formato/telefone'
-import { useNoComputador } from '../../shared/layout/useNoComputador'
 import { AvisoDeErro } from '../../shared/ui/AvisoDeErro'
 import { Botao } from '../../shared/ui/Botao'
 import { Campo } from '../../shared/ui/Campo'
 import { Chave } from '../../shared/ui/Chave'
 import { Mensagem } from '../../shared/ui/Mensagem'
-import { Voltar } from '../../shared/ui/Voltar'
+import { SoParaLeitor } from '../../shared/ui/SoParaLeitor'
 import { usePedirTrocaDeSenha, useSair, useSalvarConta, type MudancasNaConta } from './api'
 import { ExcluirConta } from './ExcluirConta'
 import * as S from './MinhaConta.styles'
 
 function Conta({ usuario }: { usuario: Usuario }) {
   const tema = useTheme()
-  const noComputador = useNoComputador()
   const salvar = useSalvarConta()
   const trocarSenha = usePedirTrocaDeSenha()
   const sair = useSair()
@@ -94,7 +102,7 @@ function Conta({ usuario }: { usuario: Usuario }) {
         />
         <Chave
           rotulo="Receber avisos automáticos"
-          explicacao="Riscos críticos às 6h e o resumo de segunda. Também dá para mandar PARAR ou VOLTAR no WhatsApp."
+          explicacao="Riscos críticos às 6h e o resumo de segunda."
           ligada={avisos}
           aoMudar={setAvisos}
         />
@@ -108,56 +116,109 @@ function Conta({ usuario }: { usuario: Usuario }) {
         </S.LinhaDosBotoes>
       </S.Formulario>
 
-      <S.Espaco />
-
-      {noComputador ? (
-        <>
-          <S.Faixa>
-            <S.TextoDaFaixa>
-              <strong>Sair desta conta</strong>
-              <span>Você pode entrar de novo quando quiser.</span>
-            </S.TextoDaFaixa>
-            <Botao variante="neutro" onClick={sair}>
-              <LogOut size={tema.icone.busca} aria-hidden />
-              &nbsp;Sair
-            </Botao>
-          </S.Faixa>
-          <ExcluirConta
-            abrir={(abrirConfirmacao) => (
-              <S.Faixa $perigo>
-                <S.TextoDaFaixa $perigo>
-                  <strong>Excluir minha conta</strong>
-                  <span>Apaga suas lavouras e avisos. Isso não tem volta.</span>
-                </S.TextoDaFaixa>
-                <Botao variante="perigo" onClick={abrirConfirmacao}>
-                  Excluir conta
-                </Botao>
-              </S.Faixa>
-            )}
-          />
-        </>
-      ) : (
-        <>
-          <Botao variante="neutro" onClick={sair}>
-            <LogOut size={tema.icone.busca} aria-hidden />
-            &nbsp;Sair
-          </Botao>
-          <ExcluirConta
-            abrir={(abrirConfirmacao) => (
-              <S.Excluir type="button" onClick={abrirConfirmacao}>
-                Excluir minha conta
-              </S.Excluir>
-            )}
-          />
-        </>
-      )}
+      <S.Rodape>
+        <Botao variante="neutro" onClick={sair}>
+          <LogOut size={tema.icone.selo} aria-hidden />
+          &nbsp;Sair
+        </Botao>
+        <ExcluirConta
+          abrir={(abrirConfirmacao) => (
+            <S.Excluir type="button" onClick={abrirConfirmacao}>
+              Excluir minha conta
+            </S.Excluir>
+          )}
+        />
+      </S.Rodape>
     </>
   )
 }
 
-// /conta
+// Fecha a janela: primeiro ela sai animada, depois volta para a página de onde veio (ou para o
+// painel, se a pessoa abriu /conta direto).
+function useFechar() {
+  const navegar = useNavigate()
+  const { key } = useLocation()
+  const [fechando, setFechando] = useState(false)
+  const relogio = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  useEffect(() => () => clearTimeout(relogio.current), [])
+
+  function fechar() {
+    if (fechando) return
+    setFechando(true)
+    const semMovimento = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    relogio.current = setTimeout(
+      () => {
+        if (key === 'default') navegar('/', { replace: true, viewTransition: false })
+        else navegar(-1)
+      },
+      semMovimento ? 0 : S.DURACAO_DA_SAIDA,
+    )
+  }
+
+  return { fechando, fechar }
+}
+
+// A janela por cima da tela: no computador, no meio; no celular, sobe de baixo. Fecha com o X,
+// com Esc ou tocando fora, e devolve o foco para quem abriu.
+function Janela({ children }: { children: ReactNode }) {
+  const tema = useTheme()
+  const idDoTitulo = useId()
+  const janela = useRef<HTMLDivElement>(null)
+  const { fechando, fechar } = useFechar()
+  const fecharComEsc = useEffectEvent(() => fechar())
+
+  useEffect(() => {
+    const quemAbriu = document.activeElement as HTMLElement | null
+    janela.current?.focus()
+
+    // Com a confirmação de excluir aberta por cima, o Esc é dela.
+    function aoApertar(evento: KeyboardEvent) {
+      if (evento.key === 'Escape' && janela.current?.contains(document.activeElement)) {
+        fecharComEsc()
+      }
+    }
+    document.addEventListener('keydown', aoApertar)
+    return () => {
+      document.removeEventListener('keydown', aoApertar)
+      quemAbriu?.focus()
+    }
+  }, [])
+
+  return createPortal(
+    <S.Veu
+      $fechando={fechando}
+      onClick={(evento) => {
+        if (evento.target === evento.currentTarget) fechar()
+      }}
+    >
+      <S.Janela
+        ref={janela}
+        $fechando={fechando}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={idDoTitulo}
+        tabIndex={-1}
+      >
+        {/* O título não aparece (a foto abre a janela), mas dá nome a ela para o leitor de tela. */}
+        <SoParaLeitor as="h1" id={idDoTitulo}>
+          Minha conta
+        </SoParaLeitor>
+        <S.Faixa>
+          <S.Alca aria-hidden />
+          <S.Fechar type="button" onClick={fechar} aria-label="Fechar">
+            <X size={tema.icone.botao} aria-hidden />
+          </S.Fechar>
+        </S.Faixa>
+        <S.Corpo>{children}</S.Corpo>
+      </S.Janela>
+    </S.Veu>,
+    document.body,
+  )
+}
+
+// /conta: abre por cima do painel.
 export function MinhaConta() {
-  const noComputador = useNoComputador()
   const usuario = useUsuario()
 
   let conteudo = <S.Aviso role="status">Carregando seus dados…</S.Aviso>
@@ -176,15 +237,5 @@ export function MinhaConta() {
     )
   }
 
-  return (
-    <S.Pagina>
-      {!noComputador && (
-        <div>
-          <Voltar para="/" rotulo="Voltar para o painel" />
-        </div>
-      )}
-      <S.Titulo>Minha conta</S.Titulo>
-      {conteudo}
-    </S.Pagina>
-  )
+  return <Janela>{conteudo}</Janela>
 }

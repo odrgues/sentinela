@@ -36,11 +36,15 @@ export const rotas: RouteObject[] = [
             // Se uma tela quebrar, o erro aparece dentro da Casca, com a barra do topo.
             errorElement: <ErroNaTela />,
             children: [
-              { path: '/', element: <Painel /> },
+              // A conta abre numa janela por cima do painel.
+              {
+                path: '/',
+                element: <Painel />,
+                children: [{ path: 'conta', element: <MinhaConta /> }],
+              },
               { path: '/lavouras/nova', element: <NovaLavoura /> },
               { path: '/lavouras/:id', element: <DetalheDaLavoura /> },
               { path: '/lavouras/:id/editar', element: <EditarLavoura /> },
-              { path: '/conta', element: <MinhaConta /> },
             ],
           },
         ],

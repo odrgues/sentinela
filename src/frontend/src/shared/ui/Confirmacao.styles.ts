@@ -1,5 +1,7 @@
 import styled from 'styled-components'
 import { noComputador } from '../../styles/midia'
+import { Botao } from './Botao.styles'
+import { Entrada, Grupo, Rotulo } from './Campo.styles'
 import type { NivelDoTema } from './nivel'
 
 export const Veu = styled.div`
@@ -10,6 +12,7 @@ export const Veu = styled.div`
   align-items: flex-end;
   justify-content: center;
   background: ${({ theme }) => theme.cores.fundo.veu};
+  backdrop-filter: blur(${({ theme }) => theme.desfoque.veu});
 
   ${noComputador} {
     align-items: center;
@@ -17,13 +20,14 @@ export const Veu = styled.div`
   }
 `
 
+// Compacto, como a janela da conta: título, texto, campo e botões menores.
 export const Dialogo = styled.div`
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.espaco[8]};
-  padding: ${({ theme }) => theme.espaco[6]} ${({ theme }) => theme.espaco[11]}
-    ${({ theme }) => theme.espaco[12]};
+  gap: ${({ theme }) => theme.espaco[7]};
+  padding: ${({ theme }) => theme.espaco[6]} ${({ theme }) => theme.espaco[10]}
+    ${({ theme }) => theme.espaco[11]};
   background: ${({ theme }) => theme.cores.fundo.cartao};
   border-radius: ${({ theme }) => theme.raio.folha} ${({ theme }) => theme.raio.folha} 0 0;
 
@@ -32,8 +36,8 @@ export const Dialogo = styled.div`
   }
 
   ${noComputador} {
-    max-width: ${({ theme }) => theme.largura.cartaoCentral};
-    padding-top: ${({ theme }) => theme.espaco[11]};
+    max-width: ${({ theme }) => theme.largura.formulario};
+    padding-top: ${({ theme }) => theme.espaco[10]};
     border-radius: ${({ theme }) => theme.raio.folha};
   }
 `
@@ -69,24 +73,43 @@ export const Textos = styled.div`
   h2 {
     margin: 0;
     font-size: ${({ theme }) => theme.fonte.tamanho.tituloDaConfirmacao};
-    font-weight: ${({ theme }) => theme.fonte.peso.extra};
+    font-weight: ${({ theme }) => theme.fonte.peso.forte};
     line-height: ${({ theme }) => theme.fonte.alturaLinha.media};
   }
 
   form {
-    margin-top: ${({ theme }) => theme.espaco[4]};
+    margin-top: ${({ theme }) => theme.espaco[3]};
   }
 
   p {
     margin: 0;
-    font-size: ${({ theme }) => theme.fonte.tamanho.destaque};
-    line-height: ${({ theme }) => theme.fonte.alturaLinha.solta};
+    font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
+    line-height: ${({ theme }) => theme.fonte.alturaLinha.media};
     color: ${({ theme }) => theme.cores.texto.secundario};
+  }
+
+  ${Grupo} {
+    gap: ${({ theme }) => theme.espaco[2]};
+  }
+
+  ${Rotulo} {
+    font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
+  }
+
+  ${Entrada} {
+    height: ${({ theme }) => theme.altura.campoDeAcesso};
+    padding: 0 ${({ theme }) => theme.espaco[7]};
+    font-size: ${({ theme }) => theme.fonte.tamanho.apoio};
   }
 `
 
 export const Acoes = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.espaco[6]};
+  gap: ${({ theme }) => theme.espaco[4]};
+
+  ${Botao} {
+    min-height: ${({ theme }) => theme.altura.botaoDeAcesso};
+    font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
+  }
 `

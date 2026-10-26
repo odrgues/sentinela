@@ -5,7 +5,8 @@ import type { NivelDoTema } from './nivel'
 
 type Props = {
   titulo: string
-  icone: ReactNode
+  // Opcional: o quadradinho colorido com o ícone, no alto.
+  icone?: ReactNode
   nivel: NivelDoTema
   // O texto embaixo do título.
   children: ReactNode
@@ -48,9 +49,11 @@ export function Confirmacao({ titulo, icone, nivel, children, acoes, aoFechar }:
         tabIndex={-1}
       >
         <S.Alca aria-hidden />
-        <S.Icone $nivel={nivel} aria-hidden>
-          {icone}
-        </S.Icone>
+        {icone && (
+          <S.Icone $nivel={nivel} aria-hidden>
+            {icone}
+          </S.Icone>
+        )}
         <S.Textos>
           <h2 id={idDoTitulo}>{titulo}</h2>
           {children}

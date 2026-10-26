@@ -1,6 +1,4 @@
-import { UserX } from 'lucide-react'
 import { useCallback, useState, type FormEvent, type ReactNode } from 'react'
-import { useTheme } from 'styled-components'
 import { erroGeral } from '../../shared/api/erros'
 import { AvisoDeErro } from '../../shared/ui/AvisoDeErro'
 import { Botao } from '../../shared/ui/Botao'
@@ -11,7 +9,6 @@ import { useExcluirConta } from './api'
 // O botão que abre a confirmação. Excluir pede a senha, para ninguém apagar a conta de
 // quem esqueceu o celular aberto.
 export function ExcluirConta({ abrir }: { abrir: (abrirConfirmacao: () => void) => ReactNode }) {
-  const tema = useTheme()
   const excluir = useExcluirConta()
   const [aberta, setAberta] = useState(false)
   const [senha, setSenha] = useState('')
@@ -44,7 +41,6 @@ export function ExcluirConta({ abrir }: { abrir: (abrirConfirmacao: () => void) 
         <Confirmacao
           titulo="Excluir sua conta?"
           nivel="critico"
-          icone={<UserX size={tema.icone.confirmacao} aria-hidden />}
           aoFechar={fechar}
           acoes={
             <>
@@ -65,7 +61,7 @@ export function ExcluirConta({ abrir }: { abrir: (abrirConfirmacao: () => void) 
         >
           <p>
             Suas lavouras e todos os avisos serão apagados, e você para de receber mensagens no
-            WhatsApp. Isso não tem volta.
+            WhatsApp.
           </p>
           <form id="excluir-conta" onSubmit={confirmar} noValidate>
             <Campo
