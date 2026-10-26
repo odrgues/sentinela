@@ -1,7 +1,5 @@
 import styled from 'styled-components'
 import { noComputador } from '../../styles/midia'
-import { Botao } from './Botao.styles'
-import { Entrada, Grupo, Rotulo } from './Campo.styles'
 import type { NivelDoTema } from './nivel'
 
 export const Veu = styled.div`
@@ -87,29 +85,10 @@ export const Textos = styled.div`
     line-height: ${({ theme }) => theme.fonte.alturaLinha.media};
     color: ${({ theme }) => theme.cores.texto.secundario};
   }
-
-  ${Grupo} {
-    gap: ${({ theme }) => theme.espaco[2]};
-  }
-
-  ${Rotulo} {
-    font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
-  }
-
-  ${Entrada} {
-    height: ${({ theme }) => theme.altura.campoDeAcesso};
-    padding: 0 ${({ theme }) => theme.espaco[7]};
-    font-size: ${({ theme }) => theme.fonte.tamanho.apoio};
-  }
 `
 
 export const Acoes = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.espaco[4]};
-
-  ${Botao} {
-    min-height: ${({ theme }) => theme.altura.botaoDeAcesso};
-    font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
-  }
 `

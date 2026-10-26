@@ -4,22 +4,19 @@ import * as S from './Logo.styles'
 // O logo do Sentinela: o nome e, à direita dele, a plantinha saindo da terra.
 // Animado, o nome entra suave e, no fim, a planta cresce: a terra, o caule, as folhas e o broto.
 // Com "reduzir movimento" ligado no sistema, aparece pronto. Pequeno, é o da barra do topo.
-// Claro, é branco, para ficar em cima do verde.
 export function Logo({
   animado = true,
   pequeno = false,
-  claro = false,
 }: {
   animado?: boolean
   pequeno?: boolean
-  claro?: boolean
 }) {
   const tema = useTheme()
-  const planta = claro ? tema.cores.plantaClara : tema.cores.planta
+  const { planta } = tema.cores
   const tamanho = pequeno ? tema.icone.logoPequeno : tema.icone.logo
 
   return (
-    <S.Logo $animado={animado} $pequeno={pequeno} $claro={claro}>
+    <S.Logo $animado={animado} $pequeno={pequeno}>
       <S.Nome>Sentinela</S.Nome>
       {/* O desenho é de 120 por 120; o viewBox corta a sobra em volta da planta. */}
       <S.Desenho viewBox="12 10 96 96" width={tamanho} height={tamanho} aria-hidden>

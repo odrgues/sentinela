@@ -8,11 +8,11 @@ export const espaco = {
   7: '14px',
   8: '16px',
   9: '18px',
-  10: '20px',
-  11: '24px',
-  12: '28px',
-  13: '32px',
-  14: '48px',
+  10: '18px',
+  11: '20px',
+  12: '24px',
+  13: '28px',
+  14: '40px',
 }
 
 export const fonte = {
@@ -30,29 +30,35 @@ export const fonte = {
     extra: 800,
   },
   tamanho: {
-    logo: '40px',
+    logo: '34px',
     // O logo na barra do topo das telas de dentro.
-    logoPequeno: '26px',
-    legenda: '13px',
-    pequeno: '14px',
-    apoio: '13px',
-    corpo: '11px',
-    destaque: '13px',
-    secao: '18px',
-    campo: '17px',
-    botao: '18px',
+    logoPequeno: '22px',
+    // Os textos miúdos, como a fonte das orientações.
+    mini: '12px',
+    legenda: '12px',
+    pequeno: '13px',
+    apoio: '12px',
+    // A escala do site, tirada da tela de entrar: 12 para apoio, 13 para o texto normal, 15 para
+    // títulos de seção, 16/18 para títulos de tela e 20 para números em destaque.
+    corpo: '13px',
+    destaque: '12px',
+    secao: '16px',
+    campo: '13px',
+    botao: '13px',
     frase: '19px',
     marcaNoTopo: '21px',
-    titulo: '26px',
-    tituloComputador: '18px',
-    tituloDeAcesso: '20px',
+    titulo: '22px',
+    tituloComputador: '16px',
+    tituloDeAcesso: '18px',
     tituloNoMapa: '24px',
-    tituloDaTela: '30px',
-    tituloDoDetalhe: '34px',
+    tituloDaTela: '18px',
+    tituloDoDetalhe: '18px',
+    // Números em destaque: a temperatura do painel, a data do aviso.
+    numero: '20px',
     // O nome da lavoura nos quadrinhos do painel.
-    nomeDaLavoura: '16px',
+    nomeDaLavoura: '15px',
     // O título dos quadros de confirmação ("Excluir sua conta?", "Já colheu?").
-    tituloDaConfirmacao: '16px',
+    tituloDaConfirmacao: '15px',
     marca: '30px',
     marcaComputador: '34px',
     temperatura: '30px',
@@ -89,30 +95,33 @@ export const sombra = {
   mensagem: '0 6px 20px rgba(28, 42, 31, 0.25)',
   folha: '0 -6px 24px rgba(28, 42, 31, 0.14)',
   cartaoNoMapa: '0 6px 24px rgba(28, 42, 31, 0.16)',
+  // O vidro da coluna do painel, flutuando por cima do mapa: a sombra cai para a direita.
+  vidro: '3px 0 22px rgba(28, 42, 31, 0.18)',
   abaEscolhida: '0 1px 4px rgba(28, 42, 31, 0.15)',
   bolinhaDaChave: '0 1px 3px rgba(0, 0, 0, 0.25)',
 }
 
 export const altura = {
-  toque: '44px',
-  botaoRedondo: '48px',
-  botaoSecundario: '52px',
-  campo: '54px',
-  botao: '56px',
-  // Nas telas de acesso, o campo e o botão são menores, para o logo ter destaque.
-  campoDeAcesso: '44px',
-  botaoDeAcesso: '46px',
+  toque: '40px',
+  botaoRedondo: '44px',
+  // O padrão de tamanho do site inteiro (o do painel e das telas de acesso): campos de 44, botão
+  // principal de 46 e botões secundários de 40.
+  botaoSecundario: '36px',
+  campo: '40px',
+  botao: '42px',
   iconeEmDestaque: '64px',
   numeroDoPasso: '28px',
-  avatar: '36px',
+  avatar: '32px',
   // A faixa das pílulas do topo no computador (o logo, o menu e a conta).
-  barraDoTopo: '72px',
-  opcao: '60px',
+  barraDoTopo: '64px',
+  opcao: '44px',
   bolinhaDaOpcao: '22px',
   listaDeCulturas: '232px',
+  // A lista de culturas na folha da nova lavoura no celular.
+  listaDeCulturasPequena: '176px',
   mapaNoComputador: '520px',
   // No celular, o mapa fica parado no alto e a folha com as lavouras sobe por cima dele.
-  mapaNoCelular: '45dvh',
+  mapaNoCelular: '52dvh',
   inicioDaFolha: '40dvh',
   alcaDaFolha: '5px',
   bolinhaDaLegenda: '12px',
@@ -120,13 +129,18 @@ export const altura = {
   carregandoTitulo: '24px',
   carregandoCartao: '92px',
   barraDoCiclo: '12px',
+  // A faixa com a foto no alto da página da lavoura.
+  heroi: '104px',
+  // A faixa da linha das máximas no gráfico da semana.
+  trilhaDoGrafico: '32px',
+  trilhaDoGraficoPequena: '24px',
   // A barrinha do ciclo nos cartões das lavouras do painel.
   barraDoCicloPequena: '6px',
   // A altura mínima dos quadrinhos das lavouras no painel do computador (quase a largura deles).
   quadrinhoDaLavoura: '172px',
-  aba: '46px',
-  filtro: '40px',
-  iconeDaConfirmacao: '56px',
+  aba: '36px',
+  filtro: '36px',
+  iconeDaConfirmacao: '44px',
   chave: '32px',
   bolinhaDaChave: '24px',
   // O cartão centralizado das telas de acesso (formulário e foto lado a lado) e a faixa da
@@ -145,7 +159,7 @@ export const quebra = {
 export const largura = {
   // As telas que não têm versão de computador ficam num cartão centralizado deste tamanho.
   cartaoCentral: '480px',
-  formulario: '420px',
+  formulario: '380px',
   textoDaFaixa: '460px',
   cartaoDeAcesso: '800px',
   mapa: '560px',
@@ -156,10 +170,16 @@ export const largura = {
   carregandoMedio: '140px',
   carregandoLongo: '220px',
   detalhe: '1280px',
+  // A página da lavoura no computador: centralizada, com respiro dos lados.
+  paginaDaLavoura: '1120px',
   colunaDoDetalhe: '340px',
-  colunaDaPrevisao: '600px',
-  diaDaPrevisao: '96px',
-  diaNaLista: '52px',
+  // O ciclo ao lado do gráfico da semana.
+  colunaDoCiclo: '260px',
+  // O bloco com o dia do aviso, no computador.
+  diaDoAviso: '72px',
+  // Cada dia do gráfico da semana, na página da lavoura.
+  diaNoGrafico: '88px',
+  diaNoGraficoPequeno: '76px',
   seloDoHistorico: '82px',
   tabelaDoHistorico: '520px',
   chave: '52px',
@@ -188,29 +208,27 @@ export const icone = {
   marca: 34,
   marcaComputador: 40,
   // A plantinha à direita do nome, no logo das telas de acesso.
-  logo: 48,
-  logoPequeno: 32,
+  logo: 40,
+  logoPequeno: 28,
   clima: 40,
   busca: 20,
-  avisoDoDetalhe: 24,
+  avisoDoDetalhe: 20,
   tempoNaLista: 26,
-  tempoNoCartao: 34,
-  confirmacao: 30,
+  tempoNoCartao: 26,
+  confirmacao: 22,
 }
 
 // O marcador parado no meio do mapa, com a ponta no ponto marcado.
 export const marcador = {
-  largura: 56,
-  altura: 72,
-  // Os marcadores das lavouras no mapa do painel.
-  larguraNoPainel: 40,
-  alturaNoPainel: 52,
+  // Os marcadores do mapa: o de marcar a lavoura e os das lavouras no painel.
+  largura: 36,
+  altura: 46,
 }
 
 // Quanto o mapa fica borrado atrás do vidro da coluna do painel.
 export const desfoque = {
-  // A foto das folhas no fundo da coluna do painel: bem desfocada.
-  foto: '40px',
+  // O mapa atrás do vidro da coluna do painel e da nova lavoura.
+  vidro: '18px',
   // O que fica atrás dos cartões transparentes.
   cartao: '14px',
   // A tela atrás das janelas (Minha conta, as confirmações).

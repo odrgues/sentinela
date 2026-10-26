@@ -11,7 +11,7 @@ const estilo = css<{ $variante: Variante }>`
   justify-content: center;
   border-radius: ${({ theme }) => theme.raio.botao};
   font-family: inherit;
-  font-size: ${({ theme }) => theme.fonte.tamanho.destaque};
+  font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
   font-weight: ${({ theme }) => theme.fonte.peso.medio};
   text-align: center;
   text-decoration: none;

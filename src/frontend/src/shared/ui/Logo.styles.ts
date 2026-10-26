@@ -91,7 +91,7 @@ export const Nome = styled.span`
   color: ${({ theme }) => theme.cores.destaque.base};
 `
 
-export const Logo = styled.div<{ $animado: boolean; $pequeno: boolean; $claro: boolean }>`
+export const Logo = styled.div<{ $animado: boolean; $pequeno: boolean }>`
   display: flex;
   /* A terra fica apoiada na mesma linha em que as letras se apoiam. */
   align-items: baseline;
@@ -102,14 +102,6 @@ export const Logo = styled.div<{ $animado: boolean; $pequeno: boolean; $claro: b
     css`
       ${Nome} {
         font-size: ${theme.fonte.tamanho.logoPequeno};
-      }
-    `}
-
-  ${({ theme, $claro }) =>
-    $claro &&
-    css`
-      ${Nome} {
-        color: ${theme.cores.texto.sobreDestaque};
       }
     `}
 

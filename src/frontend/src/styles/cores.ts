@@ -8,9 +8,9 @@ export const cores = {
     escolhido: '#EEF4EA',
   },
   fundo: {
-    pagina: '#F5F3EC',
+    pagina: '#FFFFFF',
     cartao: '#FFFFFF',
-    // Os cartões por cima do vidro verde (painel e nova lavoura): branco transparente, com o
+    // Os cartões por cima do vidro (painel e nova lavoura): branco transparente, com o
     // fundo desfocado atrás (desfoque.cartao). O último número é a opacidade.
     cartaoNoVidro: 'rgba(255, 255, 255, 0.9)',
     // A borda fininha dos cartões transparentes, como o brilho na beira de um vidro.
@@ -77,6 +77,15 @@ export const cores = {
     fundo: '#FFF4F2',
     borda: '#E9A79D',
   },
+  // O escurecido por cima da foto do alto da página da lavoura, mais forte à esquerda (texto).
+  heroi: {
+    escuro: 'rgba(14, 32, 9, 0.82)',
+    claro: 'rgba(14, 32, 9, 0.2)',
+  },
+  // A linha das máximas no gráfico da semana.
+  grafico: {
+    linha: '#E8A33A',
+  },
   enso: {
     fundo: '#E3EDF3',
     titulo: '#173F56',
@@ -85,6 +94,8 @@ export const cores = {
   // O amarelo do broto da marca e do marcador do mapa.
   marca: {
     sol: '#F2D27A',
+    // O marcador vermelho no meio do mapa, para marcar onde fica a lavoura.
+    alfinete: '#E5322B',
   },
   // A plantinha do logo: o caule, as folhas, o broto e o monte de terra, na cor do nome
   // (destaque.base). A nervura é da cor do cartão, um risco claro no meio da folha.
@@ -95,19 +106,10 @@ export const cores = {
     nervura: '#FFFFFF',
     terra: '#1C3A12',
   },
-  // O logo claro, para ficar em cima do verde (o vidro do painel).
-  plantaClara: {
-    caule: '#FFFFFF',
-    folha: '#FFFFFF',
-    broto: '#FFFFFF',
-    nervura: '#1C3A12',
-    terra: '#FFFFFF',
-  },
-  // O verde por cima da foto desfocada da coluna do painel: mais escuro que o da marca
-  // (destaque.base) e meio transparente, para a foto aparecer. O último número é a opacidade.
+  // O vidro da coluna do painel e da nova lavoura: um branco neutro e transparente, com o mapa
+  // borrado atrás dando a cor. O último número é a opacidade.
   vidro: {
-    fundo: 'rgba(14, 32, 9, 0.6)',
-    borda: 'rgba(255, 255, 255, 0.15)',
+    fundo: 'rgba(255, 255, 255, 0.42)',
   },
   erro: '#A3271A',
   sucesso: '#9CC3A3',
