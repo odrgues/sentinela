@@ -1,15 +1,12 @@
-import { Timer } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { useTheme } from 'styled-components'
 import { erroGeral } from '../../shared/api/erros'
 import { AvisoDeErro } from '../../shared/ui/AvisoDeErro'
 import { Botao, BotaoLink } from '../../shared/ui/Botao'
 import { Campo } from '../../shared/ui/Campo'
 import * as S from './acesso.styles'
 import { useRedefinirSenha } from './api'
-import { TelaCentral } from './components/TelaCentral'
-import { Topo } from './components/Topo'
+import { TelaDividida } from './components/TelaDividida'
 
 const TAMANHO_MINIMO_DA_SENHA = 6
 
@@ -26,28 +23,22 @@ function validar(senha: string, repetida: string): Erros {
 }
 
 function LinkExpirado() {
-  const tema = useTheme()
-
   return (
-    <TelaCentral>
-      <Topo comMarca />
+    <TelaDividida>
       <S.Conteudo>
-        <S.IconeEmDestaque $tom="atencao">
-          <Timer size={tema.icone.destaque} aria-hidden />
-        </S.IconeEmDestaque>
         <S.Cabecalho>
           <S.Titulo>Este link expirou</S.Titulo>
-          <S.Texto>
+          <S.Explicacao>
             Por segurança, o link vale por 30 minutos e só pode ser usado uma vez. Peça um novo,
             leva um minuto.
-          </S.Texto>
+          </S.Explicacao>
         </S.Cabecalho>
         <BotaoLink to="/esqueci-senha">Pedir outro link</BotaoLink>
-        <S.LinkSimples>
+        <S.Rodape>
           <Link to="/entrar">Voltar para o login</Link>
-        </S.LinkSimples>
+        </S.Rodape>
       </S.Conteudo>
-    </TelaCentral>
+    </TelaDividida>
   )
 }
 
@@ -75,10 +66,14 @@ export function NovaSenha() {
   }
 
   return (
-    <TelaCentral>
-      <Topo comMarca />
+    <TelaDividida>
       <S.Formulario onSubmit={enviar} noValidate>
-        <S.Titulo>Crie uma senha nova</S.Titulo>
+        <S.Cabecalho>
+          <S.Titulo>Crie uma senha nova</S.Titulo>
+          <S.Explicacao>
+            Depois de salvar, você volta para o login e entra com a senha nova.
+          </S.Explicacao>
+        </S.Cabecalho>
         <Campo
           rotulo="Nova senha"
           type="password"
@@ -102,10 +97,7 @@ export function NovaSenha() {
         <Botao type="submit" disabled={redefinir.isPending}>
           {redefinir.isPending ? 'Salvando…' : 'Salvar nova senha'}
         </Botao>
-        <S.TextoCentral>
-          Depois de salvar, você volta para o login e entra com a senha nova.
-        </S.TextoCentral>
       </S.Formulario>
-    </TelaCentral>
+    </TelaDividida>
   )
 }

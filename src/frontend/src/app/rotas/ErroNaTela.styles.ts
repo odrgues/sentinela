@@ -24,7 +24,7 @@ export const Tela = styled.main`
   }
 `
 
-// O botão no tamanho dos botões das telas de acesso, do tamanho do texto e centralizado.
+// O botão do tamanho do texto e centralizado.
 export const Acoes = styled.div`
   display: flex;
   justify-content: center;
@@ -32,8 +32,11 @@ export const Acoes = styled.div`
   margin-top: ${({ theme }) => theme.espaco[4]};
 
   > * {
-    min-height: ${({ theme }) => theme.altura.botaoDeAcesso};
     padding: 0 ${({ theme }) => theme.espaco[10]};
-    font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
   }
+`
+
+// A página não encontrada fica fora da Casca: ocupa a tela toda sozinha.
+export const TelaInteira = styled(Tela)`
+  min-height: 100dvh;
 `

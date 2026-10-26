@@ -1,6 +1,4 @@
 import styled, { css } from 'styled-components'
-import { Botao } from '../../shared/ui/Botao.styles'
-import { Entrada, Grupo, Rotulo } from '../../shared/ui/Campo.styles'
 import { noCelular } from '../../styles/midia'
 
 export const Formulario = styled.form`
@@ -8,34 +6,13 @@ export const Formulario = styled.form`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.espaco[5]};
-
-  /* Nas telas de acesso, o formulário é mais compacto que no resto do site, para o logo ter
-     destaque: o rótulo mais perto da caixa de texto, e o rótulo, o campo e o botão menores. */
-  ${Grupo} {
-    gap: ${({ theme }) => theme.espaco[2]};
-  }
-
-  ${Rotulo} {
-    font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
-  }
-
-  ${Entrada} {
-    height: ${({ theme }) => theme.altura.campoDeAcesso};
-    padding: 0 ${({ theme }) => theme.espaco[7]};
-    font-size: ${({ theme }) => theme.fonte.tamanho.apoio};
-  }
-
-  ${Botao} {
-    min-height: ${({ theme }) => theme.altura.botaoDeAcesso};
-    font-size: ${({ theme }) => theme.fonte.tamanho.corpo};
-  }
 `
 
 export const Conteudo = styled.div`
   flex-grow: 1;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.espaco[10]};
+  gap: ${({ theme }) => theme.espaco[6]};
 `
 
 export const Cabecalho = styled.div`
@@ -72,14 +49,6 @@ export const Explicacao = styled.p`
   font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
   line-height: ${({ theme }) => theme.fonte.alturaLinha.media};
   color: ${({ theme }) => theme.cores.texto.secundario};
-`
-
-export const TextoCentral = styled.p`
-  margin: 0;
-  font-size: ${({ theme }) => theme.fonte.tamanho.apoio};
-  line-height: ${({ theme }) => theme.fonte.alturaLinha.media};
-  color: ${({ theme }) => theme.cores.texto.secundario};
-  text-align: center;
 `
 
 // Os links das telas de acesso ficam sem sublinhado; ele aparece com o mouse em cima.
@@ -125,60 +94,39 @@ export const LinkDaDireita = styled.span`
   }
 `
 
-export const IconeEmDestaque = styled.div<{ $tom: 'ok' | 'atencao' }>`
-  width: ${({ theme }) => theme.altura.iconeEmDestaque};
-  height: ${({ theme }) => theme.altura.iconeEmDestaque};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: ${({ theme }) => theme.raio.quadro};
-  background: ${({ theme, $tom }) => theme.cores.nivel[$tom].fundo};
-  color: ${({ theme, $tom }) =>
-    $tom === 'ok' ? theme.cores.destaque.base : theme.cores.nivel.atencao.texto};
-`
-
+// As dicas numeradas do "Confira seu e-mail", leves, sem caixa em volta.
 export const Dicas = styled.ol`
   margin: 0;
-  padding: ${({ theme }) => theme.espaco[8]};
+  padding: 0;
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.espaco[6]};
-  background: ${({ theme }) => theme.cores.fundo.cartao};
-  border: ${({ theme }) => theme.espessura.borda} solid ${({ theme }) => theme.cores.borda.cartao};
-  border-radius: ${({ theme }) => theme.raio.cartao};
-  font-size: ${({ theme }) => theme.fonte.tamanho.corpo};
+  gap: ${({ theme }) => theme.espaco[4]};
+  font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
   line-height: ${({ theme }) => theme.fonte.alturaLinha.media};
+  color: ${({ theme }) => theme.cores.texto.secundario};
+
+  strong {
+    color: ${({ theme }) => theme.cores.texto.principal};
+  }
 `
 
 export const Dica = styled.li`
   display: flex;
-  align-items: flex-start;
-  gap: ${({ theme }) => theme.espaco[5]};
+  align-items: center;
+  gap: ${({ theme }) => theme.espaco[4]};
 `
 
 export const NumeroDaDica = styled.span`
   flex-shrink: 0;
-  width: ${({ theme }) => theme.espaco[11]};
-  height: ${({ theme }) => theme.espaco[11]};
+  width: ${({ theme }) => theme.espaco[10]};
+  height: ${({ theme }) => theme.espaco[10]};
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: ${({ theme }) => theme.raio.circulo};
   background: ${({ theme }) => theme.cores.destaque.suave};
   color: ${({ theme }) => theme.cores.destaque.sobreSuave};
-  font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
+  font-size: ${({ theme }) => theme.fonte.tamanho.mini};
   font-weight: ${({ theme }) => theme.fonte.peso.extra};
-`
-
-export const LinkSimples = styled.span`
-  align-self: center;
-
-  a {
-    ${semSublinhado}
-    display: block;
-    padding: ${({ theme }) => theme.espaco[6]};
-    font-size: ${({ theme }) => theme.fonte.tamanho.corpo};
-    font-weight: ${({ theme }) => theme.fonte.peso.forte};
-  }
 `

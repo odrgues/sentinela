@@ -1,8 +1,7 @@
-import { Mail } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useTheme } from 'styled-components'
+import { Link } from 'react-router'
 import { AvisoDeErro } from '../../../shared/ui/AvisoDeErro'
-import { Botao, BotaoLink } from '../../../shared/ui/Botao'
+import { Botao } from '../../../shared/ui/Botao'
 import * as S from '../acesso.styles'
 import { usePedirLink } from '../api'
 import { Topo } from './Topo'
@@ -11,7 +10,6 @@ const ESPERA_PARA_PEDIR_DE_NOVO = 60 * 1000
 
 // Depois de pedir o link: a pessoa vai ao e-mail, ou pede de novo depois de 1 minuto.
 export function EmailEnviado({ email, aoVoltar }: { email: string; aoVoltar: () => void }) {
-  const tema = useTheme()
   const pedirLink = usePedirLink()
   const [esperando, setEsperando] = useState(false)
 
@@ -29,15 +27,12 @@ export function EmailEnviado({ email, aoVoltar }: { email: string; aoVoltar: () 
     <>
       <Topo voltar={{ aoClicar: aoVoltar, rotulo: 'Voltar' }} />
       <S.Conteudo>
-        <S.IconeEmDestaque $tom="ok">
-          <Mail size={tema.icone.destaque} aria-hidden />
-        </S.IconeEmDestaque>
         <S.Cabecalho>
           <S.Titulo>Confira seu e-mail</S.Titulo>
-          <S.Texto>
+          <S.Explicacao>
             Se existir uma conta com <strong>{email}</strong>, mandamos um link para criar uma senha
             nova.
-          </S.Texto>
+          </S.Explicacao>
         </S.Cabecalho>
         <S.Dicas>
           <S.Dica>
@@ -49,8 +44,7 @@ export function EmailEnviado({ email, aoVoltar }: { email: string; aoVoltar: () 
           <S.Dica>
             <S.NumeroDaDica aria-hidden>2</S.NumeroDaDica>
             <span>
-              Não chegou? Olhe também a caixa de <strong>spam</strong> ou{' '}
-              <strong>lixo eletrônico</strong>.
+              Não chegou? Olhe também a caixa de <strong>spam</strong>.
             </span>
           </S.Dica>
         </S.Dicas>
@@ -58,9 +52,9 @@ export function EmailEnviado({ email, aoVoltar }: { email: string; aoVoltar: () 
         <Botao variante="neutro" onClick={pedirDeNovo} disabled={esperando || pedirLink.isPending}>
           {esperando ? 'Enviamos de novo. Aguarde 1 minuto para pedir outro.' : 'Enviar de novo'}
         </Botao>
-        <BotaoLink to="/entrar" variante="contorno">
-          Voltar para o login
-        </BotaoLink>
+        <S.Rodape>
+          <Link to="/entrar">Voltar para o login</Link>
+        </S.Rodape>
       </S.Conteudo>
     </>
   )
