@@ -1,11 +1,16 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from './app/App'
-import '@fontsource/figtree/400.css'
-import '@fontsource/figtree/500.css'
-import '@fontsource/figtree/600.css'
-import '@fontsource/figtree/700.css'
-import '@fontsource/figtree/800.css'
+// A Google Sans tem os pesos 400 a 700; onde o tema pede 800, o navegador usa o 700.
+import '@fontsource/google-sans/400.css'
+import '@fontsource/google-sans/500.css'
+import '@fontsource/google-sans/600.css'
+import '@fontsource/google-sans/700.css'
+// A Noto Sans é a fonte de dentro dos cartões do painel (ver fonte.familiaDosCartoes).
+import '@fontsource/noto-sans/400.css'
+import '@fontsource/noto-sans/500.css'
+import '@fontsource/noto-sans/600.css'
+import '@fontsource/noto-sans/700.css'
 
 // Só em desenvolvimento: no build, o import.meta.env.DEV vira false e o MSW nem entra no pacote.
 // Com `npm run dev:api`, fica desligada e tudo vai para o backend de verdade.

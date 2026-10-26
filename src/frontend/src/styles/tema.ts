@@ -1,6 +1,7 @@
 import { cores } from './cores'
 import {
   altura,
+  desfoque,
   espaco,
   espessura,
   fonte,
@@ -26,6 +27,7 @@ export const tema = {
   icone,
   tracoDoIcone,
   marcador,
+  desfoque,
 }
 
 export type Tema = typeof tema

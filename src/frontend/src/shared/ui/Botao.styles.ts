@@ -12,7 +12,7 @@ const estilo = css<{ $variante: Variante }>`
   border-radius: ${({ theme }) => theme.raio.botao};
   font-family: inherit;
   font-size: ${({ theme }) => theme.fonte.tamanho.destaque};
-  font-weight: ${({ theme }) => theme.fonte.peso.forte};
+  font-weight: ${({ theme }) => theme.fonte.peso.medio};
   text-align: center;
   text-decoration: none;
   cursor: pointer;
