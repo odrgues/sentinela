@@ -28,6 +28,9 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // As telas inteiras (preencher o formulário, salvar e voltar ao painel) passam dos 5 s
+    // padrão em máquina carregada; o limite maior evita falha por lentidão, não por erro.
+    testTimeout: 15_000,
     setupFiles: './src/test/setup.ts',
     // sem isso o Vitest entrega o CSS vazio, e a guarda do tema não enxergaria os .css de src/
     css: { include: /\/src\// },
