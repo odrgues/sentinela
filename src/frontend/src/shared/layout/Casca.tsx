@@ -1,24 +1,32 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { UserRound } from 'lucide-react'
 import { useEffect } from 'react'
-import { Outlet, useNavigate } from 'react-router'
+import { Outlet, useMatch, useNavigate } from 'react-router'
 import { useTheme } from 'styled-components'
 import { MENSAGENS } from '../api/erros'
 import { SESSAO_VENCIDA } from '../api/sessao'
 import { useUsuario } from '../api/useUsuario'
-import { Marca } from '../ui/Marca'
+import { Logo } from '../ui/Logo'
 import * as S from './Casca.styles'
 import { useNoComputador } from './useNoComputador'
 
 function BarraDoTopo() {
   const tema = useTheme()
   const { data: usuario } = useUsuario()
+  // No painel, o mapa ocupa a tela toda e a barra fica por cima dele. A conta abre por cima do
+  // painel, então conta também.
+  const noPainel = useMatch('/') !== null
+  const naConta = useMatch('/conta') !== null
+  // A nova lavoura é igual ao painel: mapa na tela toda e vidro verde.
+  const naNovaLavoura = useMatch('/lavouras/nova') !== null
+  const sobreOMapa = noPainel || naConta || naNovaLavoura
 
   return (
-    <S.Barra>
+    <S.Barra $sobreOMapa={sobreOMapa}>
       <S.Esquerda>
         <S.LinkDaMarca to="/" aria-label="Sentinela, ir para o painel">
-          <Marca />
+          {/* No painel e na nova lavoura, o logo fica em cima do vidro verde: claro. */}
+          <Logo pequeno claro={sobreOMapa} />
         </S.LinkDaMarca>
         <S.Menu aria-label="Principal">
           <S.ItemDoMenu to="/" end>
@@ -27,7 +35,8 @@ function BarraDoTopo() {
           <S.ItemDoMenu to="/lavouras/nova">Nova lavoura</S.ItemDoMenu>
         </S.Menu>
       </S.Esquerda>
-      <S.LinkDaConta to="/conta">
+      {/* A janela da conta tem a própria animação: sem a transição de página. */}
+      <S.LinkDaConta to="/conta" viewTransition={false}>
         <S.Avatar aria-hidden>
           {usuario ? usuario.nome.charAt(0).toUpperCase() : <UserRound size={tema.icone.botao} />}
         </S.Avatar>

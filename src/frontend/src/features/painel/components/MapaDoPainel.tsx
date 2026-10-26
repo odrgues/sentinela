@@ -35,8 +35,16 @@ function MarcadorDaLavoura({ apelido, nivel }: { apelido: string; nivel: NivelDo
   )
 }
 
-// O mapa abre mostrando todas as lavouras.
-function Enquadrar({ lavouras }: { lavouras: LavouraNoPainel[] }) {
+// O mapa abre mostrando todas as lavouras, fora do que estiver por cima dele à esquerda e no alto.
+function Enquadrar({
+  lavouras,
+  folgaAEsquerda,
+  folgaEmCima,
+}: {
+  lavouras: LavouraNoPainel[]
+  folgaAEsquerda: number
+  folgaEmCima: number
+}) {
   const mapa = useMap()
 
   useEffect(() => {
@@ -49,8 +57,13 @@ function Enquadrar({ lavouras }: { lavouras: LavouraNoPainel[] }) {
     const limites = new google.maps.LatLngBounds()
     for (const { latitude, longitude } of lavouras)
       limites.extend({ lat: latitude, lng: longitude })
-    mapa.fitBounds(limites, FOLGA_EM_VOLTA)
-  }, [mapa, lavouras])
+    mapa.fitBounds(limites, {
+      top: FOLGA_EM_VOLTA + folgaEmCima,
+      right: FOLGA_EM_VOLTA,
+      bottom: FOLGA_EM_VOLTA,
+      left: FOLGA_EM_VOLTA + folgaAEsquerda,
+    })
+  }, [mapa, lavouras, folgaAEsquerda, folgaEmCima])
 
   return null
 }
@@ -69,8 +82,16 @@ export function Legenda() {
 }
 
 // Mapa comum (não satélite), para os marcadores coloridos se destacarem. Tocar num marcador
-// abre o detalhe da lavoura.
-export function MapaDoPainel({ lavouras }: { lavouras: LavouraNoPainel[] }) {
+// abre o detalhe da lavoura. As folgas são o tamanho do que flutua por cima do mapa.
+export function MapaDoPainel({
+  lavouras,
+  folgaAEsquerda = 0,
+  folgaEmCima = 0,
+}: {
+  lavouras: LavouraNoPainel[]
+  folgaAEsquerda?: number
+  folgaEmCima?: number
+}) {
   const navegar = useNavigate()
   const chave = chaveDoGoogle()
 
@@ -111,7 +132,7 @@ export function MapaDoPainel({ lavouras }: { lavouras: LavouraNoPainel[] }) {
             </AdvancedMarker>
           ))}
         </Map>
-        <Enquadrar lavouras={lavouras} />
+        <Enquadrar lavouras={lavouras} folgaAEsquerda={folgaAEsquerda} folgaEmCima={folgaEmCima} />
       </S.Area>
     </APIProvider>
   )

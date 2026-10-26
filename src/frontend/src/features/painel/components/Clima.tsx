@@ -15,12 +15,10 @@ export function Clima({ hoje }: { hoje: Painel['hoje'] }) {
       <S.IconeDoClima $quente={quente}>
         <Icone size={tema.icone.clima} aria-hidden />
       </S.IconeDoClima>
-      <div>
-        {hoje.tempC !== null && <S.Temperatura>{Math.round(hoje.tempC)}°</S.Temperatura>}
-        <S.OndeEComo>
-          Hoje em {hoje.cidade} · {hoje.condicaoTexto}
-        </S.OndeEComo>
-      </div>
+      {hoje.tempC !== null && <S.Temperatura>{Math.round(hoje.tempC)}°</S.Temperatura>}
+      <S.OndeEComo>
+        Hoje em {hoje.cidade} · {hoje.condicaoTexto}
+      </S.OndeEComo>
     </S.Clima>
   )
 }

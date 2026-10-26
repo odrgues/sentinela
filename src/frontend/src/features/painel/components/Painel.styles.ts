@@ -1,9 +1,10 @@
 import styled, { keyframes } from 'styled-components'
 
+// Numa linha só: o ícone, a temperatura e "Hoje em Uberaba · céu limpo".
 export const Clima = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.espaco[6]};
+  gap: ${({ theme }) => theme.espaco[5]};
 `
 
 export const Temperatura = styled.span`
@@ -22,18 +23,6 @@ export const IconeDoClima = styled.span<{ $quente: boolean }>`
   display: flex;
   color: ${({ theme, $quente }) =>
     $quente ? theme.cores.nivel.atencao.marcador : theme.cores.texto.icone};
-`
-
-export const Frase = styled.p`
-  margin: 0;
-  font-size: ${({ theme }) => theme.fonte.tamanho.frase};
-  line-height: ${({ theme }) => theme.fonte.alturaLinha.media};
-  font-weight: ${({ theme }) => theme.fonte.peso.semiforte};
-`
-
-export const Atualizada = styled.span`
-  font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
-  color: ${({ theme }) => theme.cores.texto.secundario};
 `
 
 export const CabecalhoDaLista = styled.div`

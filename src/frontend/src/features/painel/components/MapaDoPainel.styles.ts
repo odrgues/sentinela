@@ -45,10 +45,11 @@ export const Etiqueta = styled.span`
   white-space: nowrap;
 `
 
+// No canto de cima, embaixo da pílula da conta: no canto de baixo ficam os botões de zoom.
 export const Legenda = styled.div`
   position: absolute;
+  top: calc(${({ theme }) => theme.altura.barraDoTopo} + ${({ theme }) => theme.espaco[4]});
   right: ${({ theme }) => theme.espaco[10]};
-  bottom: ${({ theme }) => theme.espaco[10]};
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.espaco[4]};

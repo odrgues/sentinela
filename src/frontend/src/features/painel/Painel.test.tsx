@@ -14,7 +14,7 @@ function responderPainel(resposta: object) {
 }
 
 describe('Painel', () => {
-  it('cumprimenta pelo nome e mostra o clima e a frase da semana', async () => {
+  it('cumprimenta pelo nome e mostra o clima de hoje', async () => {
     jaEntrou()
     abrirApp('/')
 
@@ -26,48 +26,22 @@ describe('Painel', () => {
     ).toBeInTheDocument()
     expect(screen.getByText('29°')).toBeInTheDocument()
     expect(screen.getByText('Hoje em Uberaba · sol com poucas nuvens')).toBeInTheDocument()
-    expect(
-      screen.getByText(
-        'Semana quente e com pouca chuva. Na quinta, o calor passa do limite da soja.',
-      ),
-    ).toBeInTheDocument()
   })
 
-  it('lista as lavouras na ordem da API, com o andamento e o aviso, e cada uma abre o detalhe', async () => {
+  it('lista as lavouras na ordem da API, com a cultura, a fase, o aviso e o dia do ciclo, e cada uma abre o detalhe', async () => {
     jaEntrou()
     const roteador = abrirApp('/')
 
     const lista = await screen.findByRole('list')
     const lavouras = within(lista).getAllByRole('link')
     expect(lavouras.map((link) => link.textContent)).toEqual([
-      'Talhão do fundoSoja · dia 45 de 120 · Desenvolvimento vegetativoCalor forte na quinta',
-      'Roça da baixadaMilho · dia 20 de 120 · Vegetativo (V4 a V17)Pouca chuva na semana',
-      'Feijão da hortaFeijão · dia 12 de 90 · Germinação e emergência (V0-V2)Tudo certo esta semana',
+      'Talhão do fundoSojaDesenvolvimento vegetativoCalor forte na quintaDia 45 de 120',
+      'Roça da baixadaMilhoVegetativo (V4 a V17)Pouca chuva na semanaDia 20 de 120',
+      'Feijão da hortaFeijãoGerminação e emergência (V0-V2)Tudo certo esta semanaDia 12 de 90',
     ])
 
     await userEvent.click(lavouras[0])
     expect(roteador.state.location.pathname).toBe('/lavouras/1')
-  })
-
-  it('na lavoura perene, mostra a safra no lugar do dia', async () => {
-    jaEntrou()
-    const [primeira] = painel().cultivos
-    responderPainel({
-      cultivos: [
-        {
-          ...primeira,
-          cultura: 'Café',
-          tipoCiclo: 'perene',
-          diaAtual: null,
-          cicloDias: null,
-          safra: '2026/27',
-          fase: null,
-        },
-      ],
-    })
-    abrirApp('/')
-
-    expect(await screen.findByText('Café · safra 2026/27')).toBeInTheDocument()
   })
 
   it('enquanto carrega, mostra o cinza no lugar das lavouras', async () => {
@@ -125,15 +99,35 @@ describe('Painel', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Minha conta' })).toBeInTheDocument()
   })
 
-  it('no computador, mostra quando a previsão foi atualizada e a legenda do mapa', async () => {
+  it('no computador, mostra a legenda do mapa e "Nova lavoura" só no menu do topo', async () => {
     telaDeComputador()
     jaEntrou()
     abrirApp('/')
 
-    expect(await screen.findByText('Previsão atualizada hoje às 7h')).toBeInTheDocument()
+    await screen.findByRole('heading', { name: 'Suas lavouras' })
     expect(screen.getByText('Legenda')).toBeInTheDocument()
     expect(
-      within(screen.getByRole('main')).getByRole('link', { name: 'Nova lavoura' }),
+      within(screen.getByRole('main')).queryByRole('link', { name: 'Nova lavoura' }),
+    ).not.toBeInTheDocument()
+    expect(
+      within(screen.getByRole('navigation', { name: 'Principal' })).getByRole('link', {
+        name: 'Nova lavoura',
+      }),
     ).toHaveAttribute('href', '/lavouras/nova')
+  })
+
+  it('no computador, resume a semana: avisos por nível, o mais urgente e a próxima colheita', async () => {
+    telaDeComputador()
+    jaEntrou()
+    abrirApp('/')
+
+    const resumo = await screen.findByRole('list', { name: 'Avisos das lavouras' })
+    expect(
+      within(resumo)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(['1Crítico', '1Atenção', '1Tudo certo'])
+    expect(screen.getByText(/Talhão do fundo, calor forte na quinta/)).toBeInTheDocument()
+    expect(screen.getByText(/Talhão do fundo, em 75 dias/)).toBeInTheDocument()
   })
 })

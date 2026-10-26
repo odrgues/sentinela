@@ -1,5 +1,5 @@
-import { Plus, Sprout, UserRound } from 'lucide-react'
-import { Link, Navigate, useLocation } from 'react-router'
+import { CalendarCheck, Plus, UserRound } from 'lucide-react'
+import { Link, Navigate, Outlet, useLocation, useMatch } from 'react-router'
 import { useTheme } from 'styled-components'
 import { erroPassageiro } from '../../shared/api/erros'
 import { quandoFoi } from '../../shared/formato/data'
@@ -7,6 +7,8 @@ import { useNoComputador } from '../../shared/layout/useNoComputador'
 import { AvisoDeErro } from '../../shared/ui/AvisoDeErro'
 import { Botao } from '../../shared/ui/Botao'
 import { Mensagem } from '../../shared/ui/Mensagem'
+import { ICONE_DO_NIVEL, NIVEL, NOME_DO_NIVEL } from '../../shared/ui/nivel'
+import { SoParaLeitor } from '../../shared/ui/SoParaLeitor'
 import { usePainel } from './api'
 import { CartaoDaLavoura } from './components/CartaoDaLavoura'
 import { Carregando } from './components/Carregando'
@@ -15,40 +17,95 @@ import { Legenda, MapaDoPainel } from './components/MapaDoPainel'
 import * as P from './components/Painel.styles'
 import { SemPrevisao } from '../../shared/ui/SemPrevisao'
 import * as S from './Painel.styles'
-import { saudacao } from './textos'
-import type { Painel as DadosDoPainel } from './tipos'
+import { maisUrgente, proximaColheita, saudacao } from './textos'
+import type { Painel as DadosDoPainel, LavouraNoPainel } from './tipos'
 
+// O que mais pede atenção: a lavoura com o aviso mais grave e a próxima a colher.
+function Destaques({ lavouras }: { lavouras: LavouraNoPainel[] }) {
+  const tema = useTheme()
+  const urgente = maisUrgente(lavouras)
+  const colheita = proximaColheita(lavouras)
+  if (!urgente && !colheita) return null
+  const IconeDoAviso = urgente ? ICONE_DO_NIVEL[NIVEL[urgente.aviso.severidade]] : null
+
+  return (
+    <S.Destaques>
+      {urgente && IconeDoAviso && (
+        <S.Destaque $nivel={NIVEL[urgente.aviso.severidade]}>
+          <IconeDoAviso size={tema.icone.selo} strokeWidth={tema.tracoDoIcone.forte} aria-hidden />
+          <span>
+            <strong>Mais urgente:</strong> {urgente.apelido}, {urgente.aviso.mensagem.toLowerCase()}
+          </span>
+        </S.Destaque>
+      )}
+      {colheita && (
+        <S.Destaque>
+          <CalendarCheck size={tema.icone.selo} strokeWidth={tema.tracoDoIcone.forte} aria-hidden />
+          <span>
+            <strong>Próxima colheita:</strong> {colheita.apelido},{' '}
+            {colheita.faltam === 0 ? 'já no ponto' : `em ${colheita.faltam} dias`}
+          </span>
+        </S.Destaque>
+      )}
+    </S.Destaques>
+  )
+}
+
+// "1 Crítico · 2 Atenção · 1 Tudo certo": quantas lavouras estão em cada nível de aviso.
+function ResumoDosAvisos({ lavouras }: { lavouras: LavouraNoPainel[] }) {
+  const niveis = (['critico', 'atencao', 'ok'] as const)
+    .map((nivel) => ({
+      nivel,
+      quantas: lavouras.filter((lavoura) => NIVEL[lavoura.aviso.severidade] === nivel).length,
+    }))
+    .filter(({ quantas }) => quantas > 0)
+
+  return (
+    <S.Resumo aria-label="Avisos das lavouras">
+      {niveis.map(({ nivel, quantas }) => (
+        <S.ItemDoResumo key={nivel} $nivel={nivel}>
+          <strong>{quantas}</strong>
+          {NOME_DO_NIVEL[nivel]}
+        </S.ItemDoResumo>
+      ))}
+    </S.Resumo>
+  )
+}
+
+// O essencial de cada lavoura; o resto (o dia do ciclo, a fase, a previsão) fica na página dela.
 function Conteudo({ painel, noComputador }: { painel: DadosDoPainel; noComputador: boolean }) {
   const tema = useTheme()
-  const clima = (
-    <>
-      <Clima hoje={painel.hoje} />
-      <P.Frase>{painel.frase}</P.Frase>
-    </>
-  )
 
   return (
     <>
       {!painel.previsaoDisponivel && <SemPrevisao atualizadaEm={painel.previsaoAtualizadaEm} />}
       {noComputador ? (
         <S.CartaoDoClima>
-          {clima}
+          <Clima hoje={painel.hoje} />
           {painel.previsaoDisponivel && (
-            <P.Atualizada>
+            <S.Atualizada>
               Previsão atualizada {quandoFoi(painel.previsaoAtualizadaEm)}
-            </P.Atualizada>
+            </S.Atualizada>
           )}
+          <ResumoDosAvisos lavouras={painel.cultivos} />
+          <Destaques lavouras={painel.cultivos} />
         </S.CartaoDoClima>
       ) : (
-        <S.Bloco>{clima}</S.Bloco>
+        <Clima hoje={painel.hoje} />
       )}
-      <P.CabecalhoDaLista>
-        <h2>Suas lavouras</h2>
-        <Link to="/lavouras/nova">
-          <Plus size={tema.icone.botao} strokeWidth={tema.tracoDoIcone.forte} aria-hidden />
-          {noComputador ? 'Nova lavoura' : 'Nova'}
-        </Link>
-      </P.CabecalhoDaLista>
+      {/* No computador, o título não aparece (os quadrinhos falam por si) e "Nova lavoura" já
+          está no menu do topo. */}
+      {noComputador ? (
+        <SoParaLeitor as="h2">Suas lavouras</SoParaLeitor>
+      ) : (
+        <P.CabecalhoDaLista>
+          <h2>Suas lavouras</h2>
+          <Link to="/lavouras/nova">
+            <Plus size={tema.icone.botao} strokeWidth={tema.tracoDoIcone.forte} aria-hidden />
+            Nova
+          </Link>
+        </P.CabecalhoDaLista>
+      )}
       <P.Lista>
         {painel.cultivos.map((lavoura) => (
           <li key={lavoura.id}>
@@ -69,8 +126,14 @@ export function Painel() {
   // "Lavoura salva!" depois de cadastrar uma lavoura.
   const mensagem = typeof state?.mensagem === 'string' ? state.mensagem : null
 
-  // Sem nenhuma lavoura, o painel não tem o que mostrar: vai marcar a primeira.
-  if (painel.data?.cultivos.length === 0) return <Navigate to="/lavouras/nova" replace />
+  // A janela da conta (/conta) abre por cima do painel, pelo <Outlet />.
+  const comAConta = useMatch('/conta') !== null
+
+  // Sem nenhuma lavoura, o painel não tem o que mostrar: vai marcar a primeira. Com a conta
+  // aberta, fica: a pessoa pode querer mexer na conta antes de ter lavoura.
+  if (painel.data?.cultivos.length === 0 && !comAConta) {
+    return <Navigate to="/lavouras/nova" replace />
+  }
 
   const nome = painel.data ? `, ${painel.data.usuario.nome}` : ''
   const titulo = `${saudacao(new Date().getHours())}${nome}`
@@ -96,14 +159,21 @@ export function Painel() {
     return (
       <S.Tela>
         {mensagem && <Mensagem texto={mensagem} />}
+        <S.Vidro aria-hidden />
         <S.Coluna>
-          <S.Titulo>{titulo}</S.Titulo>
+          {/* No computador, a saudação não aparece: fica só para o leitor de tela. */}
+          <SoParaLeitor as="h1">{titulo}</SoParaLeitor>
           {conteudo}
         </S.Coluna>
         <S.LadoDoMapa>
-          <MapaDoPainel lavouras={lavouras} />
+          <MapaDoPainel
+            lavouras={lavouras}
+            folgaAEsquerda={parseFloat(tema.largura.colunaDoPainel)}
+            folgaEmCima={parseFloat(tema.altura.barraDoTopo)}
+          />
           <Legenda />
         </S.LadoDoMapa>
+        <Outlet />
       </S.Tela>
     )
   }
@@ -115,11 +185,9 @@ export function Painel() {
         <MapaDoPainel lavouras={lavouras} />
       </S.MapaNoAlto>
       <S.TopoFlutuante>
-        <S.Saudacao>
-          <Sprout size={tema.icone.marcaNoTopo} aria-hidden />
-          {titulo}
-        </S.Saudacao>
-        <S.BotaoDaConta to="/conta" aria-label="Minha conta">
+        {/* A saudação não aparece: fica só para o leitor de tela. */}
+        <SoParaLeitor as="h1">{titulo}</SoParaLeitor>
+        <S.BotaoDaConta to="/conta" aria-label="Minha conta" viewTransition={false}>
           <UserRound size={tema.icone.topo} aria-hidden />
         </S.BotaoDaConta>
       </S.TopoFlutuante>
@@ -127,6 +195,7 @@ export function Painel() {
         <S.Alca aria-hidden />
         {conteudo}
       </S.Folha>
+      <Outlet />
     </>
   )
 }
