@@ -1,17 +1,7 @@
 import styled from 'styled-components'
-
-// No computador: o mapa à esquerda e o formulário à direita.
-export const Tela = styled.main`
-  flex-grow: 1;
-  display: flex;
-  flex-wrap: wrap;
-`
-
-export const ColunaDoFormulario = styled.div`
-  flex: 1 1 ${({ theme }) => theme.largura.colunaDaLavoura};
-  max-width: ${({ theme }) => theme.largura.formularioDaLavoura};
-  padding: ${({ theme }) => theme.espaco[13]};
-`
+import * as TelaComMapa from '../../shared/layout/TelaComMapa.styles'
+import { Botao } from '../../shared/ui/Botao.styles'
+import { Dica, Entrada, Grupo, Rotulo } from '../../shared/ui/Campo.styles'
 
 export const PaginaDoCelular = styled.main`
   padding: ${({ theme }) => theme.espaco[6]} ${({ theme }) => theme.espaco[11]}
@@ -67,4 +57,46 @@ export const Subtitulo = styled.p`
   margin: 0;
   font-size: ${({ theme }) => theme.fonte.tamanho.corpo};
   color: ${({ theme }) => theme.cores.texto.secundario};
+`
+
+// No computador, o formulário num cartão em cima do vidro (TelaComMapa.styles.ts), compacto
+// como a janela da conta: título, rótulos, campos e botão menores.
+export const CartaoDoFormulario = styled(TelaComMapa.Cartao)`
+  padding: ${({ theme }) => theme.espaco[8]} ${({ theme }) => theme.espaco[9]};
+
+  ${Formulario} {
+    gap: ${({ theme }) => theme.espaco[7]};
+  }
+
+  ${TituloDaTela} {
+    font-size: ${({ theme }) => theme.fonte.tamanho.tituloDeAcesso};
+    font-weight: ${({ theme }) => theme.fonte.peso.forte};
+  }
+
+  ${Subtitulo} {
+    font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
+  }
+
+  ${Grupo} {
+    gap: ${({ theme }) => theme.espaco[2]};
+  }
+
+  ${Rotulo} {
+    font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
+  }
+
+  ${Entrada} {
+    height: ${({ theme }) => theme.altura.campoDeAcesso};
+    padding: 0 ${({ theme }) => theme.espaco[7]};
+    font-size: ${({ theme }) => theme.fonte.tamanho.apoio};
+  }
+
+  ${Dica} {
+    font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
+  }
+
+  ${Botao} {
+    min-height: ${({ theme }) => theme.altura.botaoDeAcesso};
+    font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
+  }
 `

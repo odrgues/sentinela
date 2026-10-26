@@ -12,6 +12,8 @@ type Props = {
   rodape?: ReactNode
   // Editar lavoura: o mapa abre no ponto já salvo.
   inicio?: Ponto
+  // Nova lavoura no computador: o mapa ocupa a tela toda, embaixo do vidro com o formulário.
+  telaCheia?: boolean
 }
 
 // O único lugar que decide entre o mapa do Google e o aviso de mapa desligado.

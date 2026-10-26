@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { erroGeral } from '../../shared/api/erros'
+import * as TelaComMapa from '../../shared/layout/TelaComMapa.styles'
 import { useNoComputador } from '../../shared/layout/useNoComputador'
 import { AvisoDeErro } from '../../shared/ui/AvisoDeErro'
 import { Botao } from '../../shared/ui/Botao'
@@ -21,7 +22,8 @@ const SEM_DADOS: DadosDaLavoura = {
 }
 
 // No celular, dois passos: onde fica (o mapa) e o que plantou (o formulário).
-// No computador, os dois juntos.
+// No computador, os dois juntos, como o painel: o mapa na tela toda e o formulário num cartão
+// em cima do vidro verde, à esquerda.
 export function NovaLavoura() {
   const noComputador = useNoComputador()
   const criar = useCriarLavoura()
@@ -65,6 +67,7 @@ export function NovaLavoura() {
   const mapa = (
     <MarcarNoMapa
       aoMudarLocal={setLocal}
+      telaCheia={noComputador}
       topo={
         !noComputador && (
           <>
@@ -114,10 +117,13 @@ export function NovaLavoura() {
 
   if (noComputador) {
     return (
-      <S.Tela>
-        {mapa}
-        <S.ColunaDoFormulario>{formulario}</S.ColunaDoFormulario>
-      </S.Tela>
+      <TelaComMapa.Tela>
+        <TelaComMapa.LadoDoMapa>{mapa}</TelaComMapa.LadoDoMapa>
+        <TelaComMapa.Vidro aria-hidden />
+        <TelaComMapa.Coluna>
+          <S.CartaoDoFormulario>{formulario}</S.CartaoDoFormulario>
+        </TelaComMapa.Coluna>
+      </TelaComMapa.Tela>
     )
   }
 

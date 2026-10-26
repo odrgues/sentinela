@@ -36,6 +36,7 @@ type Props = {
   topo?: ReactNode
   rodape?: ReactNode
   inicio?: Ponto
+  telaCheia?: boolean
 }
 
 // O APIProvider carrega o Google; tudo que usa as bibliotecas dele (o Geocoder do
@@ -48,7 +49,13 @@ export function MapaDoGoogle({ chave, ...resto }: Props) {
   )
 }
 
-function ConteudoDoMapa({ aoMudarLocal, topo, rodape, inicio }: Omit<Props, 'chave'>) {
+function ConteudoDoMapa({
+  aoMudarLocal,
+  topo,
+  rodape,
+  inicio,
+  telaCheia = false,
+}: Omit<Props, 'chave'>) {
   const [camera, setCamera] = useState<Camera | null>(null)
   const [destino, setDestino] = useState<Destino | null>(null)
 
@@ -64,7 +71,7 @@ function ConteudoDoMapa({ aoMudarLocal, topo, rodape, inicio }: Omit<Props, 'cha
   else if (local === null) instrucao = 'Não achamos o município deste ponto. Mova um pouco o mapa.'
 
   return (
-    <S.Area>
+    <S.Area $telaCheia={telaCheia}>
       <Map
         defaultCenter={inicio ? { lat: inicio.latitude, lng: inicio.longitude } : CENTRO_DO_BRASIL}
         defaultZoom={inicio ? ZOOM_DO_GPS : ZOOM_DO_BRASIL}
@@ -83,12 +90,12 @@ function ConteudoDoMapa({ aoMudarLocal, topo, rodape, inicio }: Omit<Props, 'cha
         }}
       />
       <IrPara destino={destino} />
-      <S.CartaoDeCima>
+      <S.CartaoDeCima $telaCheia={telaCheia}>
         {topo}
         <BuscaDeEndereco aoEscolher={(ponto) => setDestino({ ...ponto, zoom: ZOOM_DA_BUSCA })} />
       </S.CartaoDeCima>
       <Marcador />
-      <S.CartaoDeBaixo>
+      <S.CartaoDeBaixo $telaCheia={telaCheia}>
         <S.Instrucao>{instrucao}</S.Instrucao>
         <MinhaLocalizacao aoAchar={(ponto) => setDestino({ ...ponto, zoom: ZOOM_DO_GPS })} />
         {rodape}
