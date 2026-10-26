@@ -5,10 +5,11 @@ import { RouterProvider } from 'react-router/dom'
 import { criarClienteDeConsultas } from '../shared/api/consultas'
 import { ProvedorDeTema } from '../styles/ProvedorDeTema'
 import { rotas } from './rotas/rotas'
+import { comTransicoes } from './transicoes'
 
 export function App() {
   const [clienteDeConsultas] = useState(() => criarClienteDeConsultas())
-  const [roteador] = useState(() => createBrowserRouter(rotas))
+  const [roteador] = useState(() => comTransicoes(createBrowserRouter(rotas)))
 
   return (
     <QueryClientProvider client={clienteDeConsultas}>
