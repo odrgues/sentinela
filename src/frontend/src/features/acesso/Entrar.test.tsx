@@ -80,4 +80,17 @@ describe('Entrar', () => {
       '/esqueci-senha',
     )
   })
+
+  it('o botão do olho mostra e esconde a senha', async () => {
+    abrirApp('/entrar')
+    const senha = await screen.findByLabelText('Senha')
+    await userEvent.type(senha, 'segredo')
+    expect(senha).toHaveAttribute('type', 'password')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Mostrar senha' }))
+    expect(senha).toHaveAttribute('type', 'text')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ocultar senha' }))
+    expect(senha).toHaveAttribute('type', 'password')
+  })
 })
