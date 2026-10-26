@@ -11,8 +11,8 @@ export const Grupo = styled.fieldset`
 
 export const Legenda = styled.legend`
   padding: 0;
-  margin-bottom: ${({ theme }) => theme.espaco[4]};
-  font-size: ${({ theme }) => theme.fonte.tamanho.corpo};
+  margin-bottom: ${({ theme }) => theme.espaco[2]};
+  font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
   font-weight: ${({ theme }) => theme.fonte.peso.forte};
 `
 
@@ -31,7 +31,7 @@ export const Busca = styled.div`
 
 export const EntradaDaBusca = styled.input`
   width: 100%;
-  height: ${({ theme }) => theme.altura.botaoSecundario};
+  height: ${({ theme }) => theme.altura.campo};
   padding: 0 ${({ theme }) => theme.espaco[8]} 0 ${({ theme }) => theme.espaco[14]};
   font-family: inherit;
   font-size: ${({ theme }) => theme.fonte.tamanho.campo};
@@ -54,12 +54,14 @@ export const Lista = styled.div<{ $comErro: boolean }>`
   border-radius: ${({ theme }) => theme.raio.botao};
 `
 
+// A linha não encolhe: com muitas culturas, a lista rola em vez de espremer as linhas.
 export const Opcao = styled.label`
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.espaco[6]};
   min-height: ${({ theme }) => theme.altura.opcao};
-  padding: ${({ theme }) => theme.espaco[4]} ${({ theme }) => theme.espaco[8]};
+  padding: ${({ theme }) => theme.espaco[3]} ${({ theme }) => theme.espaco[7]};
   cursor: pointer;
 
   & + & {
@@ -106,10 +108,12 @@ export const Textos = styled.span`
 export const Nome = styled.span`
   font-size: ${({ theme }) => theme.fonte.tamanho.campo};
   font-weight: ${({ theme }) => theme.fonte.peso.forte};
+  line-height: ${({ theme }) => theme.fonte.alturaLinha.media};
 `
 
 export const Ciclo = styled.span`
-  font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
+  font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
+  line-height: ${({ theme }) => theme.fonte.alturaLinha.media};
   color: ${({ theme }) => theme.cores.texto.secundario};
 `
 

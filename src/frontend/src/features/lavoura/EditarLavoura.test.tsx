@@ -88,15 +88,12 @@ describe('Editar lavoura', () => {
     expect(corpos).toEqual([])
   })
 
-  it('o local trocado só vale depois de confirmar', async () => {
+  it('mostra o mapa e o formulário juntos, sem o "Trocar"', async () => {
     const corpos = guardarPedidos('PATCH')
     await abrirEdicao()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Trocar o local no mapa' }))
-    expect(
-      screen.getByRole('heading', { level: 1, name: 'Onde fica a lavoura?' }),
-    ).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Voltar para a edição' }))
+    expect(screen.getByText('Mapa desligado')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Trocar o local no mapa' })).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Salvar alterações' }))
 
     await screen.findByRole('heading', { level: 1, name: 'Talhão do fundo' })
@@ -138,10 +135,12 @@ describe('Editar lavoura', () => {
     ).toBeInTheDocument()
   })
 
-  it('no computador, fica num cartão no meio da tela, com a barra do topo', async () => {
+  it('no computador, como o painel: o mapa, o formulário e a barra do topo', async () => {
     telaDeComputador()
     await abrirEdicao()
 
+    expect(screen.getByText('Mapa desligado')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Trocar o local no mapa' })).not.toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: 'Principal' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Salvar alterações' })).toBeInTheDocument()
   })

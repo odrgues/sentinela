@@ -13,7 +13,7 @@ const TELAS_DE_ACESSO = [
 
 const TELAS_DE_QUEM_ENTROU: [string, string | RegExp][] = [
   ['/', /, João$/],
-  ['/lavouras/nova', 'Onde fica sua lavoura?'],
+  ['/lavouras/nova', 'Nova lavoura'],
   ['/lavouras/1', 'Talhão do fundo'],
   ['/lavouras/1/editar', 'Editar lavoura'],
   ['/conta', 'Minha conta'],

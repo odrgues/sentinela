@@ -21,13 +21,12 @@ const SEM_DADOS: DadosDaLavoura = {
   unidade: 'ha',
 }
 
-// No celular, dois passos: onde fica (o mapa) e o que plantou (o formulário).
-// No computador, os dois juntos, como o painel: o mapa na tela toda e o formulário num cartão
-// em cima do vidro verde, à esquerda.
+// Mapa e formulário numa tela só. No computador, como o painel: o mapa na tela toda e o
+// formulário num cartão em cima do vidro, à esquerda. No celular, o mapa no alto e o formulário
+// numa folha logo abaixo.
 export function NovaLavoura() {
   const noComputador = useNoComputador()
   const criar = useCriarLavoura()
-  const [passo, setPasso] = useState<1 | 2>(1)
   const [local, setLocal] = useState<Local | null>(null)
   const [dados, setDados] = useState<DadosDaLavoura>(SEM_DADOS)
   const [erros, setErros] = useState<ErrosDaLavoura>({})
@@ -64,48 +63,18 @@ export function NovaLavoura() {
     })
   }
 
-  const mapa = (
-    <MarcarNoMapa
-      aoMudarLocal={setLocal}
-      telaCheia={noComputador}
-      topo={
-        !noComputador && (
-          <>
-            <S.LinhaDoPasso>
-              <Voltar para="/" rotulo="Voltar para o painel" />
-              <S.Passo>Passo 1 de 2</S.Passo>
-            </S.LinhaDoPasso>
-            <S.TituloNoMapa>Onde fica sua lavoura?</S.TituloNoMapa>
-          </>
-        )
-      }
-      rodape={
-        !noComputador && (
-          <Botao onClick={() => setPasso(2)} disabled={!local}>
-            Confirmar local
-          </Botao>
-        )
-      }
-    />
-  )
+  const mapa = <MarcarNoMapa aoMudarLocal={setLocal} telaCheia />
 
   const formulario = (
     <S.Formulario onSubmit={salvar} noValidate>
-      {noComputador ? (
-        <S.Cabecalho>
+      <S.Cabecalho>
+        <S.LinhaDoPasso>
+          {!noComputador && <Voltar para="/" rotulo="Voltar para o painel" />}
           <S.TituloDaTela>Nova lavoura</S.TituloDaTela>
-          <S.Subtitulo>Marque no mapa e conte o que você plantou.</S.Subtitulo>
-        </S.Cabecalho>
-      ) : (
-        <S.Cabecalho>
-          <S.LinhaDoPasso>
-            <Voltar aoClicar={() => setPasso(1)} rotulo="Voltar para o mapa" />
-            <S.Passo>Passo 2 de 2</S.Passo>
-          </S.LinhaDoPasso>
-          <S.Titulo>O que você plantou?</S.Titulo>
-        </S.Cabecalho>
-      )}
-      <LocalMarcado local={local} aoTrocar={noComputador ? undefined : () => setPasso(1)} />
+        </S.LinhaDoPasso>
+        <S.Subtitulo>Marque no mapa e conte o que você plantou.</S.Subtitulo>
+      </S.Cabecalho>
+      <LocalMarcado local={local} />
       {faltaLocal && !local && <AvisoDeErro titulo="Marque no mapa onde fica a lavoura." />}
       <CamposDaLavoura dados={dados} mudar={mudar} erros={errosNaTela} />
       {erro && <AvisoDeErro titulo={erro.message} />}
@@ -127,11 +96,10 @@ export function NovaLavoura() {
     )
   }
 
-  // O mapa continua montado no passo 2, só escondido: ao voltar, ele está onde a pessoa deixou.
   return (
     <>
-      <div hidden={passo !== 1}>{mapa}</div>
-      {passo === 2 && <S.PaginaDoCelular>{formulario}</S.PaginaDoCelular>}
+      <S.MapaDoCelular>{mapa}</S.MapaDoCelular>
+      <S.FolhaDoCelular>{formulario}</S.FolhaDoCelular>
     </>
   )
 }

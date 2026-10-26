@@ -20,10 +20,8 @@ function guardarCorpoDoPost() {
   return corpos
 }
 
-async function confirmarLocal() {
-  await screen.findByRole('heading', { level: 1, name: 'Onde fica sua lavoura?' })
-  await userEvent.click(screen.getByRole('button', { name: 'Confirmar local' }))
-  await screen.findByRole('heading', { level: 1, name: 'O que você plantou?' })
+async function abrirFormulario() {
+  await screen.findByRole('heading', { level: 1, name: 'Nova lavoura' })
 }
 
 async function preencher({ cultura = 'Soja', apelido = 'Roça nova', data = '2026-08-27' } = {}) {
@@ -33,13 +31,15 @@ async function preencher({ cultura = 'Soja', apelido = 'Roça nova', data = '202
 }
 
 describe('Nova lavoura no celular', () => {
-  it('sem a chave do Google, avisa e marca o ponto de exemplo', async () => {
+  it('mostra o mapa e o formulário na mesma tela, sem passos', async () => {
     jaEntrou()
     abrirApp('/lavouras/nova')
 
     expect(await screen.findByText('Mapa desligado')).toBeInTheDocument()
-    expect(screen.getByText('Passo 1 de 2')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Confirmar local' })).toBeEnabled()
+    expect(screen.getByRole('heading', { level: 1, name: 'Nova lavoura' })).toBeInTheDocument()
+    expect(await screen.findByText('Uberaba – MG')).toBeInTheDocument()
+    expect(screen.queryByText('Passo 1 de 2')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Confirmar local' })).not.toBeInTheDocument()
   })
 
   it('salva com o ponto, o município e o que a pessoa preencheu, e volta para o painel', async () => {
@@ -47,7 +47,7 @@ describe('Nova lavoura no celular', () => {
     const corpos = guardarCorpoDoPost()
     const roteador = abrirApp('/lavouras/nova')
 
-    await confirmarLocal()
+    await abrirFormulario()
     expect(screen.getByText('Uberaba – MG')).toBeInTheDocument()
     await preencher()
     await userEvent.type(screen.getByLabelText('Tamanho em hectares (opcional)'), '12,5')
@@ -68,28 +68,11 @@ describe('Nova lavoura no celular', () => {
     })
   })
 
-  it('volta do passo 2 para o mapa pelo "Trocar" e pela seta', async () => {
-    jaEntrou()
-    abrirApp('/lavouras/nova')
-    await confirmarLocal()
-
-    await userEvent.click(screen.getByRole('button', { name: 'Trocar o local no mapa' }))
-    expect(
-      screen.getByRole('heading', { level: 1, name: 'Onde fica sua lavoura?' }),
-    ).toBeInTheDocument()
-
-    await userEvent.click(screen.getByRole('button', { name: 'Confirmar local' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Voltar para o mapa' }))
-    expect(
-      screen.getByRole('heading', { level: 1, name: 'Onde fica sua lavoura?' }),
-    ).toBeInTheDocument()
-  })
-
   it('sem preencher, avisa embaixo de cada campo e não chama a API', async () => {
     jaEntrou()
     const corpos = guardarCorpoDoPost()
     abrirApp('/lavouras/nova')
-    await confirmarLocal()
+    await abrirFormulario()
 
     await userEvent.click(screen.getByRole('button', { name: 'Salvar e ver minha lavoura' }))
 
@@ -104,7 +87,7 @@ describe('Nova lavoura no celular', () => {
   it('com o nome repetido, avisa embaixo do nome', async () => {
     jaEntrou()
     abrirApp('/lavouras/nova')
-    await confirmarLocal()
+    await abrirFormulario()
 
     await preencher({ apelido: APELIDO_REPETIDO })
     await userEvent.click(screen.getByRole('button', { name: 'Salvar e ver minha lavoura' }))
@@ -117,7 +100,7 @@ describe('Nova lavoura no celular', () => {
   it('no café, pergunta desde quando a lavoura existe', async () => {
     jaEntrou()
     abrirApp('/lavouras/nova')
-    await confirmarLocal()
+    await abrirFormulario()
 
     await userEvent.click(await screen.findByRole('radio', { name: 'Café' }))
 
@@ -129,7 +112,7 @@ describe('Nova lavoura no celular', () => {
   it('procura a cultura sem ligar para acento', async () => {
     jaEntrou()
     abrirApp('/lavouras/nova')
-    await confirmarLocal()
+    await abrirFormulario()
 
     await userEvent.type(await screen.findByLabelText('Procurar cultura'), 'algodao')
 
@@ -145,7 +128,7 @@ describe('Nova lavoura no celular', () => {
   it('mostra a descrição do ciclo de cada cultura', async () => {
     jaEntrou()
     abrirApp('/lavouras/nova')
-    await confirmarLocal()
+    await abrirFormulario()
 
     expect(await screen.findByRole('radio', { name: 'Soja' })).toHaveAccessibleDescription(
       'Ciclo de 120 dias',

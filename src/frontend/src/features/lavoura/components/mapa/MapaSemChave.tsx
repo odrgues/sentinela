@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from 'react'
-import type { Local } from '../../tipos'
+import type { Local, Ponto } from '../../tipos'
 import { LOCAL_DE_EXEMPLO } from './localDeExemplo'
 import * as S from './Mapa.styles'
 import { Marcador } from './Marcador'
@@ -8,17 +8,21 @@ type Props = {
   aoMudarLocal: (local: Local | null) => void
   topo?: ReactNode
   rodape?: ReactNode
+  inicio?: Ponto
   telaCheia?: boolean
 }
 
 // Sem VITE_GOOGLE_MAPS_KEY não tem mapa. Em desenvolvimento e nos testes, a lavoura fica no
 // ponto de exemplo, para o resto da tela funcionar. No build de produção, não marca nada.
-export function MapaSemChave({ aoMudarLocal, topo, rodape, telaCheia = false }: Props) {
+// Na edição (com inicio), não marca nada: a lavoura continua no ponto salvo.
+export function MapaSemChave({ aoMudarLocal, topo, rodape, inicio, telaCheia = false }: Props) {
   const emDesenvolvimento = import.meta.env.DEV
+  const temInicio = inicio !== undefined
 
   useEffect(() => {
+    if (temInicio) return
     aoMudarLocal(emDesenvolvimento ? LOCAL_DE_EXEMPLO : null)
-  }, [aoMudarLocal, emDesenvolvimento])
+  }, [aoMudarLocal, emDesenvolvimento, temInicio])
 
   return (
     <S.Area $telaCheia={telaCheia}>

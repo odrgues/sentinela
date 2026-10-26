@@ -25,7 +25,7 @@ describe('Cadastro', () => {
     await preencher({ nome: 'Maria', email: 'maria@exemplo.com', senha: 'segredo' })
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Onde fica sua lavoura?' }),
+      await screen.findByRole('heading', { level: 1, name: 'Nova lavoura' }),
     ).toBeInTheDocument()
     expect(roteador.state.location.pathname).toBe('/lavouras/nova')
     expect(lerToken()).toBe('token-de-mentira')
@@ -39,7 +39,7 @@ describe('Cadastro', () => {
     abrirApp('/cadastro')
 
     await preencher({ nome: 'Maria', email: 'maria@exemplo.com', senha: 'segredo' })
-    await screen.findByRole('heading', { level: 1, name: 'Onde fica sua lavoura?' })
+    await screen.findByRole('heading', { level: 1, name: 'Nova lavoura' })
 
     expect(corpos[0]).toEqual({ nome: 'Maria', email: 'maria@exemplo.com', senha: 'segredo' })
     servidor.events.removeAllListeners()

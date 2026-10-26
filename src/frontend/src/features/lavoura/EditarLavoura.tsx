@@ -5,10 +5,12 @@ import { useTheme } from 'styled-components'
 import type { Cultura } from '../../shared/api/tipos/cultura'
 import { erroGeral } from '../../shared/api/erros'
 import { useCulturas } from '../../shared/api/useCulturas'
+import * as TelaComMapa from '../../shared/layout/TelaComMapa.styles'
 import { useNoComputador } from '../../shared/layout/useNoComputador'
 import { AvisoDeErro } from '../../shared/ui/AvisoDeErro'
 import { Botao, BotaoLink } from '../../shared/ui/Botao'
 import { Confirmacao } from '../../shared/ui/Confirmacao'
+import { SoParaLeitor } from '../../shared/ui/SoParaLeitor'
 import { Voltar } from '../../shared/ui/Voltar'
 import { useEditarLavoura, useExcluirLavoura, useLavoura } from './api'
 import { CamposDaLavoura } from './components/CamposDaLavoura'
@@ -76,10 +78,15 @@ function Edicao({ id, lavoura, culturas }: Props) {
   }))
   const [dados, setDados] = useState<DadosDaLavoura>(antes.dados)
   const [local, setLocal] = useState<Local>(antes.local)
-  const [noMapa, setNoMapa] = useState(false)
-  // O ponto do mapa só passa a valer quando a pessoa confirma.
-  const [localNoMapa, setLocalNoMapa] = useState<Local | null>(null)
   const [erros, setErros] = useState<ErrosDaLavoura>({})
+  // O mapa fica sempre à vista e o local muda conforme a pessoa mexe nele. Quando ele só abre no
+  // ponto salvo, o ponto é o mesmo: não conta como mudança.
+  const mudarLocalPeloMapa = useCallback((novo: Local | null) => {
+    if (!novo) return
+    setLocal((atual) =>
+      novo.latitude === atual.latitude && novo.longitude === atual.longitude ? atual : novo,
+    )
+  }, [])
 
   const nomeRepetido = editar.error?.status === 409 ? editar.error.message : undefined
   const camposDaApi = editar.error?.campos ?? {}
@@ -102,60 +109,60 @@ function Edicao({ id, lavoura, culturas }: Props) {
     else editar.mutate(mudancas)
   }
 
-  function confirmarLocal() {
-    if (localNoMapa) setLocal(localNoMapa)
-    setNoMapa(false)
-  }
-
-  if (noMapa) {
-    const mapa = (
-      <MarcarNoMapa
-        inicio={local}
-        aoMudarLocal={setLocalNoMapa}
-        topo={
-          <>
-            <N.LinhaDoPasso>
-              <Voltar aoClicar={() => setNoMapa(false)} rotulo="Voltar para a edição" />
-            </N.LinhaDoPasso>
-            <N.TituloNoMapa>Onde fica a lavoura?</N.TituloNoMapa>
-          </>
-        }
-        rodape={
-          <Botao onClick={confirmarLocal} disabled={!localNoMapa}>
-            Confirmar local
-          </Botao>
-        }
+  const formulario = (
+    <N.Formulario onSubmit={salvar} noValidate>
+      {/* No computador, o menu do topo já leva de volta e o formulário fala por si: o título
+            fica só para o leitor de tela. */}
+      {noComputador ? (
+        <SoParaLeitor as="h1">Editar lavoura</SoParaLeitor>
+      ) : (
+        <N.LinhaDoPasso>
+          <Voltar para={`/lavouras/${id}`} rotulo="Voltar para a lavoura" />
+          <N.TituloDaTela>Editar lavoura</N.TituloDaTela>
+        </N.LinhaDoPasso>
+      )}
+      <S.GrupoDoLocal>
+        <S.RotuloDoLocal>Local</S.RotuloDoLocal>
+        <LocalMarcado local={local} />
+      </S.GrupoDoLocal>
+      <CamposDaLavoura
+        dados={dados}
+        mudar={(mudanca) => setDados((atuais) => ({ ...atuais, ...mudanca }))}
+        erros={errosNaTela}
       />
+      <S.Recalcula>
+        <Info size={tema.icone.busca} aria-hidden />
+        Se mudar a cultura ou a data, a colheita prevista e os avisos são calculados de novo.
+      </S.Recalcula>
+      {erro && <AvisoDeErro titulo={erro.message} />}
+      <Botao type="submit" disabled={editar.isPending}>
+        {editar.isPending ? 'Salvando…' : 'Salvar alterações'}
+      </Botao>
+      <ExcluirLavoura id={id} apelido={lavoura.apelido} />
+    </N.Formulario>
+  )
+
+  const mapa = <MarcarNoMapa inicio={local} aoMudarLocal={mudarLocalPeloMapa} telaCheia />
+
+  // Como a nova lavoura. No computador: o mapa na tela toda e o formulário num cartão em cima do
+  // vidro, à esquerda. No celular: o mapa no alto e o formulário numa folha que sobe até o meio.
+  if (noComputador) {
+    return (
+      <TelaComMapa.Tela>
+        <TelaComMapa.LadoDoMapa>{mapa}</TelaComMapa.LadoDoMapa>
+        <TelaComMapa.Vidro aria-hidden />
+        <TelaComMapa.Coluna>
+          <N.CartaoDoFormulario>{formulario}</N.CartaoDoFormulario>
+        </TelaComMapa.Coluna>
+      </TelaComMapa.Tela>
     )
-    return noComputador ? <S.MapaNoComputador>{mapa}</S.MapaNoComputador> : mapa
   }
 
   return (
-    <S.Pagina>
-      <N.Formulario onSubmit={salvar} noValidate>
-        <N.Cabecalho>
-          <N.LinhaDoPasso>
-            <Voltar para={`/lavouras/${id}`} rotulo="Voltar para a lavoura" />
-          </N.LinhaDoPasso>
-          <N.Titulo>Editar lavoura</N.Titulo>
-        </N.Cabecalho>
-        <LocalMarcado local={local} aoTrocar={() => setNoMapa(true)} />
-        <CamposDaLavoura
-          dados={dados}
-          mudar={(mudanca) => setDados((atuais) => ({ ...atuais, ...mudanca }))}
-          erros={errosNaTela}
-        />
-        <S.Recalcula>
-          <Info size={tema.icone.busca} aria-hidden />
-          Se mudar a cultura ou a data, a colheita prevista e os avisos são calculados de novo.
-        </S.Recalcula>
-        {erro && <AvisoDeErro titulo={erro.message} />}
-        <Botao type="submit" disabled={editar.isPending}>
-          {editar.isPending ? 'Salvando…' : 'Salvar alterações'}
-        </Botao>
-        <ExcluirLavoura id={id} apelido={lavoura.apelido} />
-      </N.Formulario>
-    </S.Pagina>
+    <>
+      <N.MapaDoCelular>{mapa}</N.MapaDoCelular>
+      <N.FolhaDoCelular>{formulario}</N.FolhaDoCelular>
+    </>
   )
 }
 

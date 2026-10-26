@@ -12,7 +12,8 @@ type Props = {
   rodape?: ReactNode
   // Editar lavoura: o mapa abre no ponto já salvo.
   inicio?: Ponto
-  // Nova lavoura no computador: o mapa ocupa a tela toda, embaixo do vidro com o formulário.
+  // Nova lavoura: no computador, o mapa ocupa a tela toda embaixo do vidro com o formulário; e,
+  // no computador e no celular, a busca e o "Usar minha localização" ficam compactos.
   telaCheia?: boolean
 }
 

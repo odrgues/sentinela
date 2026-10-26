@@ -3,11 +3,11 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { useTheme } from 'styled-components'
 import { chaveDoGoogle, mapIdDoGoogle } from '../../../shared/mapa/chave'
+import { GOTA_VAZADA } from '../../../shared/mapa/gota'
 import { NIVEL, NOME_DO_NIVEL, type NivelDoTema } from '../../../shared/ui/nivel'
 import type { LavouraNoPainel } from '../tipos'
 import * as S from './MapaDoPainel.styles'
 
-const GOTA = 'M28 2 C 13 2 4 13 4 25 C 4 42 28 66 28 66 C 28 66 52 42 52 25 C 52 13 43 2 28 2 Z'
 const ZOOM_DE_UMA_LAVOURA = 15
 const FOLGA_EM_VOLTA = 56
 
@@ -17,19 +17,9 @@ function MarcadorDaLavoura({ apelido, nivel }: { apelido: string; nivel: NivelDo
   return (
     <S.Marcador>
       <S.Etiqueta>{apelido}</S.Etiqueta>
-      <svg
-        aria-hidden="true"
-        width={marcador.larguraNoPainel}
-        height={marcador.alturaNoPainel}
-        viewBox="0 0 56 72"
-      >
-        <path
-          d={GOTA}
-          fill={cores.nivel[nivel].marcador}
-          stroke={cores.texto.sobreDestaque}
-          strokeWidth="4"
-        />
-        <circle cx="28" cy="25" r="9" fill={cores.texto.sobreDestaque} />
+      <svg aria-hidden="true" width={marcador.largura} height={marcador.altura} viewBox="0 0 56 72">
+        {/* Igual ao marcador de marcar a lavoura, na cor do nível de aviso. */}
+        <path d={GOTA_VAZADA} fillRule="evenodd" fill={cores.nivel[nivel].marcador} />
       </svg>
     </S.Marcador>
   )
