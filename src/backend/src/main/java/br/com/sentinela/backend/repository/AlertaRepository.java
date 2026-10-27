@@ -1,3 +1,4 @@
+
 package br.com.sentinela.backend.repository;
 
 import br.com.sentinela.backend.model.Alerta;
@@ -14,19 +15,41 @@ import java.util.List;
 
 @Repository
 public interface AlertaRepository extends JpaRepository<Alerta, Long> {
+
     List<Alerta> findByCultivoUsuarioIdOrderByDataPrevistaDesc(Long usuarioId);
+
     List<Alerta> findByCultivoIdOrderByDataPrevistaDesc(Long cultivoId);
-    boolean existsByCultivoIdAndTipoAndDataPrevista(Long cultivoId, String tipo, LocalDate dataPrevista);
 
-    // Os avisos de uma janela de dias (a semana da previsão).
-    List<Alerta> findByCultivoIdAndDataPrevistaBetween(Long cultivoId, LocalDate de, LocalDate ate);
+    List<Alerta> findByCultivoUsuarioId(Long usuarioId);
 
-    // Antes de reclassificar, os avisos de hoje em diante saem: a previsão nova manda.
+    List<Alerta> findByCultivoId(Long cultivoId);
+
+    boolean existsByCultivoIdAndTipoAndDataPrevista(
+            Long cultivoId,
+            String tipo,
+            LocalDate dataPrevista
+    );
+
+    // Avisos dentro de uma janela de dias da previsão.
+    List<Alerta> findByCultivoIdAndDataPrevistaBetween(
+            Long cultivoId,
+            LocalDate de,
+            LocalDate ate
+    );
+
+    // Remove os avisos a partir da data indicada antes de reclassificar.
     @Modifying
-    @Query("delete from Alerta a where a.cultivo.id = :cultivoId and a.dataPrevista >= :de")
-    void apagarAPartirDe(@Param("cultivoId") Long cultivoId, @Param("de") LocalDate de);
+    @Query("""
+            delete from Alerta a
+            where a.cultivo.id = :cultivoId
+              and a.dataPrevista >= :de
+            """)
+    void apagarAPartirDe(
+            @Param("cultivoId") Long cultivoId,
+            @Param("de") LocalDate de
+    );
 
-    // Histórico com filtros opcionais: o filtro nulo não restringe nada.
+    // Histórico com filtros opcionais.
     @Query("""
             select a from Alerta a
             where a.cultivo.id = :cultivoId
@@ -36,10 +59,12 @@ public interface AlertaRepository extends JpaRepository<Alerta, Long> {
               and (:ate is null or a.dataPrevista <= :ate)
             order by a.dataPrevista desc, a.id desc
             """)
-    Page<Alerta> buscarHistorico(@Param("cultivoId") Long cultivoId,
-                                 @Param("severidade") String severidade,
-                                 @Param("tipo") String tipo,
-                                 @Param("de") LocalDate de,
-                                 @Param("ate") LocalDate ate,
-                                 Pageable pagina);
+    Page<Alerta> buscarHistorico(
+            @Param("cultivoId") Long cultivoId,
+            @Param("severidade") String severidade,
+            @Param("tipo") String tipo,
+            @Param("de") LocalDate de,
+            @Param("ate") LocalDate ate,
+            Pageable pagina
+    );
 }

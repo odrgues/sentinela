@@ -12,4 +12,6 @@ public interface MensagemRepository extends JpaRepository<Mensagem, Long> {
     List<Mensagem> findByUsuarioIdOrderByRegistradoEmDesc(Long usuarioId);
 
     List<Mensagem> findByChatIdOrderByRegistradoEmDesc(String chatId);
+
+    List<Mensagem> findAllByOrderByRegistradoEmDesc();
 }

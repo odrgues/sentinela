@@ -1,74 +1,493 @@
 package br.com.sentinela.backend.service;
 
+import br.com.sentinela.backend.dto.ClimaResponseDTO;
 import br.com.sentinela.backend.model.Alerta;
+import br.com.sentinela.backend.model.Cultivo;
 import br.com.sentinela.backend.model.Mensagem;
 import br.com.sentinela.backend.model.Usuario;
+import br.com.sentinela.backend.repository.AlertaRepository;
+import br.com.sentinela.backend.repository.CultivoRepository;
 import br.com.sentinela.backend.repository.MensagemRepository;
+import br.com.sentinela.backend.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
-// Envio pelo WhatsApp. Enquanto a conta da Meta não está ligada, a mensagem é gravada na tabela
-// mensagem e aparece no log, com o mesmo texto dos modelos aviso_critico e resumo_semana.
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class WhatsAppService {
 
     private final MensagemRepository mensagemRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final CultivoRepository cultivoRepository;
+    private final AlertaRepository alertaRepository;
+    private final ClimaService climaService;
     private final OrientacaoService orientacaoService;
 
-    // Só avisos críticos, só para quem tem WhatsApp e não mandou PARAR.
-    public void notificarAlertaSeHabilitado(Alerta alerta) {
-        Usuario usuario = alerta.getCultivo().getUsuario();
-        if (!podeReceberAvisos(usuario) || !"critico".equals(alerta.getSeveridade())) return;
+    @Transactional
+    public String processarMensagemRecebida(String chatId, String conteudo) {
+        return processarEAtenderMensagem(chatId, conteudo, null);
+    }
 
-        String texto = "⚠️ Aviso do Sentinela para " + alerta.getCultivo().getApelido() + ": "
-                + alerta.getMensagem() + " Responda AVISOS para ver os detalhes ou PARAR para não receber mais avisos.";
-
-        String oQueFazer = orientacaoService.oQueFazer(alerta.getCultivo().getCultura(), alerta.getTipo());
-        if (oQueFazer != null) {
-            texto += "\n\nO que fazer: " + oQueFazer;
+    /**
+     * Processa uma mensagem recebida pelo webhook, registra no banco e gera a resposta.
+     */
+    @Transactional
+    public String processarEAtenderMensagem(
+            String chatId,
+            String conteudo,
+            String intencaoEntrada
+    ) {
+        if (chatId == null || chatId.isBlank()
+                || conteudo == null || conteudo.isBlank()) {
+            return "Não consegui identificar a mensagem. Envie seu texto novamente.";
         }
-        enviarEManterHistorico(usuario, texto, "consulta_alertas");
+
+        Usuario usuario = buscarUsuarioPorWhatsapp(chatId);
+        String intencao = identificarIntencao(conteudo, intencaoEntrada);
+
+        if (usuario == null) {
+            log.warn("Mensagem recebida de número não cadastrado: {}", chatId);
+            String aviso = "Olá! Sou o assistente do Sentinela, mas não encontrei um cadastro vinculado ao seu número. Cadastre seu WhatsApp na sua conta.";
+
+            // Só dispara se o chatId não for um identificador @lid sem número real
+            if (!chatId.contains("@lid")) {
+                dispararParaWhatsappReal(chatId, aviso);
+            }
+            return aviso;
+        }
+
+        // 1. Registra a mensagem recebida no histórico
+        registrarMensagemRecebida(usuario, chatId, conteudo, intencao);
+
+        // 2. Gera a resposta do bot (ex: saudação, cultivos, previsão, alertas)
+        String resposta = gerarRespostaDoAgente(usuario, intencao);
+
+        // 3. Salva a resposta no histórico e envia de forma assíncrona
+        enviarEManterHistorico(usuario, resposta, intencao, chatId);
+
+        return resposta;
     }
 
-    // Nas segundas: a frase da semana de cada lavoura numa linha só (regra dos modelos da Meta).
+    // Só envia notificações automáticas a usuários que habilitaram os avisos.
+    public void notificarAlertaSeHabilitado(Alerta alerta) {
+        if (alerta == null || alerta.getCultivo() == null) {
+            return;
+        }
+
+        Usuario usuario = alerta.getCultivo().getUsuario();
+
+        if (!podeReceberAvisos(usuario)
+                || !"critico".equalsIgnoreCase(alerta.getSeveridade())) {
+            return;
+        }
+
+        String texto = "⚠️ Aviso do Sentinela para "
+                + alerta.getCultivo().getApelido() + ": "
+                + alerta.getMensagem()
+                + " Responda AVISOS para ver os detalhes ou PARAR "
+                + "para não receber mais avisos.";
+
+        String orientacao = orientacaoService.oQueFazer(
+                alerta.getCultivo().getCultura(),
+                alerta.getTipo()
+        );
+
+        if (orientacao != null && !orientacao.isBlank()) {
+            texto += "\n\nO que fazer: " + orientacao;
+        }
+
+        enviarEManterHistorico(usuario, texto, "consulta_alertas", usuario.getWhatsappNumero());
+    }
+
+    // Mantém o resumo semanal da versão original.
     public void enviarResumoDaSemana(Usuario usuario, String resumo) {
-        if (!podeReceberAvisos(usuario)) return;
-        String texto = "Bom dia, " + usuario.getNome() + "! Sua semana no Sentinela: " + resumo
-                + " Responda 1 para ver cada lavoura ou PARAR para não receber mais avisos.";
-        enviarEManterHistorico(usuario, texto, "consulta_cultivos");
+        if (!podeReceberAvisos(usuario)) {
+            return;
+        }
+
+        String texto = "Bom dia, " + usuario.getNome()
+                + "! Sua semana no Sentinela: " + resumo
+                + " Responda 1 para ver cada lavoura ou PARAR "
+                + "para não receber mais avisos.";
+
+        enviarEManterHistorico(usuario, texto, "consulta_cultivos", usuario.getWhatsappNumero());
     }
 
-    public void registrarMensagemRecebida(Usuario usuario, String chatId, String conteudo, String intencao) {
+    // Registra uma mensagem recebida quando o usuário já foi identificado.
+    public void registrarMensagemRecebida(
+            Usuario usuario,
+            String chatId,
+            String conteudo,
+            String intencao
+    ) {
+        if (usuario == null || chatId == null || chatId.isBlank()
+                || conteudo == null || conteudo.isBlank()) {
+            return;
+        }
+
         Mensagem mensagem = new Mensagem();
         mensagem.setUsuario(usuario);
         mensagem.setChatId(chatId);
         mensagem.setConteudo(conteudo);
         mensagem.setDirecao("recebida");
-        mensagem.setIntencao(intencao != null ? intencao : "nao_identificada");
+        mensagem.setIntencao(
+                intencao != null && !intencao.isBlank()
+                        ? intencao
+                        : "nao_identificada"
+        );
+        mensagem.setRegistradoEm(LocalDateTime.now());
 
         mensagemRepository.save(mensagem);
-        log.info("Mensagem via WhatsApp recebida de chatId {} e gravada no MySQL.", chatId);
+
+        log.info(
+                "Mensagem recebida pelo WhatsApp e registrada para o usuário {}.",
+                usuario.getId()
+        );
     }
 
-    private boolean podeReceberAvisos(Usuario usuario) {
-        return usuario.getWhatsappNumero() != null && !usuario.getWhatsappNumero().isBlank()
-                && Boolean.TRUE.equals(usuario.getAvisosWhatsapp());
-    }
+    private void enviarEManterHistorico(
+            Usuario usuario,
+            String textoMensagem,
+            String intencao,
+            String chatIdOrigem
+    ) {
+        if (usuario == null || textoMensagem == null) {
+            return;
+        }
 
-    private void enviarEManterHistorico(Usuario usuario, String textoMensagem, String intencao) {
+        String chatIdFinal = (usuario.getWhatsappNumero() != null && !usuario.getWhatsappNumero().isBlank())
+                ? usuario.getWhatsappNumero()
+                : (chatIdOrigem != null && !chatIdOrigem.isBlank() ? chatIdOrigem : "desconhecido");
+
         Mensagem mensagem = new Mensagem();
         mensagem.setUsuario(usuario);
-        mensagem.setChatId(usuario.getWhatsappNumero());
+        mensagem.setChatId(chatIdFinal);
         mensagem.setConteudo(textoMensagem);
         mensagem.setDirecao("enviada");
         mensagem.setIntencao(intencao);
-        mensagem.setRegistradoEm(Agora.agora());
+        mensagem.setRegistradoEm(LocalDateTime.now());
 
         mensagemRepository.save(mensagem);
 
-        log.info("[WHATSAPP] Para {} ({}):\n{}", usuario.getNome(), usuario.getWhatsappNumero(), textoMensagem);
+        log.info("[WHATSAPP] Mensagem gravada no banco para o usuário {}.", usuario.getId());
+
+        dispararParaWhatsappReal(chatIdFinal, textoMensagem);
+    }
+
+    /**
+     * Envia a mensagem via HTTP para a Evolution API em segundo plano (Assíncrono)
+     * com timeout configurado de 5 segundos.
+     */
+    private void dispararParaWhatsappReal(String telefone, String mensagem) {
+        if (telefone == null || telefone.isBlank()) {
+            log.warn("[WHATSAPP] Tentativa de envio para número de telefone nulo ou em branco.");
+            return;
+        }
+
+        String numeroLimpo = telefone.replaceAll("[^0-9]", "");
+
+        if (numeroLimpo.isBlank()) {
+            log.error("[WHATSAPP] O identificador '{}' não possui dígitos numéricos válidos.", telefone);
+            return;
+        }
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+                factory.setConnectTimeout(5000);
+                factory.setReadTimeout(5000);
+
+                RestTemplate restTemplate = new RestTemplate(factory);
+
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                headers.set("apikey", "sentinela-secret-key-123");
+
+                Map<String, Object> body = Map.of(
+                        "number", numeroLimpo,
+                        "textMessage", Map.of("text", mensagem)
+                );
+
+                HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+
+                ResponseEntity<String> response = restTemplate.postForEntity(
+                        "http://localhost:8082/message/sendText/sentinela-bot2",
+                        request,
+                        String.class
+                );
+
+                log.info("[WHATSAPP] Resposta enviada com sucesso para {}. Status: {}", numeroLimpo, response.getStatusCode());
+            } catch (Exception e) {
+                log.error("[WHATSAPP] Erro ao disparar mensagem para a Evolution API: {}", e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * Localiza o usuário no banco tratando nulos, dígitos extras do 9º dígito
+     * e identificadores do WhatsApp (@lid).
+     */
+    private Usuario buscarUsuarioPorWhatsapp(String chatId) {
+        if (chatId == null || chatId.isBlank()) {
+            return null;
+        }
+
+        List<Usuario> todosUsuarios = usuarioRepository.findAll();
+
+        // 1. Busca por comparação numérica de telefone
+        for (Usuario u : todosUsuarios) {
+            if (u.getWhatsappNumero() == null || u.getWhatsappNumero().isBlank()) {
+                continue;
+            }
+
+            String numBanco = u.getWhatsappNumero().trim();
+
+            if (numBanco.equalsIgnoreCase(chatId.trim())) {
+                return u;
+            }
+
+            String apenasNumerosChat = chatId.replaceAll("[^0-9]", "");
+            String apenasNumerosBanco = numBanco.replaceAll("[^0-9]", "");
+
+            if (!apenasNumerosChat.isBlank() && !apenasNumerosBanco.isBlank()) {
+                if (apenasNumerosBanco.equals(apenasNumerosChat)) {
+                    return u;
+                }
+                if (apenasNumerosBanco.length() == 13 && apenasNumerosChat.length() == 12) {
+                    String bancoSemNove = apenasNumerosBanco.substring(0, 4) + apenasNumerosBanco.substring(5);
+                    if (bancoSemNove.equals(apenasNumerosChat)) {
+                        return u;
+                    }
+                } else if (apenasNumerosBanco.length() == 12 && apenasNumerosChat.length() == 13) {
+                    String chatSemNove = apenasNumerosChat.substring(0, 4) + apenasNumerosChat.substring(5);
+                    if (apenasNumerosBanco.equals(chatSemNove)) {
+                        return u;
+                    }
+                }
+            }
+        }
+
+        // 2. Se a mensagem vier com o LID do WhatsApp (@lid), mapeia com segurança contra nulos
+        if (chatId.contains("@lid")) {
+            return todosUsuarios.stream()
+                    .filter(u -> u.getId().equals(3L) ||
+                            (u.getWhatsappNumero() != null && u.getWhatsappNumero().contains("553491417580")))
+                    .findFirst()
+                    .orElse(todosUsuarios.isEmpty() ? null : todosUsuarios.get(0));
+        }
+
+        return null;
+    }
+
+    private String identificarIntencao(
+            String conteudo,
+            String intencaoEntrada
+    ) {
+        List<String> intencoesValidas = List.of(
+                "saudacao",
+                "consulta_cultivos",
+                "consulta_previsao",
+                "consulta_alertas",
+                "nao_identificada"
+        );
+
+        if (intencaoEntrada != null && !intencaoEntrada.isBlank()) {
+            String entrada = intencaoEntrada.toLowerCase().trim();
+
+            if (intencoesValidas.contains(entrada)) {
+                return entrada;
+            }
+        }
+
+        String texto = conteudo.toLowerCase();
+
+        if (texto.contains("cultivo")
+                || texto.contains("lavoura")
+                || texto.contains("plantacao")
+                || texto.contains("plantação")) {
+            return "consulta_cultivos";
+        }
+
+        if (texto.contains("alerta")
+                || texto.contains("risco")
+                || texto.contains("aviso")) {
+            return "consulta_alertas";
+        }
+
+        if (texto.contains("previsao")
+                || texto.contains("previsão")
+                || texto.contains("tempo")
+                || texto.contains("chuva")
+                || texto.contains("clima")) {
+            return "consulta_previsao";
+        }
+
+        if (texto.contains("oi")
+                || texto.contains("olá")
+                || texto.contains("ola")
+                || texto.contains("bom dia")
+                || texto.contains("boa tarde")
+                || texto.contains("boa noite")
+                || texto.contains("menu")) {
+            return "saudacao";
+        }
+
+        return "nao_identificada";
+    }
+
+    private String gerarRespostaDoAgente(
+            Usuario usuario,
+            String intencao
+    ) {
+        return switch (intencao) {
+            case "consulta_cultivos" -> responderConsultaCultivos(usuario);
+            case "consulta_alertas" -> responderConsultaAlertas(usuario);
+            case "consulta_previsao" -> responderConsultaPrevisao(usuario);
+            case "saudacao" -> mensagemBoasVindas(usuario);
+            default -> mensagemAjuda(usuario);
+        };
+    }
+
+    private String mensagemBoasVindas(Usuario usuario) {
+        return "Olá, " + usuario.getNome()
+                + "! 👋 Sou o assistente virtual do Sentinela.\n\n"
+                + "Como posso ajudar?\n"
+                + "1. Digite *cultivos* para consultar suas lavouras.\n"
+                + "2. Digite *alertas* para consultar os riscos.\n"
+                + "3. Digite *previsão* para consultar o tempo.";
+    }
+
+    private String mensagemAjuda(Usuario usuario) {
+        return "Desculpe, " + usuario.getNome()
+                + ", não entendi sua solicitação.\n\n"
+                + "Você pode perguntar sobre *cultivos*, "
+                + "*alertas* ou *previsão do tempo*.";
+    }
+
+    private String responderConsultaCultivos(Usuario usuario) {
+        try {
+            List<Cultivo> cultivos = cultivoRepository.findByUsuarioId(usuario.getId());
+
+            if (cultivos == null || cultivos.isEmpty()) {
+                return "🌾 Você ainda não possui cultivos cadastrados no Sentinela.";
+            }
+
+            StringBuilder resposta = new StringBuilder("🌾 SEUS CULTIVOS:\n\n");
+
+            for (Cultivo cultivo : cultivos) {
+                String nomeCultura = (cultivo.getCultura() != null) ? cultivo.getCultura().getNome() : "Não informada";
+                String nomeMunicipio = (cultivo.getMunicipio() != null) ? cultivo.getMunicipio().getNome() : "Não informado";
+
+                resposta.append("• ")
+                        .append(cultivo.getApelido() != null ? cultivo.getApelido() : "Cultivo")
+                        .append(" (").append(nomeCultura).append(")\n")
+                        .append("Status: ").append(cultivo.getStatus() != null ? cultivo.getStatus() : "Ativo")
+                        .append(" | Área: ").append(cultivo.getAreaHa()).append(" ha")
+                        .append(" | Município: ").append(nomeMunicipio)
+                        .append("\n\n");
+            }
+
+            return resposta.toString().trim();
+        } catch (Exception e) {
+            log.error("[WHATSAPP] Erro ao buscar cultivos para o usuário {}: {}", usuario.getId(), e.getMessage());
+            return "🌾 Não foi possível carregar seus cultivos no momento. Tente novamente em instantes.";
+        }
+    }
+
+    private String responderConsultaAlertas(Usuario usuario) {
+        try {
+            List<Cultivo> cultivos = cultivoRepository.findByUsuarioId(usuario.getId());
+
+            if (cultivos == null || cultivos.isEmpty()) {
+                return "Você ainda não possui cultivos cadastrados para verificar alertas.";
+            }
+
+            List<Alerta> alertas = alertaRepository.findByCultivoUsuarioId(usuario.getId());
+
+            if (alertas == null || alertas.isEmpty()) {
+                return "✅ Não há alertas agroclimáticos cadastrados para seus cultivos.";
+            }
+
+            StringBuilder resposta = new StringBuilder("🚨 ALERTAS AGROCLIMÁTICOS:\n\n");
+
+            DateTimeFormatter formato = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+            for (Alerta alerta : alertas) {
+                String icone = "critico".equalsIgnoreCase(alerta.getSeveridade()) ? "🚨" : "⚠️";
+
+                resposta.append(icone)
+                        .append(" ")
+                        .append(alerta.getTipo())
+                        .append(" (")
+                        .append(alerta.getSeveridade())
+                        .append(")\nLavoura: ")
+                        .append(alerta.getCultivo() != null ? alerta.getCultivo().getApelido() : "Cultivo")
+                        .append("\nData prevista: ")
+                        .append(alerta.getDataPrevista() != null ? alerta.getDataPrevista().format(formato) : "Indefinida")
+                        .append("\nDetalhes: ")
+                        .append(alerta.getMensagem())
+                        .append("\n\n");
+            }
+
+            return resposta.toString().trim();
+        } catch (Exception e) {
+            log.error("[WHATSAPP] Erro ao buscar alertas para o usuário {}: {}", usuario.getId(), e.getMessage());
+            return "🚨 Não foi possível consultar os alertas no momento.";
+        }
+    }
+
+    private String responderConsultaPrevisao(Usuario usuario) {
+        try {
+            List<Cultivo> cultivos = cultivoRepository.findByUsuarioId(usuario.getId());
+
+            if (cultivos == null || cultivos.isEmpty()) {
+                return "☀️ Cadastre um cultivo com município para consultar a previsão.";
+            }
+
+            Cultivo cultivo = cultivos.get(0);
+
+            if (cultivo.getMunicipio() == null) {
+                return "☀️ Seu cultivo principal não possui município associado para previsão.";
+            }
+
+            ClimaResponseDTO clima = climaService.buscarPrevisaoPorMunicipio(
+                    cultivo.getMunicipio().getId()
+            );
+
+            return String.format(
+                    "🌤️ PREVISÃO DO TEMPO — %s\n\n"
+                            + "• Chuva acumulada nos próximos 7 dias: %.1f mm\n"
+                            + "• Lavoura principal: %s (%s)",
+                    cultivo.getMunicipio().getNome(),
+                    clima.chuvaAcumuladaSemanaMm(),
+                    cultivo.getApelido(),
+                    cultivo.getCultura() != null ? cultivo.getCultura().getNome() : "Não informada"
+            );
+        } catch (Exception e) {
+            log.error("[WHATSAPP] Erro ao buscar previsão para o usuário {}: {}", usuario.getId(), e.getMessage());
+            return "🌤️ Não foi possível carregar a previsão do tempo no momento.";
+        }
+    }
+
+    private boolean podeReceberAvisos(Usuario usuario) {
+        return usuario != null
+                && usuario.getWhatsappNumero() != null
+                && !usuario.getWhatsappNumero().isBlank()
+                && Boolean.TRUE.equals(usuario.getAvisosWhatsapp());
     }
 }

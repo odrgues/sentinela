@@ -1,3 +1,4 @@
+
 package br.com.sentinela.backend.config;
 
 import br.com.sentinela.backend.dto.ErroResponseDTO;
@@ -32,7 +33,6 @@ public class SecurityConfig {
     private final SecurityFilter securityFilter;
     private final ObjectMapper objectMapper;
 
-    // Endereços do front que podem chamar a API pelo navegador, separados por vírgula.
     @Value("${app.cors.origens}")
     private List<String> origensPermitidas;
 
@@ -41,23 +41,46 @@ public class SecurityConfig {
         return http
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(HttpMethod.POST,
-                                "/api/auth/login", "/api/auth/esqueci-senha", "/api/auth/redefinir-senha",
-                                "/api/usuario").permitAll()
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/auth/login",
+                                "/api/auth/esqueci-senha",
+                                "/api/auth/redefinir-senha",
+                                "/api/usuario"
+                        ).permitAll()
+                        .requestMatchers(
+                                "/api/whatsapp/webhook",
+                                "/api/whatsapp/webhook/**"
+                        ).permitAll()
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
-                // Sem token ou com token vencido: 401 em JSON, que manda a pessoa de volta para o login.
                 .exceptionHandling(erros -> erros
                         .authenticationEntryPoint((request, response, ex) ->
-                                escreverErro(response, HttpStatus.UNAUTHORIZED, "Sua sessão expirou. Entre de novo."))
+                                escreverErro(
+                                        response,
+                                        HttpStatus.UNAUTHORIZED,
+                                        "Sua sessão expirou. Entre de novo."
+                                ))
                         .accessDeniedHandler((request, response, ex) ->
-                                escreverErro(response, HttpStatus.FORBIDDEN, "Você não tem permissão para isso."))
+                                escreverErro(
+                                        response,
+                                        HttpStatus.FORBIDDEN,
+                                        "Você não tem permissão para isso."
+                                ))
                 )
-                .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(
+                        securityFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                )
                 .build();
     }
 
@@ -65,11 +88,17 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cors = new CorsConfiguration();
         cors.setAllowedOrigins(origensPermitidas);
-        cors.setAllowedMethods(List.of("GET", "POST", "PATCH", "DELETE", "OPTIONS"));
-        cors.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        cors.setAllowedMethods(List.of(
+                "GET", "POST", "PATCH", "DELETE", "OPTIONS"
+        ));
+        cors.setAllowedHeaders(List.of(
+                "Authorization", "Content-Type"
+        ));
 
-        UrlBasedCorsConfigurationSource fonte = new UrlBasedCorsConfigurationSource();
+        UrlBasedCorsConfigurationSource fonte =
+                new UrlBasedCorsConfigurationSource();
         fonte.registerCorsConfiguration("/api/**", cors);
+
         return fonte;
     }
 
@@ -78,10 +107,18 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    private void escreverErro(HttpServletResponse response, HttpStatus status, String mensagem) throws IOException {
+    private void escreverErro(
+            HttpServletResponse response,
+            HttpStatus status,
+            String mensagem
+    ) throws IOException {
         response.setStatus(status.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
-        objectMapper.writeValue(response.getWriter(), new ErroResponseDTO(status.value(), mensagem));
+
+        objectMapper.writeValue(
+                response.getWriter(),
+                new ErroResponseDTO(status.value(), mensagem)
+        );
     }
 }
