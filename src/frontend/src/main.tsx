@@ -1,6 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from './app/App'
+// O estilo do Leaflet, dos mapas; os ajustes para o visual do app ficam em shared/mapa/Leaflet.styles.ts.
+import 'leaflet/dist/leaflet.css'
 // A Google Sans tem os pesos 400 a 700; onde o tema pede 800, o navegador usa o 700.
 import '@fontsource/google-sans/400.css'
 import '@fontsource/google-sans/500.css'

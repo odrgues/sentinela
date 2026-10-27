@@ -1,9 +1,11 @@
-import { APIProvider, AdvancedMarker, Map, useMap } from '@vis.gl/react-google-maps'
+import { latLngBounds } from 'leaflet'
 import { useEffect } from 'react'
+import { AttributionControl, MapContainer, TileLayer, ZoomControl, useMap } from 'react-leaflet'
 import { useNavigate } from 'react-router'
 import { useTheme } from 'styled-components'
-import { chaveDoGoogle, mapIdDoGoogle } from '../../../shared/mapa/chave'
 import { GOTA_VAZADA } from '../../../shared/mapa/gota'
+import { MarcadorComConteudo } from '../../../shared/mapa/MarcadorComConteudo'
+import { CENTRO_DO_BRASIL, RUAS, ZOOM_DO_BRASIL, mapaLigado } from '../../../shared/mapa/mapa'
 import { NIVEL, NOME_DO_NIVEL, type NivelDoTema } from '../../../shared/ui/nivel'
 import type { LavouraNoPainel } from '../tipos'
 import * as S from './MapaDoPainel.styles'
@@ -38,20 +40,15 @@ function Enquadrar({
   const mapa = useMap()
 
   useEffect(() => {
-    if (!mapa || lavouras.length === 0) return
+    if (lavouras.length === 0) return
     if (lavouras.length === 1) {
-      mapa.setCenter({ lat: lavouras[0].latitude, lng: lavouras[0].longitude })
-      mapa.setZoom(ZOOM_DE_UMA_LAVOURA)
+      mapa.setView([lavouras[0].latitude, lavouras[0].longitude], ZOOM_DE_UMA_LAVOURA)
       return
     }
-    const limites = new google.maps.LatLngBounds()
-    for (const { latitude, longitude } of lavouras)
-      limites.extend({ lat: latitude, lng: longitude })
+    const limites = latLngBounds(lavouras.map(({ latitude, longitude }) => [latitude, longitude]))
     mapa.fitBounds(limites, {
-      top: FOLGA_EM_VOLTA + folgaEmCima,
-      right: FOLGA_EM_VOLTA,
-      bottom: FOLGA_EM_VOLTA,
-      left: FOLGA_EM_VOLTA + folgaAEsquerda,
+      paddingTopLeft: [FOLGA_EM_VOLTA + folgaAEsquerda, FOLGA_EM_VOLTA + folgaEmCima],
+      paddingBottomRight: [FOLGA_EM_VOLTA, FOLGA_EM_VOLTA],
     })
   }, [mapa, lavouras, folgaAEsquerda, folgaEmCima])
 
@@ -83,47 +80,41 @@ export function MapaDoPainel({
   folgaEmCima?: number
 }) {
   const navegar = useNavigate()
-  const chave = chaveDoGoogle()
 
-  if (!chave) {
+  if (!mapaLigado()) {
     return (
       <S.Area>
         <S.SemMapa>
           <strong>Mapa desligado</strong>
-          Falta a chave do Google Maps (VITE_GOOGLE_MAPS_KEY).
         </S.SemMapa>
       </S.Area>
     )
   }
 
   return (
-    <APIProvider apiKey={chave} language="pt-BR" region="BR">
-      <S.Area>
-        <Map
-          mapId={mapIdDoGoogle()}
-          defaultCenter={{ lat: -14.235, lng: -51.9253 }}
-          defaultZoom={4}
-          disableDefaultUI
-          zoomControl
-          gestureHandling="greedy"
-          style={{ position: 'absolute', inset: 0 }}
-        >
-          {lavouras.map((lavoura) => (
-            <AdvancedMarker
-              key={lavoura.id}
-              position={{ lat: lavoura.latitude, lng: lavoura.longitude }}
-              title={lavoura.apelido}
-              onClick={() => navegar(`/lavouras/${lavoura.id}`)}
-            >
-              <MarcadorDaLavoura
-                apelido={lavoura.apelido}
-                nivel={NIVEL[lavoura.aviso.severidade]}
-              />
-            </AdvancedMarker>
-          ))}
-        </Map>
+    <S.Area>
+      <MapContainer
+        center={CENTRO_DO_BRASIL}
+        zoom={ZOOM_DO_BRASIL}
+        zoomControl={false}
+        attributionControl={false}
+      >
+        <TileLayer url={RUAS.url} attribution={RUAS.creditos} maxZoom={RUAS.zoomMaximo} />
+        <ZoomControl position="bottomright" />
+        <AttributionControl position="bottomright" prefix={false} />
+        {lavouras.map((lavoura) => (
+          <MarcadorComConteudo
+            key={lavoura.id}
+            latitude={lavoura.latitude}
+            longitude={lavoura.longitude}
+            titulo={lavoura.apelido}
+            aoTocar={() => navegar(`/lavouras/${lavoura.id}`)}
+          >
+            <MarcadorDaLavoura apelido={lavoura.apelido} nivel={NIVEL[lavoura.aviso.severidade]} />
+          </MarcadorComConteudo>
+        ))}
         <Enquadrar lavouras={lavouras} folgaAEsquerda={folgaAEsquerda} folgaEmCima={folgaEmCima} />
-      </S.Area>
-    </APIProvider>
+      </MapContainer>
+    </S.Area>
   )
 }

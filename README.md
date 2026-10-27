@@ -55,7 +55,7 @@ npm run dev:api   # o site falando com a API de verdade (a da porta 8080)
 npm run dev       # o site com a API de mentira, sem precisar do backend
 ```
 
-Abre em `http://localhost:5173`. Sem `VITE_GOOGLE_MAPS_KEY`, as telas de mapa mostram "Mapa desligado" e a nova lavoura é marcada em Uberaba – MG. Detalhes em [`src/frontend/README.md`](src/frontend/README.md).
+Abre em `http://localhost:5173`. Os mapas são do Leaflet, com imagens da Esri e endereços do OpenStreetMap: não pedem chave nem conta. Detalhes em [`src/frontend/README.md`](src/frontend/README.md).
 
 ### Deploy
 

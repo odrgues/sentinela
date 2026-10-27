@@ -2,37 +2,39 @@ import { describe, expect, it } from 'vitest'
 import { cidadeEUf } from './cidadeEUf'
 
 const uberaba = {
-  address_components: [
-    { long_name: 'Uberaba', short_name: 'Uberaba', types: ['administrative_area_level_2'] },
-    { long_name: 'Minas Gerais', short_name: 'MG', types: ['administrative_area_level_1'] },
-    { long_name: 'Brasil', short_name: 'BR', types: ['country', 'political'] },
-  ],
+  city: 'Uberaba',
+  state: 'Minas Gerais',
+  'ISO3166-2-lvl4': 'BR-MG',
+  country: 'Brasil',
+  country_code: 'br',
 }
 
 describe('cidadeEUf', () => {
   it('pega o município e a sigla do estado', () => {
-    expect(cidadeEUf([uberaba])).toEqual({ cidade: 'Uberaba', uf: 'MG' })
+    expect(cidadeEUf(uberaba)).toEqual({ cidade: 'Uberaba', uf: 'MG' })
   })
 
-  it('pula os resultados que não têm município', () => {
-    const soEstado = { address_components: uberaba.address_components.slice(1) }
+  it('acha o município que vem como municipality', () => {
+    const saoPaulo = {
+      municipality: 'São Paulo',
+      'ISO3166-2-lvl4': 'BR-SP',
+      country_code: 'br',
+    }
 
-    expect(cidadeEUf([soEstado, uberaba])).toEqual({ cidade: 'Uberaba', uf: 'MG' })
+    expect(cidadeEUf(saoPaulo)).toEqual({ cidade: 'São Paulo', uf: 'SP' })
   })
 
   it('fora do Brasil não acha nada', () => {
-    const assuncao = {
-      address_components: [
-        { long_name: 'Asunción', short_name: 'Asunción', types: ['administrative_area_level_2'] },
-        { long_name: 'Central', short_name: 'Central', types: ['administrative_area_level_1'] },
-        { long_name: 'Paraguay', short_name: 'PY', types: ['country'] },
-      ],
-    }
+    const assuncao = { city: 'Assunção', 'ISO3166-2-lvl4': 'PY-ASU', country_code: 'py' }
 
-    expect(cidadeEUf([assuncao])).toBeNull()
+    expect(cidadeEUf(assuncao)).toBeNull()
   })
 
-  it('sem resultado não acha nada', () => {
-    expect(cidadeEUf([])).toBeNull()
+  it('sem município não acha nada', () => {
+    expect(cidadeEUf({ 'ISO3166-2-lvl4': 'BR-MG', country_code: 'br' })).toBeNull()
+  })
+
+  it('no mar, sem endereço, não acha nada', () => {
+    expect(cidadeEUf(undefined)).toBeNull()
   })
 })

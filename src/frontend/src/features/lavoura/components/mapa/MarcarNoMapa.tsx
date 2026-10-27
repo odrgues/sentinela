@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
-import { chaveDoGoogle } from '../../../../shared/mapa/chave'
+import { mapaLigado } from '../../../../shared/mapa/mapa'
 import type { Local, Ponto } from '../../tipos'
-import { MapaDoGoogle } from './MapaDoGoogle'
-import { MapaSemChave } from './MapaSemChave'
+import { MapaDeSatelite } from './MapaDeSatelite'
+import { MapaDesligado } from './MapaDesligado'
 
 type Props = {
   // Recebe o ponto do meio do mapa com o município, ou null enquanto não dá para marcar.
@@ -17,8 +17,7 @@ type Props = {
   telaCheia?: boolean
 }
 
-// O único lugar que decide entre o mapa do Google e o aviso de mapa desligado.
+// O único lugar que decide entre o mapa e o aviso de mapa desligado (nos testes).
 export function MarcarNoMapa(props: Props) {
-  const chave = chaveDoGoogle()
-  return chave ? <MapaDoGoogle chave={chave} {...props} /> : <MapaSemChave {...props} />
+  return mapaLigado() ? <MapaDeSatelite {...props} /> : <MapaDesligado {...props} />
 }

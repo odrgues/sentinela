@@ -85,15 +85,11 @@ As rotas `/api/interno/...` só existem no perfil `dev`, então não aparecem em
 | Variável | Valor |
 |---|---|
 | `VITE_API_URL` | `https://<app>.azurewebsites.net` (sem barra no fim e sem `/api`) |
-| `VITE_GOOGLE_MAPS_KEY` | a chave do Google Maps |
-| `VITE_GOOGLE_MAP_ID` | o Map ID |
 | `NODE_VERSION` | `22` |
 
 As variáveis `VITE_` entram no momento do build: mudou alguma, rode um novo deploy.
 
-4. Depois do primeiro deploy:
-   - passe o endereço `https://<projeto>.pages.dev` para a Larissa colocar em `FRONT_ORIGENS` e `FRONT_URL`;
-   - adicione `https://<projeto>.pages.dev/*` nas restrições de site da chave do Google Maps.
+4. Depois do primeiro deploy, passe o endereço `https://<projeto>.pages.dev` para a Larissa colocar em `FRONT_ORIGENS` e `FRONT_URL`. Os mapas não pedem chave.
 5. Teste no celular e no computador: entrar como João, painel, detalhe de uma lavoura, nova lavoura no mapa, "Esqueci minha senha".
 
 O Pages já devolve o `index.html` para rotas como `/lavouras/1` (o site não tem `404.html`), então abrir um link direto funciona.

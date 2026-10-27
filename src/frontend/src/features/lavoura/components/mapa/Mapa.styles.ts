@@ -1,6 +1,7 @@
 import styled, { css } from 'styled-components'
 import { Botao as BotaoDoTema } from '../../../../shared/ui/Botao.styles'
 import * as Busca from './BuscaDeEndereco.styles'
+import { leafletDoTema } from '../../../../shared/mapa/Leaflet.styles'
 import { noCelular, noComputador } from '../../../../styles/midia'
 
 // Tela cheia: no computador, o mapa ocupa a tela toda, embaixo do vidro (nova lavoura).
@@ -11,6 +12,8 @@ export const Area = styled.div<ComTelaCheia>`
   overflow: hidden;
   height: 100dvh;
   background: ${({ theme }) => theme.cores.fundo.mapa};
+
+  ${leafletDoTema}
 
   ${noComputador} {
     height: auto;

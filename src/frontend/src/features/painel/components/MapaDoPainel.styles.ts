@@ -1,10 +1,13 @@
 import styled from 'styled-components'
+import { leafletDoTema } from '../../../shared/mapa/Leaflet.styles'
 import type { NivelDoTema } from '../../../shared/ui/nivel'
 
 export const Area = styled.div`
   position: absolute;
   inset: 0;
   background: ${({ theme }) => theme.cores.fundo.mapa};
+
+  ${leafletDoTema}
 `
 
 export const SemMapa = styled.p`
@@ -26,7 +29,12 @@ export const SemMapa = styled.p`
   }
 `
 
+// A div do Leaflet não tem tamanho e fica no ponto: o marcador sobe inteiro e fica com a ponta nele.
 export const Marcador = styled.span`
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -100%);
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -4,7 +4,7 @@ import type { Condicao } from '../../shared/ui/tempo'
 
 export type Ponto = { latitude: number; longitude: number }
 
-// O ponto marcado no mapa, com a cidade e a UF que o Google achou para ele.
+// O ponto marcado no mapa, com a cidade e a UF que o mapa achou para ele.
 export type Local = Ponto & { cidade: string; uf: string }
 
 // Horta se mede em m²; lavoura, em hectares. A API recebe sempre hectares.

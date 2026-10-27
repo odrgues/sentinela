@@ -107,15 +107,15 @@ vencido.
 - **Sessão vencida:** um 401 com token apaga o token e volta para o login com o aviso.
 - **Nova lavoura:** no celular em dois passos, "Onde fica sua lavoura?" (o mapa) e "O que você
   plantou?" (o formulário); no computador, os dois lado a lado. O marcador fica parado no
-  meio e a pessoa arrasta o mapa; a busca usa o Places, o município e a UF vêm do Geocoder, e
+  meio e a pessoa arrasta o mapa; a busca usa o Photon, o município e a UF vêm do Nominatim (os dois com os dados do
+  OpenStreetMap), e
   "Usar minha localização" usa o GPS do navegador.
 - A lista de culturas com busca (sem ligar para acento), a pergunta do café ("Desde quando a
   lavoura existe?") e o nome repetido (409) avisado embaixo do campo.
 
-**Sem a chave do Google** (`VITE_GOOGLE_MAPS_KEY`, ver `.env.example`), a tela mostra "Mapa
-desligado" e, em desenvolvimento e nos testes, marca a lavoura no ponto de exemplo, em Uberaba –
-MG. A parte do Google (mapa, busca e Geocoder) só roda com a chave, e ainda não foi testada com
-uma chave de verdade.
+**Os mapas** são do Leaflet, com a foto de satélite da Esri (marcar a lavoura) e o mapa de ruas
+da Esri (painel). Nada disso pede chave ou conta. Nos testes (jsdom) não dá para desenhar o mapa:
+a tela mostra "Mapa desligado" e marca a lavoura no ponto de exemplo, em Uberaba – MG.
 
 **O painel** (`src/features/painel`):
 
@@ -129,9 +129,6 @@ uma chave de verdade.
 - Os estados: carregando (cinza pulsando), previsão fora do ar (a faixa cinza com a hora da
   última busca que deu certo), erro com "Tentar de novo" e "Lavoura salva!" depois de
   cadastrar. Sem nenhuma lavoura, o painel manda para a Nova lavoura.
-
-Os marcadores do painel pedem um Map ID do Google (`VITE_GOOGLE_MAP_ID`). Sem ele, o mapa usa
-o `DEMO_MAP_ID`, que serve para desenvolvimento.
 
 **O detalhe da lavoura** (`/lavouras/:id`, em `src/features/lavoura`):
 

@@ -1,6 +1,5 @@
-import { useMapsLibrary } from '@vis.gl/react-google-maps'
 import { Search } from 'lucide-react'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { useTheme } from 'styled-components'
 import { SoParaLeitor } from '../../../../shared/ui/SoParaLeitor'
 import type { Ponto } from '../../tipos'
@@ -9,58 +8,77 @@ import * as S from './BuscaDeEndereco.styles'
 const ESPERA_AO_DIGITAR = 300
 const MINIMO_DE_LETRAS = 3
 
-type Sugestao = google.maps.places.PlacePrediction
+// O Brasil inteiro (oeste, sul, leste, norte), para a busca não sugerir lugares de fora.
+const CAIXA_DO_BRASIL = '-74,-34,-34,6'
 
-// "Buscar cidade ou endereço", pelo Autocomplete do Places (a API nova). Escolher uma
-// sugestão leva o mapa até lá; quem marca a lavoura continua sendo o marcador do meio.
+type Sugestao = { id: string; texto: string; ponto: Ponto }
+
+type LugarDoPhoton = {
+  geometry: { coordinates: [number, number] }
+  properties: {
+    osm_id: number
+    name?: string
+    street?: string
+    city?: string
+    county?: string
+    state?: string
+    countrycode?: string
+  }
+}
+
+// "Avenida Leopoldino de Oliveira, Uberaba, Minas Gerais", sem repetir o nome quando o lugar
+// já é a cidade.
+function textoDo({ properties: lugar }: LugarDoPhoton) {
+  const partes = [lugar.name ?? lugar.street, lugar.city ?? lugar.county, lugar.state]
+  return [...new Set(partes.filter(Boolean))].join(', ')
+}
+
+async function buscarNoPhoton(texto: string, sinal: AbortSignal): Promise<Sugestao[]> {
+  const parametros = new URLSearchParams({ q: texto, limit: '5', bbox: CAIXA_DO_BRASIL })
+  const resultado = await fetch(`https://photon.komoot.io/api/?${parametros}`, { signal: sinal })
+  const { features } = (await resultado.json()) as { features: LugarDoPhoton[] }
+  return features
+    .filter((lugar) => lugar.properties.countrycode === 'BR')
+    .map((lugar, posicao) => ({
+      id: `${lugar.properties.osm_id}-${posicao}`,
+      texto: textoDo(lugar),
+      ponto: { latitude: lugar.geometry.coordinates[1], longitude: lugar.geometry.coordinates[0] },
+    }))
+}
+
+// "Buscar cidade ou endereço", pelo Photon (dados do OpenStreetMap). Escolher uma sugestão leva
+// o mapa até lá; quem marca a lavoura continua sendo o marcador do meio.
 export function BuscaDeEndereco({ aoEscolher }: { aoEscolher: (ponto: Ponto) => void }) {
   const tema = useTheme()
   const id = useId()
-  const places = useMapsLibrary('places')
   const [texto, setTexto] = useState('')
   const [sugestoes, setSugestoes] = useState<Sugestao[]>([])
   // O texto da sugestão escolhida: com ele no campo, a lista não abre de novo.
   const [escolhido, setEscolhido] = useState<string | null>(null)
-  // Uma sessão vai das letras digitadas até a escolha: o Google cobra as duas juntas.
-  const sessao = useRef<google.maps.places.AutocompleteSessionToken | null>(null)
 
   const buscando = texto.trim().length >= MINIMO_DE_LETRAS && texto !== escolhido
 
   useEffect(() => {
-    if (!places || !buscando) return
-    let valendo = true
+    if (!buscando) return
+    const controle = new AbortController()
     const relogio = setTimeout(async () => {
-      sessao.current ??= new places.AutocompleteSessionToken()
       try {
-        const { suggestions } = await places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
-          input: texto,
-          sessionToken: sessao.current,
-          includedRegionCodes: ['br'],
-          language: 'pt-BR',
-        })
-        if (valendo) {
-          setSugestoes(suggestions.flatMap(({ placePrediction }) => placePrediction ?? []))
-        }
+        setSugestoes(await buscarNoPhoton(texto, controle.signal))
       } catch {
-        if (valendo) setSugestoes([])
+        if (!controle.signal.aborted) setSugestoes([])
       }
     }, ESPERA_AO_DIGITAR)
     return () => {
-      valendo = false
       clearTimeout(relogio)
+      controle.abort()
     }
-  }, [places, texto, buscando])
+  }, [texto, buscando])
 
-  async function escolher(sugestao: Sugestao) {
-    setTexto(sugestao.text.text)
-    setEscolhido(sugestao.text.text)
+  function escolher(sugestao: Sugestao) {
+    setTexto(sugestao.texto)
+    setEscolhido(sugestao.texto)
     setSugestoes([])
-    const lugar = sugestao.toPlace()
-    await lugar.fetchFields({ fields: ['location'] })
-    sessao.current = null
-    if (lugar.location) {
-      aoEscolher({ latitude: lugar.location.lat(), longitude: lugar.location.lng() })
-    }
+    aoEscolher(sugestao.ponto)
   }
 
   return (
@@ -82,9 +100,9 @@ export function BuscaDeEndereco({ aoEscolher }: { aoEscolher: (ponto: Ponto) => 
       {buscando && sugestoes.length > 0 && (
         <S.Sugestoes aria-label="Sugestões">
           {sugestoes.map((sugestao) => (
-            <li key={sugestao.placeId}>
+            <li key={sugestao.id}>
               <S.Sugestao type="button" onClick={() => escolher(sugestao)}>
-                {sugestao.text.text}
+                {sugestao.texto}
               </S.Sugestao>
             </li>
           ))}

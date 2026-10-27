@@ -7,7 +7,7 @@ import * as S from './Mapa.styles'
 
 const DEZ_SEGUNDOS = 10 * 1000
 
-// Usa o GPS do próprio navegador, sem Google.
+// Usa o GPS do próprio navegador.
 export function MinhaLocalizacao({ aoAchar }: { aoAchar: (ponto: Ponto) => void }) {
   const tema = useTheme()
   const [procurando, setProcurando] = useState(false)

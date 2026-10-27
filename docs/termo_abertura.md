@@ -32,7 +32,7 @@ Produtor rural de pequeno e médio porte que hoje consulta a previsão do tempo 
 
 **Cadastro (pelo site)**
 - Cadastro, edição e exclusão de cultivos: cultura, local, data de plantio e área (em hectares ou m²)
-- Marcação da lavoura no mapa (Google Maps), com o município identificado automaticamente pelo ponto marcado
+- Marcação da lavoura no mapa (Leaflet, com dados do OpenStreetMap), com o município identificado automaticamente pelo ponto marcado
 - Cadastro de culturas e suas faixas ideais e críticas, com a fonte registrada
 - Autenticação de usuários
 - Recuperação de senha por link enviado ao e-mail
@@ -156,7 +156,8 @@ Principais riscos identificados:
 | Open-Meteo | Previsão de 7 dias pelo ponto da lavoura | CC BY 4.0 |
 | WhatsApp Business Platform | Canal de conversa do agente | Gratuita (nível de teste) |
 | API de modelo de linguagem | Interpretação das perguntas e redação das respostas do agente | Conforme provedor |
-| Google Maps Platform | Mapa, busca de endereço e identificação do município | Cota gratuita mensal, exige conta de faturamento |
+| Leaflet + Esri World Imagery e World Street Map | Mapa de satélite e mapa de ruas | Gratuito, com os créditos da Esri no mapa |
+| OpenStreetMap (Photon e Nominatim) | Busca de endereço e identificação do município | ODbL, gratuito com uso moderado |
 | NOAA / CPC | Classificação mensal das fases do ENSO | Domínio público |
 | Embrapa / MAPA (ZARC) | Faixas climáticas das culturas, orientações de manejo e fases do ciclo | Publicação pública |
 | EPAMIG, IAC, Epagri, FAO (Ecocrop) | Números que a Embrapa e o MAPA não trazem (ex.: limite de calor de algumas hortaliças) | Publicação pública |

@@ -1,19 +1,20 @@
-type Parte = { long_name: string; short_name: string; types: string[] }
-type Resultado = { address_components: Parte[] }
-
-function parte(resultado: Resultado, tipo: string) {
-  return resultado.address_components.find((componente) => componente.types.includes(tipo))
+// O endereço que o Nominatim devolve para um ponto. O município vem com um nome diferente
+// conforme o tamanho do lugar, e a UF vem no código do estado, como 'BR-MG'.
+export type EnderecoDoNominatim = {
+  municipality?: string
+  city?: string
+  town?: string
+  village?: string
+  country_code?: string
+  'ISO3166-2-lvl4'?: string
 }
 
-// O Geocoder devolve vários endereços para o ponto, do mais exato ao mais geral. O município é
-// o administrative_area_level_2 e a UF é o short_name do administrative_area_level_1.
 // Fora do Brasil não vale: o backend precisa de uma UF.
-export function cidadeEUf(resultados: Resultado[]): { cidade: string; uf: string } | null {
-  for (const resultado of resultados) {
-    const pais = parte(resultado, 'country')?.short_name
-    const cidade = parte(resultado, 'administrative_area_level_2')?.long_name
-    const uf = parte(resultado, 'administrative_area_level_1')?.short_name
-    if (pais === 'BR' && cidade && uf) return { cidade, uf }
-  }
-  return null
+export function cidadeEUf(
+  endereco: EnderecoDoNominatim | undefined,
+): { cidade: string; uf: string } | null {
+  if (endereco?.country_code !== 'br') return null
+  const cidade = endereco.municipality ?? endereco.city ?? endereco.town ?? endereco.village
+  const uf = endereco['ISO3166-2-lvl4']?.replace('BR-', '')
+  return cidade && uf ? { cidade, uf } : null
 }

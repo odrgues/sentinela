@@ -12,26 +12,22 @@ type Props = {
   telaCheia?: boolean
 }
 
-// Sem VITE_GOOGLE_MAPS_KEY não tem mapa. Em desenvolvimento e nos testes, a lavoura fica no
-// ponto de exemplo, para o resto da tela funcionar. No build de produção, não marca nada.
+// Nos testes não tem mapa: a lavoura fica no ponto de exemplo, para o resto da tela funcionar.
 // Na edição (com inicio), não marca nada: a lavoura continua no ponto salvo.
-export function MapaSemChave({ aoMudarLocal, topo, rodape, inicio, telaCheia = false }: Props) {
-  const emDesenvolvimento = import.meta.env.DEV
+export function MapaDesligado({ aoMudarLocal, topo, rodape, inicio, telaCheia = false }: Props) {
   const temInicio = inicio !== undefined
 
   useEffect(() => {
     if (temInicio) return
-    aoMudarLocal(emDesenvolvimento ? LOCAL_DE_EXEMPLO : null)
-  }, [aoMudarLocal, emDesenvolvimento, temInicio])
+    aoMudarLocal(LOCAL_DE_EXEMPLO)
+  }, [aoMudarLocal, temInicio])
 
   return (
     <S.Area $telaCheia={telaCheia}>
       <S.SemMapa>
         <p>
           <strong>Mapa desligado</strong>
-          {emDesenvolvimento
-            ? 'Falta a chave do Google Maps (VITE_GOOGLE_MAPS_KEY). Enquanto isso, a lavoura fica marcada em Uberaba – MG.'
-            : 'O mapa não carregou. Tente de novo mais tarde.'}
+          Enquanto isso, a lavoura fica marcada em Uberaba – MG.
         </p>
       </S.SemMapa>
       {topo && <S.CartaoDeCima $telaCheia={telaCheia}>{topo}</S.CartaoDeCima>}
