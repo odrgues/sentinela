@@ -1,13 +1,7 @@
 import type { Map as MapaDoLeaflet } from 'leaflet'
 import { useEffect, useState, type ReactNode } from 'react'
-import {
-  AttributionControl,
-  MapContainer,
-  TileLayer,
-  ZoomControl,
-  useMap,
-  useMapEvents,
-} from 'react-leaflet'
+import { AttributionControl, MapContainer, ZoomControl, useMap, useMapEvents } from 'react-leaflet'
+import { CamadasDeSatelite } from '../../../../shared/mapa/CamadasDeSatelite'
 import { CENTRO_DO_BRASIL, SATELITE, ZOOM_DO_BRASIL } from '../../../../shared/mapa/mapa'
 import type { Local, Ponto } from '../../tipos'
 import { BuscaDeEndereco } from './BuscaDeEndereco'
@@ -84,17 +78,7 @@ export function MapaDeSatelite({ aoMudarLocal, topo, rodape, inicio, telaCheia =
         zoomControl={false}
         attributionControl={false}
       >
-        <TileLayer
-          url={SATELITE.url}
-          attribution={SATELITE.creditos}
-          maxNativeZoom={SATELITE.zoomDaFoto}
-          maxZoom={SATELITE.zoomMaximo}
-        />
-        <TileLayer
-          url={SATELITE.nomes}
-          maxNativeZoom={SATELITE.zoomDaFoto}
-          maxZoom={SATELITE.zoomMaximo}
-        />
+        <CamadasDeSatelite />
         <ZoomControl position="bottomright" />
         <AttributionControl position="bottomright" prefix={false} />
         <AoParar aoParar={setCamera} />

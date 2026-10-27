@@ -156,7 +156,7 @@ Principais riscos identificados:
 | Open-Meteo | Previsão de 7 dias pelo ponto da lavoura | CC BY 4.0 |
 | WhatsApp Business Platform | Canal de conversa do agente | Gratuita (nível de teste) |
 | API de modelo de linguagem | Interpretação das perguntas e redação das respostas do agente | Conforme provedor |
-| Leaflet + Esri World Imagery e World Street Map | Mapa de satélite e mapa de ruas | Gratuito, com os créditos da Esri no mapa |
+| Leaflet + Esri World Imagery | Mapa de satélite, com os nomes das cidades | Gratuito, com os créditos da Esri no mapa |
 | OpenStreetMap (Photon e Nominatim) | Busca de endereço e identificação do município | ODbL, gratuito com uso moderado |
 | NOAA / CPC | Classificação mensal das fases do ENSO | Domínio público |
 | Embrapa / MAPA (ZARC) | Faixas climáticas das culturas, orientações de manejo e fases do ciclo | Publicação pública |

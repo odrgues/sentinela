@@ -113,8 +113,8 @@ vencido.
 - A lista de culturas com busca (sem ligar para acento), a pergunta do café ("Desde quando a
   lavoura existe?") e o nome repetido (409) avisado embaixo do campo.
 
-**Os mapas** são do Leaflet, com a foto de satélite da Esri (marcar a lavoura) e o mapa de ruas
-da Esri (painel). Nada disso pede chave ou conta. Nos testes (jsdom) não dá para desenhar o mapa:
+**Os mapas** são do Leaflet, com a foto de satélite da Esri e os nomes das cidades por cima, no
+painel e ao marcar a lavoura. Nada disso pede chave ou conta. Nos testes (jsdom) não dá para desenhar o mapa:
 a tela mostra "Mapa desligado" e marca a lavoura no ponto de exemplo, em Uberaba – MG.
 
 **O painel** (`src/features/painel`):

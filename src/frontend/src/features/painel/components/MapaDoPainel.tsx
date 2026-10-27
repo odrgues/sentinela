@@ -1,11 +1,12 @@
 import { latLngBounds } from 'leaflet'
 import { useEffect } from 'react'
-import { AttributionControl, MapContainer, TileLayer, ZoomControl, useMap } from 'react-leaflet'
+import { AttributionControl, MapContainer, ZoomControl, useMap } from 'react-leaflet'
 import { useNavigate } from 'react-router'
 import { useTheme } from 'styled-components'
 import { GOTA_VAZADA } from '../../../shared/mapa/gota'
 import { MarcadorComConteudo } from '../../../shared/mapa/MarcadorComConteudo'
-import { CENTRO_DO_BRASIL, RUAS, ZOOM_DO_BRASIL, mapaLigado } from '../../../shared/mapa/mapa'
+import { CamadasDeSatelite } from '../../../shared/mapa/CamadasDeSatelite'
+import { CENTRO_DO_BRASIL, SATELITE, ZOOM_DO_BRASIL, mapaLigado } from '../../../shared/mapa/mapa'
 import { NIVEL, NOME_DO_NIVEL, type NivelDoTema } from '../../../shared/ui/nivel'
 import type { LavouraNoPainel } from '../tipos'
 import * as S from './MapaDoPainel.styles'
@@ -68,7 +69,7 @@ export function Legenda() {
   )
 }
 
-// Mapa comum (não satélite), para os marcadores coloridos se destacarem. Tocar num marcador
+// O mesmo satélite da nova lavoura, com um marcador colorido por lavoura. Tocar num marcador
 // abre o detalhe da lavoura. As folgas são o tamanho do que flutua por cima do mapa.
 export function MapaDoPainel({
   lavouras,
@@ -96,10 +97,11 @@ export function MapaDoPainel({
       <MapContainer
         center={CENTRO_DO_BRASIL}
         zoom={ZOOM_DO_BRASIL}
+        maxZoom={SATELITE.zoomMaximo}
         zoomControl={false}
         attributionControl={false}
       >
-        <TileLayer url={RUAS.url} attribution={RUAS.creditos} maxZoom={RUAS.zoomMaximo} />
+        <CamadasDeSatelite />
         <ZoomControl position="bottomright" />
         <AttributionControl position="bottomright" prefix={false} />
         {lavouras.map((lavoura) => (
