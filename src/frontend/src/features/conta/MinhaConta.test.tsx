@@ -45,12 +45,27 @@ describe('Minha conta', () => {
 
     await userEvent.clear(screen.getByLabelText('Nome'))
     await userEvent.type(screen.getByLabelText('Nome'), 'João Silva')
-    await userEvent.click(screen.getByRole('switch', { name: 'Receber avisos automáticos' }))
     await userEvent.click(screen.getByRole('button', { name: 'Salvar' }))
 
     expect(await screen.findByText('Alterações salvas')).toBeInTheDocument()
-    expect(corpos).toEqual([{ nome: 'João Silva', avisosWhatsapp: false }])
-    expect(screen.getByRole('switch', { name: 'Receber avisos automáticos' })).not.toBeChecked()
+    expect(corpos).toEqual([{ nome: 'João Silva' }])
+  })
+
+  it('a chave de avisos salva na hora, sem o Salvar, e confirma', async () => {
+    const corpos = guardarPedidos('PATCH', '/api/usuario/me')
+    await abrirConta()
+    const chave = screen.getByRole('switch', { name: 'Receber avisos automáticos' })
+
+    await userEvent.click(chave)
+
+    expect(await screen.findByText('Avisos automáticos desligados')).toBeInTheDocument()
+    expect(corpos).toEqual([{ avisosWhatsapp: false }])
+    expect(chave).not.toBeChecked()
+
+    await userEvent.click(chave)
+
+    expect(await screen.findByText('Avisos automáticos ligados')).toBeInTheDocument()
+    expect(corpos).toEqual([{ avisosWhatsapp: false }, { avisosWhatsapp: true }])
   })
 
   it('apagar o WhatsApp manda null, que desvincula', async () => {

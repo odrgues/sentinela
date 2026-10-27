@@ -28,14 +28,32 @@ import * as S from './MinhaConta.styles'
 function Conta({ usuario }: { usuario: Usuario }) {
   const tema = useTheme()
   const salvar = useSalvarConta()
+  // A chave de avisos salva sozinha, na hora, separada do formulário.
+  const salvarAvisos = useSalvarConta()
   const trocarSenha = usePedirTrocaDeSenha()
   const sair = useSair()
   const [nome, setNome] = useState(usuario.nome)
   const [whatsapp, setWhatsapp] = useState(telefone(usuario.whatsappNumero))
   const [avisos, setAvisos] = useState(usuario.avisosWhatsapp ?? true)
   const [faltaNome, setFaltaNome] = useState(false)
-  // Muda a cada salvar, para a mensagem "Alterações salvas" aparecer de novo.
-  const [salvamentos, setSalvamentos] = useState(0)
+  // A confirmação da última ação; a vez muda a cada uma, para a mensagem aparecer de novo.
+  const [confirmacao, setConfirmacao] = useState<{ texto: string; vez: number } | null>(null)
+
+  function confirmar(texto: string) {
+    setConfirmacao((anterior) => ({ texto, vez: (anterior?.vez ?? 0) + 1 }))
+  }
+
+  function mudarAvisos(ligada: boolean) {
+    setAvisos(ligada)
+    salvarAvisos.mutate(
+      { avisosWhatsapp: ligada },
+      {
+        onSuccess: () =>
+          confirmar(ligada ? 'Avisos automáticos ligados' : 'Avisos automáticos desligados'),
+        onError: () => setAvisos(!ligada),
+      },
+    )
+  }
 
   // O e-mail não muda, então o 409 só pode ser o WhatsApp de outra conta.
   const camposDaApi = salvar.error?.campos ?? {}
@@ -52,10 +70,9 @@ function Conta({ usuario }: { usuario: Usuario }) {
     if (whatsapp.trim() !== telefone(usuario.whatsappNumero)) {
       mudancas.whatsappNumero = whatsapp.trim() || null
     }
-    if (avisos !== (usuario.avisosWhatsapp ?? true)) mudancas.avisosWhatsapp = avisos
     if (Object.keys(mudancas).length === 0) return
 
-    salvar.mutate(mudancas, { onSuccess: () => setSalvamentos((vezes) => vezes + 1) })
+    salvar.mutate(mudancas, { onSuccess: () => confirmar('Alterações salvas') })
   }
 
   const linkDaSenha = trocarSenha.isSuccess ? (
@@ -74,7 +91,7 @@ function Conta({ usuario }: { usuario: Usuario }) {
 
   return (
     <>
-      {salvamentos > 0 && <Mensagem key={salvamentos} texto="Alterações salvas" />}
+      {confirmacao && <Mensagem key={confirmacao.vez} texto={confirmacao.texto} />}
       <S.Formulario onSubmit={enviar} noValidate>
         <Campo
           rotulo="Nome"
@@ -104,8 +121,9 @@ function Conta({ usuario }: { usuario: Usuario }) {
           rotulo="Receber avisos automáticos"
           explicacao="Riscos críticos às 6h e o resumo de segunda."
           ligada={avisos}
-          aoMudar={setAvisos}
+          aoMudar={mudarAvisos}
         />
+        {salvarAvisos.error && <AvisoDeErro titulo={salvarAvisos.error.message} />}
         {erro && <AvisoDeErro titulo={erro.message} />}
         {trocarSenha.error && <AvisoDeErro titulo={trocarSenha.error.message} />}
         <S.LinhaDosBotoes>

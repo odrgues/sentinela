@@ -1,11 +1,20 @@
-import styled from 'styled-components'
+import styled, { keyframes } from 'styled-components'
+
+// Desce de leve e aparece, para chamar a atenção sem assustar.
+const descer = keyframes`
+  from {
+    opacity: 0;
+    transform: translate(-50%, -120%);
+  }
+`
 
 export const Mensagem = styled.div`
   position: fixed;
   top: ${({ theme }) => theme.espaco[8]};
   left: 50%;
   transform: translateX(-50%);
-  z-index: 10;
+  /* Acima da janela da Minha conta (15). */
+  z-index: 20;
   width: calc(100% - 2 * ${({ theme }) => theme.espaco[8]});
   max-width: ${({ theme }) => theme.largura.formulario};
   display: flex;
@@ -18,6 +27,11 @@ export const Mensagem = styled.div`
   box-shadow: ${({ theme }) => theme.sombra.mensagem};
   font-size: ${({ theme }) => theme.fonte.tamanho.destaque};
   font-weight: ${({ theme }) => theme.fonte.peso.forte};
+  animation: ${descer} 350ms cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 
   svg {
     flex-shrink: 0;
