@@ -1,97 +1,119 @@
 # Deploy
 
-Backend e banco no Azure (Larissa), front na Vercel (Jessica). A ordem importa, porque um precisa do endereço do outro:
+Três serviços, cada um num lugar:
 
-1. Larissa sobe o banco e a API e passa o endereço da API (`https://<app>.azurewebsites.net`).
-2. Jessica publica o front com esse endereço e passa o endereço do site (`https://<projeto>.vercel.app`).
-3. Larissa coloca o endereço do site no CORS e no link de nova senha da API.
+| Peça | Onde | Endereço |
+|---|---|---|
+| Site (React) | Vercel | https://sentinela-sepia.vercel.app |
+| API (Spring Boot) | Render, plano Starter | https://sentinela-api-38j2.onrender.com |
+| Banco (MySQL 8.4) | Aiven | `sentinela-db-sentinela-db.d.aivencloud.com:16526` |
+| Bot do WhatsApp (Evolution API) | notebook da Larissa, exposto pelo ngrok | ver a seção 4 |
+
+A ordem de criação importa, porque um precisa do endereço do outro: banco → site (sem API) → API (com o endereço do banco e do site) → endereço da API no site.
+
+Senhas e chaves **não** ficam no repositório: estão nas variáveis de ambiente do Render e com a Jessica.
 
 ---
 
-## 1. Banco — Azure Database for MySQL (Flexible Server)
+## 1. Banco — Aiven (MySQL)
 
-1. Crie o servidor MySQL **8.0** (plano B1MS do Azure for Students). Anote o host (`<servidor>.mysql.database.azure.com`), o usuário e a senha do administrador.
-2. Em **Rede**, libere o seu IP (para rodar os scripts) e marque **Permitir acesso público de qualquer serviço do Azure** (para a API conseguir entrar).
-3. Em **Parâmetros do servidor**, mude `time_zone` para `-03:00`. O Azure começa em UTC; o banco local (docker-compose) já roda em `-03:00`, e o seed da demonstração usa `CURDATE()` e `NOW()`. Sem isso, os horários da demonstração ficam 3 horas adiantados.
-4. Crie o banco e rode os 4 scripts, na ordem, da raiz do repositório:
+1. Em [console.aiven.io](https://console.aiven.io), crie um serviço **MySQL** (plano Developer, pago com os créditos do trial, sem cartão). Região na América do Norte, para ficar perto da API.
+2. Em **Connection information**, anote o host, a porta, o usuário (`avnadmin`) e a senha.
+3. Crie o banco e rode os 4 scripts, na ordem, da raiz do repositório:
 
 ```bash
-H=<servidor>.mysql.database.azure.com
-U=<usuario-admin>
-mysql -h $H -u $U -p --ssl-mode=REQUIRED -e "CREATE DATABASE sentinela CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
+H=<host>.aivencloud.com; P=<porta>; U=avnadmin
+M="mysql -h $H -P $P -u $U -p --ssl-mode=REQUIRED --default-character-set=utf8mb4"
+$M -e "CREATE DATABASE sentinela CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
 for f in database/schema/01_ddl.sql database/seeds/02_dados_iniciais.sql database/seeds/03_orientacoes.sql database/seeds/04_demonstracao.sql; do
-  mysql -h $H -u $U -p --ssl-mode=REQUIRED --default-character-set=utf8mb4 sentinela < $f
+  $M --init-command="SET time_zone='-03:00'" sentinela < $f
 done
 ```
 
-O `--default-character-set=utf8mb4` é o que mantém os acentos certos.
+- O `--default-character-set=utf8mb4` mantém os acentos certos.
+- O banco da Aiven roda em UTC. O `--init-command` faz o seed da demonstração (que usa `CURDATE()` e `NOW()`) gravar as datas no horário de Brasília.
+- Sem o cliente `mysql` instalado, dá para usar o do contêiner do docker-compose: `docker exec -i sentinela-mysql mysql ...`.
 
-## 2. API — Azure App Service
+## 2. API — Render
 
-1. Gere o `.jar`:
+O `src/backend/Dockerfile` compila o `.jar` com o Maven e roda só o Java, com a memória limitada aos 512 MB do plano e o fuso de Brasília (o servidor do Render roda em UTC).
 
-```bash
-cd src/backend
-./mvnw clean package -DskipTests
-# gera target/backend-0.0.1-SNAPSHOT.jar
-```
-
-2. Crie um **App Service** Linux, pilha **Java 21**, servidor **Java SE**, plano B1.
-3. Em **Configuração → Configurações gerais**, ligue o **Always On**. Sem ele a API dorme, e a rotina das 6h (previsão e avisos) e a do dia 6 (El Niño) não rodam.
-4. Em **Configuração → Configurações do aplicativo**, crie as variáveis:
-
-| Variável | Valor |
-|---|---|
-| `DB_URL` | `jdbc:mysql://<servidor>.mysql.database.azure.com:3306/sentinela?useSSL=true&requireSSL=true&serverTimezone=America/Sao_Paulo` |
-| `DB_USER` | usuário do MySQL |
-| `DB_PASSWORD` | senha do MySQL |
-| `JWT_SECRET` | um texto aleatório longo (ex.: `openssl rand -base64 48`); nunca o valor padrão do repositório |
-| `FRONT_ORIGENS` | endereço do site, ex.: `https://sentinela.vercel.app` (mais de um: separados por vírgula) |
-| `FRONT_URL` | o mesmo endereço do site (vai no link do e-mail de nova senha) |
-| `MAIL_HOST` | `smtp.gmail.com` |
-| `MAIL_PORT` | `587` |
-| `MAIL_USER` | o Gmail do projeto (ex.: `sentinela.avisos@gmail.com`) |
-| `MAIL_PASSWORD` | a **senha de app** do Google (exige verificação em 2 etapas na conta), não a senha normal |
-| `SERVER_PORT` | `80`, se o Azure não definir sozinho (a API escuta em 8080 por padrão) |
-
-Sem as variáveis de e-mail, "Esqueci minha senha" continua respondendo, mas o link só aparece no log da API (**Fluxo de log** do App Service).
-
-5. Publique o `.jar` (pelo **Centro de Implantação**, ou com a CLI):
-
-```bash
-az webapp deploy --resource-group <grupo> --name <app> --src-path target/backend-0.0.1-SNAPSHOT.jar --type jar
-```
-
-6. Teste:
-   - `https://<app>.azurewebsites.net/api/painel` sem token responde `401` em JSON: a API está no ar.
-   - No Postman (`docs/postman_sentinela.json`), troque `baseUrl` para `https://<app>.azurewebsites.net/api` e rode **Entrar (João)** e **Painel**.
-
-As rotas `/api/interno/...` só existem no perfil `dev`, então não aparecem em produção.
-
-## 3. Front — Vercel
-
-1. Em **vercel.com → Add New → Project**, importe o repositório `odrgues/sentinela` do GitHub.
-2. Configuração do projeto:
+1. Em [dashboard.render.com](https://dashboard.render.com): **New → Web Service**, repositório `odrgues/sentinela`.
+2. Configuração:
 
 | Campo | Valor |
 |---|---|
-| Framework Preset | `Vite` |
-| Root Directory | `src/frontend` |
-| Build Command | `npm run build` |
-| Output Directory | `dist` |
+| Language | Docker |
+| Branch | `main` |
+| Region | Virginia (US East), perto do banco |
+| Root Directory | `src/backend` |
+| Dockerfile Path | `./Dockerfile` |
+| Instance Type | **Starter** (0,5 CPU, 512 MB). O Free (0,1 CPU) leva ~6 min para ligar e 2 a 4 s por tela, e dorme depois de 15 min parado. |
+| Health Check Path | `/swagger-ui/index.html` |
+| Build Filters → Included Paths | `src/backend/**` (só publica de novo quando o backend muda) |
 
 3. **Environment Variables:**
 
 | Variável | Valor |
 |---|---|
-| `VITE_API_URL` | `https://<app>.azurewebsites.net` (sem barra no fim e sem `/api`) |
+| `DB_URL` | `jdbc:mysql://<host>:<porta>/sentinela?sslMode=REQUIRED&serverTimezone=America/Sao_Paulo&sessionVariables=time_zone=%27-03:00%27` |
+| `DB_USER` | `avnadmin` |
+| `DB_PASSWORD` | a senha da Aiven |
+| `JWT_SECRET` | um texto aleatório longo (`openssl rand -base64 48`); nunca o valor padrão do repositório |
+| `FRONT_ORIGENS` | `https://sentinela-sepia.vercel.app` (mais de um: separados por vírgula) |
+| `FRONT_URL` | o mesmo endereço do site (vai no link do e-mail de nova senha) |
+| `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD` | opcionais: Gmail com senha de app. Sem elas, o link de nova senha só aparece em **Logs** |
+| `EVOLUTION_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCIA`, `WHATSAPP_WEBHOOK_TOKEN` | o bot do WhatsApp; ver a seção 4 |
+
+O `sessionVariables` no `DB_URL` põe cada conexão da API no horário de Brasília. Sem ele, as horas gravadas pelo banco (como "Previsão atualizada às…") aparecem 3 horas adiantadas.
+
+O Render lê a porta da variável `PORT`, que ele mesmo define; o `application.properties` usa `server.port=${PORT:8080}`.
+
+4. Teste:
+   - `https://<api>.onrender.com/swagger-ui/index.html` responde `200`: a API está no ar.
+   - `https://<api>.onrender.com/api/painel` sem token responde `401` em JSON.
+
+Cada push na `main` que mexe em `src/backend` publica a API de novo (uns 5 minutos; com o health check, a versão antiga responde até a nova ficar pronta).
+
+As rotas `/api/interno/...` só existem no perfil `dev`, então não aparecem em produção.
+
+## 3. Site — Vercel
+
+1. Em [vercel.com/new](https://vercel.com/new), importe `odrgues/sentinela`.
+2. **Root Directory:** `src/frontend`. O resto a Vercel preenche (Vite, `npm run build`, `dist`).
+3. **Settings → Environment Variables:**
+
+| Variável | Valor |
+|---|---|
+| `VITE_API_URL` | `https://sentinela-api-38j2.onrender.com` (sem barra no fim e sem `/api`) |
 
 As variáveis `VITE_` entram no momento do build: mudou alguma, faça um novo deploy (**Deployments → ⋯ → Redeploy**).
 
-4. Depois do primeiro deploy, passe o endereço `https://<projeto>.vercel.app` para a Larissa colocar em `FRONT_ORIGENS` e `FRONT_URL`. Os mapas não pedem chave.
-5. Teste no celular e no computador: entrar como João, painel, detalhe de uma lavoura, nova lavoura no mapa, "Esqueci minha senha".
+O `src/frontend/vercel.json` manda as rotas do site (como `/lavouras/1`) para o `index.html`, então abrir um link direto funciona. Cada push na `main` publica o site de novo. Os mapas (Leaflet, Esri e OpenStreetMap) não pedem chave.
 
-O `src/frontend/vercel.json` manda as rotas do site (como `/lavouras/1`) para o `index.html`, então abrir um link direto funciona. Cada push na `main` publica o site de novo sozinho.
+## 4. Bot do WhatsApp — Evolution API
+
+A Evolution API é um WhatsApp Web automatizado: um celular dedicado escaneia o QR Code e vira o número do bot. Ela roda no Docker do notebook da Larissa, e o ngrok dá a ela um endereço público.
+
+```
+celular do produtor ⇄ WhatsApp ⇄ Evolution (notebook, porta 8082) ⇄ ngrok
+                                         │ webhook (mensagem recebida)        ▲ envio da resposta
+                                         ▼                                    │
+                              API no Render: /api/whatsapp/webhook ───────────┘
+```
+
+1. Na Evolution, a instância (`sentinela-bot2`) manda o evento `MESSAGES_UPSERT` para `https://<api>.onrender.com/api/whatsapp/webhook?token=<segredo>`.
+2. O ngrok aponta para a Evolution: `ngrok http --url=<domínio-fixo>.ngrok-free.dev 8082`.
+3. No Render, as variáveis da API:
+
+| Variável | Valor |
+|---|---|
+| `EVOLUTION_URL` | o endereço do ngrok, ex.: `https://<domínio-fixo>.ngrok-free.dev` |
+| `EVOLUTION_API_KEY` | a `AUTHENTICATION_API_KEY` da Evolution |
+| `EVOLUTION_INSTANCIA` | `sentinela-bot2` |
+| `WHATSAPP_WEBHOOK_TOKEN` | o mesmo `<segredo>` do endereço do webhook; sem ele, a API não confere quem chamou |
+
+O bot só funciona com o notebook da Larissa ligado, com o Docker da Evolution e o ngrok de pé. O site e a API funcionam sem ele.
 
 ---
 
@@ -100,9 +122,14 @@ O `src/frontend/vercel.json` manda as rotas do site (como `/lavouras/1`) para o 
 A rotina das 6h roda em produção e troca a previsão fixa da conta do João pela previsão de verdade do dia. Para o painel mostrar os avisos da demonstração (um crítico, dois de atenção e um "tudo certo"), rode de novo o `04_demonstracao.sql` no banco de produção **depois das 6h** daquele dia:
 
 ```bash
-mysql -h <servidor>.mysql.database.azure.com -u <usuario> -p --ssl-mode=REQUIRED --default-character-set=utf8mb4 sentinela < database/seeds/04_demonstracao.sql
+mysql -h <host>.aivencloud.com -P <porta> -u avnadmin -p --ssl-mode=REQUIRED --default-character-set=utf8mb4 \
+  --init-command="SET time_zone='-03:00'" sentinela < database/seeds/04_demonstracao.sql
 ```
 
 Se preferirem mostrar o clima real, não precisa rodar nada: os avisos da conta do João passam a ser os da previsão do dia.
 
-Antes de apresentar, abram o site e a API uma vez, para conferir que está tudo no ar.
+Antes de apresentar, abram o site uma vez para conferir que está tudo no ar, e mandem uma mensagem ao bot.
+
+## Depois da apresentação
+
+O Render cobra o Starter (US$ 7/mês) proporcional aos dias de uso. Para parar a cobrança: **Settings → Delete Web Service** no Render. O banco da Aiven usa os créditos do trial e desliga sozinho quando eles acabam; a Vercel é grátis.

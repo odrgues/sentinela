@@ -59,7 +59,7 @@ Abre em `http://localhost:5173`. Os mapas são do Leaflet, com imagens da Esri e
 
 ### Deploy
 
-Backend e banco no Azure, front na Vercel: passo a passo e variáveis em [`docs/deploy.md`](docs/deploy.md).
+Site na Vercel, API no Render e banco na Aiven: passo a passo e variáveis em [`docs/deploy.md`](docs/deploy.md).
 
 ### Contas
 
