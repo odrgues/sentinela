@@ -1,9 +1,9 @@
 # Deploy
 
-Backend e banco no Azure (Larissa), front no Cloudflare Pages (Jessica). A ordem importa, porque um precisa do endereço do outro:
+Backend e banco no Azure (Larissa), front na Vercel (Jessica). A ordem importa, porque um precisa do endereço do outro:
 
 1. Larissa sobe o banco e a API e passa o endereço da API (`https://<app>.azurewebsites.net`).
-2. Jessica publica o front com esse endereço e passa o endereço do site (`https://<projeto>.pages.dev`).
+2. Jessica publica o front com esse endereço e passa o endereço do site (`https://<projeto>.vercel.app`).
 3. Larissa coloca o endereço do site no CORS e no link de nova senha da API.
 
 ---
@@ -46,7 +46,7 @@ cd src/backend
 | `DB_USER` | usuário do MySQL |
 | `DB_PASSWORD` | senha do MySQL |
 | `JWT_SECRET` | um texto aleatório longo (ex.: `openssl rand -base64 48`); nunca o valor padrão do repositório |
-| `FRONT_ORIGENS` | endereço do site, ex.: `https://sentinela.pages.dev` (mais de um: separados por vírgula) |
+| `FRONT_ORIGENS` | endereço do site, ex.: `https://sentinela.vercel.app` (mais de um: separados por vírgula) |
 | `FRONT_URL` | o mesmo endereço do site (vai no link do e-mail de nova senha) |
 | `MAIL_HOST` | `smtp.gmail.com` |
 | `MAIL_PORT` | `587` |
@@ -68,31 +68,30 @@ az webapp deploy --resource-group <grupo> --name <app> --src-path target/backend
 
 As rotas `/api/interno/...` só existem no perfil `dev`, então não aparecem em produção.
 
-## 3. Front — Cloudflare Pages
+## 3. Front — Vercel
 
-1. Em **Workers & Pages → Criar → Pages → Conectar ao Git**, escolha o repositório `odrgues/sentinela`.
-2. Configuração do build:
+1. Em **vercel.com → Add New → Project**, importe o repositório `odrgues/sentinela` do GitHub.
+2. Configuração do projeto:
 
 | Campo | Valor |
 |---|---|
-| Branch de produção | `main` |
-| Diretório raiz | `src/frontend` |
-| Comando de build | `npm run build` |
-| Pasta de saída | `dist` |
+| Framework Preset | `Vite` |
+| Root Directory | `src/frontend` |
+| Build Command | `npm run build` |
+| Output Directory | `dist` |
 
-3. **Variáveis de ambiente** (produção):
+3. **Environment Variables:**
 
 | Variável | Valor |
 |---|---|
 | `VITE_API_URL` | `https://<app>.azurewebsites.net` (sem barra no fim e sem `/api`) |
-| `NODE_VERSION` | `22` |
 
-As variáveis `VITE_` entram no momento do build: mudou alguma, rode um novo deploy.
+As variáveis `VITE_` entram no momento do build: mudou alguma, faça um novo deploy (**Deployments → ⋯ → Redeploy**).
 
-4. Depois do primeiro deploy, passe o endereço `https://<projeto>.pages.dev` para a Larissa colocar em `FRONT_ORIGENS` e `FRONT_URL`. Os mapas não pedem chave.
+4. Depois do primeiro deploy, passe o endereço `https://<projeto>.vercel.app` para a Larissa colocar em `FRONT_ORIGENS` e `FRONT_URL`. Os mapas não pedem chave.
 5. Teste no celular e no computador: entrar como João, painel, detalhe de uma lavoura, nova lavoura no mapa, "Esqueci minha senha".
 
-O Pages já devolve o `index.html` para rotas como `/lavouras/1` (o site não tem `404.html`), então abrir um link direto funciona.
+O `src/frontend/vercel.json` manda as rotas do site (como `/lavouras/1`) para o `index.html`, então abrir um link direto funciona. Cada push na `main` publica o site de novo sozinho.
 
 ---
 
