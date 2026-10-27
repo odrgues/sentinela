@@ -44,20 +44,23 @@ describe('Esqueci minha senha', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Esqueceu a senha?' })).toBeInTheDocument()
   })
 
-  it('pede de novo, e só deixa pedir outra vez depois de 1 minuto', async () => {
+  it('conta 1 minuto até deixar pedir de novo, e recomeça depois de pedir', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const usuario = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     abrirApp('/esqueci-senha')
     await pedirLink('joao@exemplo.com')
 
-    await usuario.click(await screen.findByRole('button', { name: 'Enviar de novo' }))
+    expect(
+      await screen.findByRole('button', { name: /Enviar de novo em [01]:\d\d/ }),
+    ).toBeDisabled()
 
-    const esperando = await screen.findByRole('button', {
-      name: 'Enviamos de novo. Aguarde 1 minuto para pedir outro.',
-    })
-    expect(esperando).toBeDisabled()
+    await act(() => vi.advanceTimersByTimeAsync(30 * 1000))
+    expect(screen.getByRole('button', { name: /Enviar de novo em 0:[23]\d/ })).toBeDisabled()
 
-    await act(() => vi.advanceTimersByTimeAsync(60 * 1000))
-    expect(screen.getByRole('button', { name: 'Enviar de novo' })).toBeEnabled()
+    await act(() => vi.advanceTimersByTimeAsync(31 * 1000))
+    await usuario.click(screen.getByRole('button', { name: 'Enviar de novo' }))
+
+    expect(await screen.findByText('Enviamos outro link')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Enviar de novo em [01]:\d\d/ })).toBeDisabled()
   })
 })
