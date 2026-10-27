@@ -148,9 +148,9 @@ export function detalhe(id: number): DetalheDaLavoura | null {
       frase:
         'Você plantou em agosto de 2026, durante um El Niño muito forte. Em anos assim, o tempo pode fugir do normal da região: vale acompanhar os avisos de perto.',
       efeito:
-        'Em estudo da Embrapa com chuvas de 1980 a 2013, o El Niño não mudou o início do plantio em Goiás, vizinho do Triângulo.',
+        'Num estudo da Embrapa com as chuvas de 1980 a 2013, o El Niño não mudou a época de plantar soja em Goiás, vizinho do Triângulo Mineiro.',
       oQueFazer:
-        'Siga a janela do ZARC normalmente. Escolha cultivar adaptada à região e de produção estável.',
+        'Plante na época de sempre, a indicada para o seu município (o ZARC). Escolha uma variedade feita para a região e que produza bem todo ano.',
       fonte:
         'Embrapa Arroz e Feijão, Boletim de Pesquisa e Desenvolvimento 70 (2026), p. 8-10 e 14; Embrapa, Nota Técnica El Niño 2026/2027, p. 78 e 83',
     },
