@@ -63,7 +63,7 @@ O `src/backend/Dockerfile` compila o `.jar` com o Maven e roda só o Java, com a
 | `FRONT_ORIGENS` | `https://sentinela-sepia.vercel.app` (mais de um: separados por vírgula) |
 | `FRONT_URL` | o mesmo endereço do site (vai no link do e-mail de nova senha) |
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD` | opcionais: Gmail com senha de app. Sem elas, o link de nova senha só aparece em **Logs** |
-| `EVOLUTION_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCIA`, `WHATSAPP_WEBHOOK_TOKEN` | o bot do WhatsApp; ver a seção 4 |
+| `EVOLUTION_API_URL`, `EVOLUTION_API_KEY` | o bot do WhatsApp; ver a seção 4 |
 
 O `sessionVariables` no `DB_URL` põe cada conexão da API no horário de Brasília. Sem ele, as horas gravadas pelo banco (como "Previsão atualizada às…") aparecem 3 horas adiantadas.
 
@@ -102,16 +102,14 @@ celular do produtor ⇄ WhatsApp ⇄ Evolution (notebook, porta 8082) ⇄ ngrok
                               API no Render: /api/whatsapp/webhook ───────────┘
 ```
 
-1. Na Evolution, a instância (`sentinela-bot2`) manda o evento `MESSAGES_UPSERT` para `https://<api>.onrender.com/api/whatsapp/webhook?token=<segredo>`.
+1. Na Evolution, a instância (`sentinela-bot2`) manda o evento `MESSAGES_UPSERT` para `https://<api>.onrender.com/api/whatsapp/webhook`.
 2. O ngrok aponta para a Evolution: `ngrok http --url=<domínio-fixo>.ngrok-free.dev 8082`.
 3. No Render, as variáveis da API:
 
 | Variável | Valor |
 |---|---|
-| `EVOLUTION_URL` | o endereço do ngrok, ex.: `https://<domínio-fixo>.ngrok-free.dev` |
+| `EVOLUTION_API_URL` | o endereço do ngrok, ex.: `https://<domínio-fixo>.ngrok-free.dev`. Sem ela, a API tenta `localhost:8082` e o bot não responde |
 | `EVOLUTION_API_KEY` | a `AUTHENTICATION_API_KEY` da Evolution |
-| `EVOLUTION_INSTANCIA` | `sentinela-bot2` |
-| `WHATSAPP_WEBHOOK_TOKEN` | o mesmo `<segredo>` do endereço do webhook; sem ele, a API não confere quem chamou |
 
 O bot só funciona com o notebook da Larissa ligado, com o Docker da Evolution e o ngrok de pé. O site e a API funcionam sem ele.
 
