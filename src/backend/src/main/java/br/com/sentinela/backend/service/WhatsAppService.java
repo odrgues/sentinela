@@ -42,6 +42,9 @@ public class WhatsAppService {
     @Value("${evolution.api.url:http://localhost:8082}")
     private String evolutionApiUrl;
 
+    @Value("${evolution.api.key:}")
+    private String evolutionApiKey;
+
     @Transactional
     public String processarMensagemRecebida(String chatId, String conteudo) {
         return processarEAtenderMensagem(chatId, conteudo, null);
@@ -170,8 +173,6 @@ public class WhatsAppService {
             return;
         }
 
-        // CORREÇÃO: Prioriza sempre o chat de onde veio a mensagem (chatIdOrigem)
-        // para garantir que a resposta vá para quem mandou, e não para o número do bot/perfil.
         String chatIdFinal = (chatIdOrigem != null && !chatIdOrigem.isBlank())
                 ? chatIdOrigem
                 : (usuario.getWhatsappNumero() != null && !usuario.getWhatsappNumero().isBlank()
@@ -192,9 +193,10 @@ public class WhatsAppService {
 
         dispararParaWhatsappReal(chatIdFinal, textoMensagem);
     }
+
     /**
      * Envia a mensagem via HTTP para a Evolution API em segundo plano (Assíncrono)
-     * com timeout configurado de 5 segundos.
+     * utilizando a chave de API injetada via propriedade.
      */
     private void dispararParaWhatsappReal(String telefone, String mensagem) {
         if (telefone == null || telefone.isBlank()) {
@@ -219,7 +221,7 @@ public class WhatsAppService {
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);
-                headers.set("apikey", "sentinela-secret-key-123");
+                headers.set("apikey", evolutionApiKey);
 
                 Map<String, Object> body = Map.of(
                         "number", numeroLimpo,
@@ -271,7 +273,6 @@ public class WhatsAppService {
                 if (apenasNumerosBanco.equals(apenasNumerosChat)) {
                     return u;
                 }
-                // Tratamento do 9º dígito (13 vs 12 dígitos)
                 if (apenasNumerosBanco.length() == 13 && apenasNumerosChat.length() == 12) {
                     String bancoSemNove = apenasNumerosBanco.substring(0, 4) + apenasNumerosBanco.substring(5);
                     if (bancoSemNove.equals(apenasNumerosChat)) {
@@ -507,6 +508,7 @@ public class WhatsAppService {
                 + "⚠️ *Alertas Climáticos e de Riscos*\n\n"
                 + "Digite *menu* ou *oi* a qualquer momento para ver as opções!";
 
+        // Utiliza a intenção validada "saudacao" para respeitar a constraint mensagem_chk_2 do MySQL
         enviarEManterHistorico(usuario, mensagem, "saudacao", usuario.getWhatsappNumero());
     }
 }

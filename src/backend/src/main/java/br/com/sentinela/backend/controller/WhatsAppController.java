@@ -58,64 +58,64 @@ public class WhatsAppController {
     }
 
     @PostMapping("/webhook")
-    public ResponseEntity<?> receberWebhook(@RequestBody JsonNode payload) {
-        JsonNode dataNode = payload.path("data");
+    public ResponseEntity<Void> receberWebhook(@RequestBody JsonNode payload) {
+        try {
+            log.debug("[WHATSAPP WEBHOOK] Payload recebido: {}", payload);
 
-        boolean fromMe = dataNode.path("key").path("fromMe").asBoolean(false);
-        if (fromMe) {
-            return ResponseEntity.ok().build();
-        }
-
-        String remoteJid = dataNode.path("key").path("remoteJid").asText();
-        String sender = payload.path("sender").asText();
-        String owner = dataNode.path("owner").asText();
-
-        log.info("[WHATSAPP WEBHOOK] remoteJid: " + remoteJid + ", sender: " + sender + ", owner: " + owner);
-
-        String chatId = "";
-
-        // REGRA: O número da Evolution API (bot) é 553496740552.
-        // Nunca devemos tratá-lo como cliente remetente.
-
-        // 1. Se remoteJid for um número válido de cliente e diferente da instância
-        if (remoteJid != null && remoteJid.contains("s.whatsapp.net") && !remoteJid.contains("553496740552")) {
-            chatId = remoteJid;
-        }
-        // 2. Se sender for um número válido de cliente e diferente da instância
-        else if (sender != null && sender.contains("s.whatsapp.net") && !sender.contains("553496740552")) {
-            chatId = sender;
-        }
-        // 3. Fallback para tratativa de @lid
-        else {
-            JsonNode participantNode = dataNode.path("key").path("participant");
-            if (!participantNode.isMissingNode() && !participantNode.asText().isBlank() && !participantNode.asText().contains("553496740552")) {
-                chatId = participantNode.asText();
-            } else {
-                // Força a vinculação com o número cadastrado da Elisa para resolver a privacidade @lid
-                chatId = "+5534999003412";
+            JsonNode dataNode = payload.path("data");
+            if (dataNode.isMissingNode() || dataNode.isNull()) {
+                return ResponseEntity.ok().build();
             }
+
+            JsonNode keyNode = dataNode.path("key");
+            boolean fromMe = keyNode.path("fromMe").asBoolean(false);
+
+            // Ignora mensagens enviadas pelo próprio bot
+            if (fromMe) {
+                return ResponseEntity.ok().build();
+            }
+
+            String remoteJid = keyNode.path("remoteJid").asText("");
+            String chatId;
+
+            if (remoteJid.contains("@s.whatsapp.net")) {
+                chatId = remoteJid.replace("@s.whatsapp.net", "");
+            } else if (remoteJid.contains("@g.us")) {
+                return ResponseEntity.ok().build(); // Ignora grupos
+            } else {
+                // Log para inspecionar os campos recebidos em chamadas com @lid
+                log.info("[WHATSAPP WEBHOOK] Key recebida com @lid: {}", keyNode.toString());
+
+                // Tenta recuperar o número real pelos campos alternativos da Evolution API
+                String numero = keyNode.path("remoteJidAlt").asText("");
+                if (numero.isBlank()) numero = keyNode.path("senderPn").asText("");
+                if (numero.isBlank()) numero = keyNode.path("participant").asText("");
+
+                // Se não encontrar o número real, mantém o remoteJid para que o serviço
+                chatId = numero.isBlank() ? remoteJid : numero;
+            }
+
+            // Trata o texto da mensagem
+            JsonNode messageNode = dataNode.path("message");
+            String texto = "";
+
+            if (messageNode.has("conversation")) {
+                texto = messageNode.path("conversation").asText("");
+            } else if (messageNode.has("extendedTextMessage")) {
+                texto = messageNode.path("extendedTextMessage").path("text").asText("");
+            }
+
+            if (!texto.isBlank() && !chatId.isBlank()) {
+                whatsAppService.processarMensagemRecebida(chatId, texto);
+            }
+
+        } catch (Exception e) {
+            log.error("[WHATSAPP WEBHOOK] Erro ao processar webhook: {}", e.getMessage(), e);
         }
-
-        // Extrai o texto da mensagem
-        JsonNode messageNode = dataNode.path("message");
-        String texto = "";
-
-        if (messageNode.has("conversation")) {
-            texto = messageNode.path("conversation").asText();
-        } else if (messageNode.has("extendedTextMessage")) {
-            texto = messageNode.path("extendedTextMessage").path("text").asText();
-        }
-
-        if (chatId.isBlank() || texto.isBlank()) {
-            return ResponseEntity.badRequest().body("{\"erro\": \"O chatId e o texto são obrigatórios.\"}");
-        }
-
-        log.info("[WHATSAPP WEBHOOK] Cliente real identificado: " + chatId + " -> Texto: " + texto);
-
-        whatsAppService.processarEAtenderMensagem(chatId, texto, null);
 
         return ResponseEntity.ok().build();
     }
+
 
     @PostMapping("/processar")
     public ResponseEntity<Map<String, String>> processarMensagemManual(@RequestBody WhatsAppWebhookDTO dto) {
