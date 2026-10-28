@@ -5,11 +5,12 @@ import * as D from './components/detalhe/Detalhe.styles'
 
 export const PaginaDoComputador = styled.main`
   width: 100%;
+  max-width: ${({ theme }) => theme.largura.paginaDaLavoura};
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.espaco[11]};
-  /* Na largura toda, com a mesma margem da barra do topo. */
-  padding: ${({ theme }) => theme.espaco[8]} ${({ theme }) => theme.espaco[10]}
+  padding: ${({ theme }) => theme.espaco[8]} ${({ theme }) => theme.espaco[14]}
     ${({ theme }) => theme.espaco[14]};
 `
 
@@ -324,7 +325,29 @@ export const PaginaDoCelular = styled.main`
   }
 
   ${D.Aviso} {
-    padding: ${({ theme }) => theme.espaco[6]};
+    gap: ${({ theme }) => theme.espaco[4]};
+    padding: ${({ theme }) => theme.espaco[8]};
+  }
+
+  /* O ícone na linha do nível, e a mensagem embaixo na largura toda: o texto e o "O que fazer"
+     começam na mesma margem, com o mesmo respiro dos dois lados. */
+  ${D.TopoDoAviso} {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: ${({ theme }) => theme.espaco[2]} ${({ theme }) => theme.espaco[3]};
+
+    > div {
+      display: contents;
+    }
+
+    ${D.CorpoDoAviso} {
+      grid-column: 1 / -1;
+    }
+  }
+
+  ${D.OQueFazer} {
+    padding: ${({ theme }) => theme.espaco[5]} ${({ theme }) => theme.espaco[6]};
   }
 
   ${D.DiaDoAviso} strong {
