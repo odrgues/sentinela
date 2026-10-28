@@ -489,4 +489,24 @@ public class WhatsAppService {
                 && !usuario.getWhatsappNumero().isBlank()
                 && Boolean.TRUE.equals(usuario.getAvisosWhatsapp());
     }
+
+    public void enviarBoasVindasOnboarding(Usuario usuario) {
+        if (usuario == null || usuario.getWhatsappNumero() == null || usuario.getWhatsappNumero().isBlank()) {
+            log.warn("[WHATSAPP] Tentativa de enviar boas-vindas para usuário sem número cadastrado.");
+            return;
+        }
+
+        String nome = (usuario.getNome() != null && !usuario.getNome().isBlank()) ? usuario.getNome() : "Produtor(a)";
+
+        String mensagem = "Olá, " + nome + "! 👋\n\n"
+                + "Seja bem-vindo(a) ao *Sentinela*!\n"
+                + "Seu número foi cadastrado com sucesso na nossa plataforma.\n\n"
+                + "Por aqui você pode consultar facilmente:\n"
+                + "🌱 *Cultivos e Lavouras*\n"
+                + "🌦️ *Previsão do Tempo*\n"
+                + "⚠️ *Alertas Climáticos e de Riscos*\n\n"
+                + "Digite *menu* ou *oi* a qualquer momento para ver as opções!";
+
+        enviarEManterHistorico(usuario, mensagem, "saudacao", usuario.getWhatsappNumero());
+    }
 }

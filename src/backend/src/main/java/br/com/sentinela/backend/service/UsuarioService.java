@@ -10,17 +10,20 @@ import br.com.sentinela.backend.exception.RecursoConflitoException;
 import br.com.sentinela.backend.model.Usuario;
 import br.com.sentinela.backend.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final TokenService tokenService;
+    private final WhatsAppService whatsAppService;
 
     @Transactional
     public AuthResponseDTO criarUsuario(UsuarioRequestDTO dto) {
@@ -43,6 +46,15 @@ public class UsuarioService {
         Usuario usuarioSalvo = usuarioRepository.save(usuario);
         String token = tokenService.gerarToken(usuarioSalvo);
 
+        // DISPARO NO CADASTRO: Se informou número no cadastro inicial
+        if (usuarioSalvo.getWhatsappNumero() != null && !usuarioSalvo.getWhatsappNumero().isBlank()) {
+            try {
+                whatsAppService.enviarBoasVindasOnboarding(usuarioSalvo);
+            } catch (Exception e) {
+                log.error("[USUARIO] Falha ao enviar mensagem de boas-vindas no cadastro: {}", e.getMessage());
+            }
+        }
+
         return new AuthResponseDTO(token, new UsuarioResponseDTO(usuarioSalvo));
     }
 
@@ -58,6 +70,8 @@ public class UsuarioService {
             usuario.setNome(dto.getNome().trim());
         }
 
+        String whatsappAnterior = usuario.getWhatsappNumero();
+
         if (dto.isWhatsappInformado()) {
             String novoWhatsapp = normalizarWhatsapp(dto.getWhatsappNumero());
             if (novoWhatsapp != null && !novoWhatsapp.equals(usuario.getWhatsappNumero())
@@ -71,7 +85,22 @@ public class UsuarioService {
             usuario.setAvisosWhatsapp(dto.getAvisosWhatsapp());
         }
 
-        return new UsuarioResponseDTO(usuarioRepository.save(usuario));
+        Usuario usuarioAtualizado = usuarioRepository.save(usuario);
+
+        // DISPARO NA ATUALIZAÇÃO: Se cadastrou um número onde antes não havia ou alterou o número existente
+        String whatsappNovo = usuarioAtualizado.getWhatsappNumero();
+        boolean eraVazioEPreencheu = (whatsappAnterior == null || whatsappAnterior.isBlank()) && (whatsappNovo != null && !whatsappNovo.isBlank());
+        boolean alterouNumero = (whatsappAnterior != null && !whatsappAnterior.equals(whatsappNovo) && whatsappNovo != null && !whatsappNovo.isBlank());
+
+        if (dto.isWhatsappInformado() && (eraVazioEPreencheu || alterouNumero)) {
+            try {
+                whatsAppService.enviarBoasVindasOnboarding(usuarioAtualizado);
+            } catch (Exception e) {
+                log.error("[USUARIO] Falha ao enviar mensagem de boas-vindas na atualização de perfil: {}", e.getMessage());
+            }
+        }
+
+        return new UsuarioResponseDTO(usuarioAtualizado);
     }
 
     // Os cultivos e os alertas saem junto (ON DELETE CASCADE); as mensagens ficam sem dono.
@@ -94,4 +123,5 @@ public class UsuarioService {
                 ? "+" + apenasNumeros
                 : "+55" + apenasNumeros;
     }
+
 }
