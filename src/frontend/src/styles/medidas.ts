@@ -170,8 +170,6 @@ export const largura = {
   carregandoMedio: '140px',
   carregandoLongo: '220px',
   detalhe: '1280px',
-  // A página da lavoura no computador: centralizada, com respiro dos lados.
-  paginaDaLavoura: '1120px',
   colunaDoDetalhe: '340px',
   // O ciclo ao lado do gráfico da semana.
   colunaDoCiclo: '260px',

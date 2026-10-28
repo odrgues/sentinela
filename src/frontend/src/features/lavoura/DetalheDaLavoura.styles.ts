@@ -5,12 +5,11 @@ import * as D from './components/detalhe/Detalhe.styles'
 
 export const PaginaDoComputador = styled.main`
   width: 100%;
-  max-width: ${({ theme }) => theme.largura.paginaDaLavoura};
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.espaco[11]};
-  padding: ${({ theme }) => theme.espaco[8]} ${({ theme }) => theme.espaco[13]}
+  /* Na largura toda, com a mesma margem da barra do topo. */
+  padding: ${({ theme }) => theme.espaco[8]} ${({ theme }) => theme.espaco[10]}
     ${({ theme }) => theme.espaco[14]};
 `
 
