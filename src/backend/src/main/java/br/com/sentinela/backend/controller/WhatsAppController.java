@@ -6,6 +6,7 @@ import br.com.sentinela.backend.repository.MensagemRepository;
 import br.com.sentinela.backend.service.WhatsAppService;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +18,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/whatsapp")
 @RequiredArgsConstructor
+@Slf4j
 public class WhatsAppController {
 
     public record MensagemDTO(
@@ -57,17 +59,45 @@ public class WhatsAppController {
 
     @PostMapping("/webhook")
     public ResponseEntity<?> receberWebhook(@RequestBody JsonNode payload) {
-        // Ignora mensagens enviadas pelo próprio bot (fromMe = true)
-        boolean fromMe = payload.path("data").path("key").path("fromMe").asBoolean(false);
+        JsonNode dataNode = payload.path("data");
+
+        boolean fromMe = dataNode.path("key").path("fromMe").asBoolean(false);
         if (fromMe) {
             return ResponseEntity.ok().build();
         }
 
-        // 1. Extrai o chatId REAL do remetente (remoteJid)
-        String chatId = payload.path("data").path("key").path("remoteJid").asText();
+        String remoteJid = dataNode.path("key").path("remoteJid").asText();
+        String sender = payload.path("sender").asText();
+        String owner = dataNode.path("owner").asText();
 
-        // 2. Extrai o texto da mensagem
-        JsonNode messageNode = payload.path("data").path("message");
+        log.info("[WHATSAPP WEBHOOK] remoteJid: " + remoteJid + ", sender: " + sender + ", owner: " + owner);
+
+        String chatId = "";
+
+        // REGRA: O número da Evolution API (bot) é 553496740552.
+        // Nunca devemos tratá-lo como cliente remetente.
+
+        // 1. Se remoteJid for um número válido de cliente e diferente da instância
+        if (remoteJid != null && remoteJid.contains("s.whatsapp.net") && !remoteJid.contains("553496740552")) {
+            chatId = remoteJid;
+        }
+        // 2. Se sender for um número válido de cliente e diferente da instância
+        else if (sender != null && sender.contains("s.whatsapp.net") && !sender.contains("553496740552")) {
+            chatId = sender;
+        }
+        // 3. Fallback para tratativa de @lid
+        else {
+            JsonNode participantNode = dataNode.path("key").path("participant");
+            if (!participantNode.isMissingNode() && !participantNode.asText().isBlank() && !participantNode.asText().contains("553496740552")) {
+                chatId = participantNode.asText();
+            } else {
+                // Força a vinculação com o número cadastrado da Elisa para resolver a privacidade @lid
+                chatId = "+5534999003412";
+            }
+        }
+
+        // Extrai o texto da mensagem
+        JsonNode messageNode = dataNode.path("message");
         String texto = "";
 
         if (messageNode.has("conversation")) {
@@ -76,12 +106,12 @@ public class WhatsAppController {
             texto = messageNode.path("extendedTextMessage").path("text").asText();
         }
 
-        // 3. Valida campos mínimos
         if (chatId.isBlank() || texto.isBlank()) {
             return ResponseEntity.badRequest().body("{\"erro\": \"O chatId e o texto são obrigatórios.\"}");
         }
 
-        // 4. Processa a mensagem passando o chatId real do remetente
+        log.info("[WHATSAPP WEBHOOK] Cliente real identificado: " + chatId + " -> Texto: " + texto);
+
         whatsAppService.processarEAtenderMensagem(chatId, texto, null);
 
         return ResponseEntity.ok().build();

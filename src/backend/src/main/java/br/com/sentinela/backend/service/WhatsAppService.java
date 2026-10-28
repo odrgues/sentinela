@@ -11,6 +11,7 @@ import br.com.sentinela.backend.repository.MensagemRepository;
 import br.com.sentinela.backend.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -38,6 +39,9 @@ public class WhatsAppService {
     private final ClimaService climaService;
     private final OrientacaoService orientacaoService;
 
+    @Value("${evolution.api.url:http://localhost:8082}")
+    private String evolutionApiUrl;
+
     @Transactional
     public String processarMensagemRecebida(String chatId, String conteudo) {
         return processarEAtenderMensagem(chatId, conteudo, null);
@@ -64,7 +68,6 @@ public class WhatsAppService {
             log.warn("Mensagem recebida de número não cadastrado: {}", chatId);
             String aviso = "Olá! Sou o assistente do Sentinela, mas não encontrei um cadastro vinculado ao seu número. Cadastre seu WhatsApp na sua conta.";
 
-            // Só dispara se o chatId não for um identificador @lid sem número real
             if (!chatId.contains("@lid")) {
                 dispararParaWhatsappReal(chatId, aviso);
             }
@@ -83,7 +86,6 @@ public class WhatsAppService {
         return resposta;
     }
 
-    // Só envia notificações automáticas a usuários que habilitaram os avisos.
     public void notificarAlertaSeHabilitado(Alerta alerta) {
         if (alerta == null || alerta.getCultivo() == null) {
             return;
@@ -114,7 +116,6 @@ public class WhatsAppService {
         enviarEManterHistorico(usuario, texto, "consulta_alertas", usuario.getWhatsappNumero());
     }
 
-    // Mantém o resumo semanal da versão original.
     public void enviarResumoDaSemana(Usuario usuario, String resumo) {
         if (!podeReceberAvisos(usuario)) {
             return;
@@ -128,7 +129,6 @@ public class WhatsAppService {
         enviarEManterHistorico(usuario, texto, "consulta_cultivos", usuario.getWhatsappNumero());
     }
 
-    // Registra uma mensagem recebida quando o usuário já foi identificado.
     public void registrarMensagemRecebida(
             Usuario usuario,
             String chatId,
@@ -170,9 +170,13 @@ public class WhatsAppService {
             return;
         }
 
-        String chatIdFinal = (usuario.getWhatsappNumero() != null && !usuario.getWhatsappNumero().isBlank())
-                ? usuario.getWhatsappNumero()
-                : (chatIdOrigem != null && !chatIdOrigem.isBlank() ? chatIdOrigem : "desconhecido");
+        // CORREÇÃO: Prioriza sempre o chat de onde veio a mensagem (chatIdOrigem)
+        // para garantir que a resposta vá para quem mandou, e não para o número do bot/perfil.
+        String chatIdFinal = (chatIdOrigem != null && !chatIdOrigem.isBlank())
+                ? chatIdOrigem
+                : (usuario.getWhatsappNumero() != null && !usuario.getWhatsappNumero().isBlank()
+                   ? usuario.getWhatsappNumero()
+                   : "desconhecido");
 
         Mensagem mensagem = new Mensagem();
         mensagem.setUsuario(usuario);
@@ -188,7 +192,6 @@ public class WhatsAppService {
 
         dispararParaWhatsappReal(chatIdFinal, textoMensagem);
     }
-
     /**
      * Envia a mensagem via HTTP para a Evolution API em segundo plano (Assíncrono)
      * com timeout configurado de 5 segundos.
@@ -225,8 +228,10 @@ public class WhatsAppService {
 
                 HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
+                String urlEndpoint = evolutionApiUrl + "/message/sendText/sentinela-bot2";
+
                 ResponseEntity<String> response = restTemplate.postForEntity(
-                        "http://localhost:8082/message/sendText/sentinela-bot2",
+                        urlEndpoint,
                         request,
                         String.class
                 );
@@ -239,8 +244,8 @@ public class WhatsAppService {
     }
 
     /**
-     * Localiza o usuário no banco tratando nulos, dígitos extras do 9º dígito
-     * e identificadores do WhatsApp (@lid).
+     * Localiza qualquer usuário cadastrado no banco comparando os dígitos do telefone
+     * de forma universal (tratando DDI, DDD e o 9º dígito).
      */
     private Usuario buscarUsuarioPorWhatsapp(String chatId) {
         if (chatId == null || chatId.isBlank()) {
@@ -248,26 +253,25 @@ public class WhatsAppService {
         }
 
         List<Usuario> todosUsuarios = usuarioRepository.findAll();
+        String apenasNumerosChat = chatId.replaceAll("[^0-9]", "");
 
-        // 1. Busca por comparação numérica de telefone
         for (Usuario u : todosUsuarios) {
             if (u.getWhatsappNumero() == null || u.getWhatsappNumero().isBlank()) {
                 continue;
             }
 
             String numBanco = u.getWhatsappNumero().trim();
-
             if (numBanco.equalsIgnoreCase(chatId.trim())) {
                 return u;
             }
 
-            String apenasNumerosChat = chatId.replaceAll("[^0-9]", "");
             String apenasNumerosBanco = numBanco.replaceAll("[^0-9]", "");
 
             if (!apenasNumerosChat.isBlank() && !apenasNumerosBanco.isBlank()) {
                 if (apenasNumerosBanco.equals(apenasNumerosChat)) {
                     return u;
                 }
+                // Tratamento do 9º dígito (13 vs 12 dígitos)
                 if (apenasNumerosBanco.length() == 13 && apenasNumerosChat.length() == 12) {
                     String bancoSemNove = apenasNumerosBanco.substring(0, 4) + apenasNumerosBanco.substring(5);
                     if (bancoSemNove.equals(apenasNumerosChat)) {
@@ -282,13 +286,8 @@ public class WhatsAppService {
             }
         }
 
-        // 2. Se a mensagem vier com o LID do WhatsApp (@lid), mapeia com segurança contra nulos
         if (chatId.contains("@lid")) {
-            return todosUsuarios.stream()
-                    .filter(u -> u.getId().equals(3L) ||
-                            (u.getWhatsappNumero() != null && u.getWhatsappNumero().contains("553491417580")))
-                    .findFirst()
-                    .orElse(todosUsuarios.isEmpty() ? null : todosUsuarios.get(0));
+            log.warn("[WHATSAPP] Mensagem recebida via @lid sem número direto correspondente: {}", chatId);
         }
 
         return null;
