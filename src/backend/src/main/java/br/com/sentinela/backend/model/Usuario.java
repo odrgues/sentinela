@@ -33,6 +33,9 @@ public class Usuario {
     @Column(name = "whatsapp_numero", unique = true, length = 20)
     private String whatsappNumero;
 
+    @Column(name = "whatsapp_lid", unique = true, length = 100)
+    private String whatsappLid;
+
     @Column(name = "avisos_whatsapp", nullable = false)
     private Boolean avisosWhatsapp = true;
 
