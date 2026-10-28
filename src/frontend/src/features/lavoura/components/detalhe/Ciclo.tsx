@@ -1,7 +1,49 @@
 import { dataCompleta, diaEMes, hoje } from '../../../../shared/formato/data'
 import { porcentagemDoCiclo } from '../../detalhe'
-import type { DetalheDaLavoura } from '../../tipos'
+import type { DetalheDaLavoura, TrechoDoCiclo } from '../../tipos'
 import * as S from './Detalhe.styles'
+
+// O ciclo dividido nas fases da cultura: as que já passaram cheias, a de agora até hoje e as
+// próximas vazias. Embaixo, a próxima fase. Passar o mouse num trecho mostra o nome da fase.
+function LinhaDoTempo({
+  fases,
+  diaAtual,
+  cicloDias,
+}: {
+  fases: TrechoDoCiclo[]
+  diaAtual: number
+  cicloDias: number
+}) {
+  const feito = porcentagemDoCiclo(diaAtual, cicloDias)
+  const proxima = fases.find((fase) => fase.diaInicio > diaAtual)
+
+  return (
+    <>
+      <S.Trechos role="img" aria-label={`${feito}% do ciclo concluído`}>
+        {fases.map((fase) => {
+          const dias = fase.diaFim - fase.diaInicio + 1
+          const cheio = Math.min(100, Math.max(0, ((diaAtual - fase.diaInicio + 1) / dias) * 100))
+          const agora = diaAtual >= fase.diaInicio && diaAtual <= fase.diaFim
+          return (
+            <S.Trecho
+              key={fase.nome}
+              $agora={agora}
+              style={{ flexGrow: dias }}
+              title={`${fase.nome} · dias ${fase.diaInicio} a ${fase.diaFim}`}
+            >
+              <S.Preenchida style={{ width: `${cheio}%` }} />
+            </S.Trecho>
+          )
+        })}
+      </S.Trechos>
+      {proxima && (
+        <S.Explicacao>
+          Depois: {proxima.nome}, a partir do dia {proxima.diaInicio}
+        </S.Explicacao>
+      )}
+    </>
+  )
+}
 
 // "Dia 45 de 120" com a barra, ou "Safra 2026/27" na lavoura perene.
 export function Ciclo({ lavoura }: { lavoura: DetalheDaLavoura }) {
@@ -22,9 +64,13 @@ export function Ciclo({ lavoura }: { lavoura: DetalheDaLavoura }) {
           </strong>
           <span>{colheita}</span>
         </S.LinhaDoCiclo>
-        <S.Barra role="img" aria-label={`${feito}% do ciclo concluído`}>
-          <S.Preenchida style={{ width: `${feito}%` }} />
-        </S.Barra>
+        {lavoura.fases?.length ? (
+          <LinhaDoTempo fases={lavoura.fases} diaAtual={diaAtual} cicloDias={cicloDias} />
+        ) : (
+          <S.Barra role="img" aria-label={`${feito}% do ciclo concluído`}>
+            <S.Preenchida style={{ width: `${feito}%` }} />
+          </S.Barra>
+        )}
         <S.Explicacao>Plantada em {diaEMes(lavoura.dataPlantio)}</S.Explicacao>
       </S.Ciclo>
     )

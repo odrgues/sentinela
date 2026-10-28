@@ -5,6 +5,7 @@ import { useTheme } from 'styled-components'
 import { erroPassageiro } from '../../shared/api/erros'
 import { quandoFoi } from '../../shared/formato/data'
 import { useNoComputador } from '../../shared/layout/useNoComputador'
+import { fotoDeSatelite, mapaLigado } from '../../shared/mapa/mapa'
 import { AvisoDeErro } from '../../shared/ui/AvisoDeErro'
 import { Botao, BotaoLink } from '../../shared/ui/Botao'
 import { Logo } from '../../shared/ui/Logo'
@@ -21,11 +22,15 @@ import { Escolha } from './components/detalhe/Escolha'
 import { Historico } from './components/detalhe/Historico'
 import { JaColhi } from './components/detalhe/JaColhi'
 import { PrevisaoDaSemana } from './components/detalhe/PrevisaoDaSemana'
+import { ResumoDaSemana } from './components/detalhe/ResumoDaSemana'
 import * as S from './DetalheDaLavoura.styles'
 import { resumoDaLavoura } from './detalhe'
 import type { DetalheDaLavoura as Lavoura } from './tipos'
 
 type Aba = 'previsao' | 'historico'
+
+// A foto de satélite do alto: larga e baixa como a faixa, com uns 2,5 km de um lado ao outro.
+const FOTO_DO_HEROI = { largura: 1600, altura: 400, metrosPorPixel: 1.6 }
 
 const ABAS: { valor: Aba; nome: string }[] = [
   { valor: 'previsao', nome: 'Próximos 7 dias' },
@@ -43,6 +48,8 @@ function Conteudo({
 }) {
   const tema = useTheme()
   const [aba, setAba] = useState<Aba>('previsao')
+  // O dia do aviso que a pessoa está olhando, aceso no gráfico.
+  const [diaEmFoco, setDiaEmFoco] = useState<string | null>(null)
   const emAndamento = lavoura.status === 'em_andamento'
   const atualizada = (
     <D.Atualizada>Previsão atualizada {quandoFoi(lavoura.previsaoAtualizadaEm)}</D.Atualizada>
@@ -58,7 +65,12 @@ function Conteudo({
   const enso = lavoura.enso && (
     <CartaoDoEnso enso={lavoura.enso} perene={lavoura.tipoCiclo === 'perene'} />
   )
-  const avisos = emAndamento && <AvisosDaSemana alertas={lavoura.alertas} />
+  const avisos = emAndamento && (
+    <AvisosDaSemana alertas={lavoura.alertas} aoOlhar={noComputador ? setDiaEmFoco : undefined} />
+  )
+  const resumo = emAndamento && lavoura.previsaoDisponivel && (
+    <ResumoDaSemana alertas={lavoura.alertas} />
+  )
 
   const abas = (
     <>
@@ -78,7 +90,11 @@ function Conteudo({
             <SemPrevisao atualizadaEm={lavoura.previsaoAtualizadaEm} />
           )}
           {!noComputador && lavoura.previsaoDisponivel && atualizada}
-          <PrevisaoDaSemana previsao={lavoura.previsao} />
+          <PrevisaoDaSemana
+            previsao={lavoura.previsao}
+            limites={lavoura.limites}
+            diaEmFoco={diaEmFoco}
+          />
         </D.Secao>
       ) : (
         <Historico id={id} emTabela={noComputador} />
@@ -95,10 +111,25 @@ function Conteudo({
     </S.Acoes>
   )
 
-  // A faixa do alto, com a foto das folhas: a cultura numa etiqueta, o nome da lavoura em
-  // destaque e o resumo.
+  // A faixa do alto, com a foto de satélite do lugar da lavoura e o ponto onde ela foi marcada: a
+  // cultura numa etiqueta, o nome da lavoura em destaque e o resumo.
+  const foto = mapaLigado()
+    ? fotoDeSatelite(
+        lavoura.latitude,
+        lavoura.longitude,
+        FOTO_DO_HEROI.largura,
+        FOTO_DO_HEROI.altura,
+        FOTO_DO_HEROI.metrosPorPixel,
+      )
+    : undefined
   const heroi = (
-    <S.Heroi>
+    <S.Heroi $foto={foto}>
+      {foto && (
+        <>
+          <S.PontoDaLavoura aria-hidden />
+          <S.CreditoDaFoto>Imagens © Esri</S.CreditoDaFoto>
+        </>
+      )}
       <S.TextosDoHeroi>
         <S.EtiquetaDaCultura>
           <Sprout size={tema.icone.selo} aria-hidden />
@@ -115,21 +146,19 @@ function Conteudo({
     return (
       <>
         {heroi}
-        {/* A previsão em gráfico e, ao lado, em que ponto do ciclo a lavoura está. */}
+        {resumo}
+        {/* A previsão em gráfico e, ao lado, em que ponto do ciclo a lavoura está e o que a fase
+            pede. Depois, os avisos e, por último, o El Niño, que é o contexto da safra. */}
         <S.PrevisaoECiclo>
           <S.Previsao>{abas}</S.Previsao>
           <S.LadoDoCiclo>
             {encerrada}
             <Ciclo lavoura={lavoura} />
+            {fase}
           </S.LadoDoCiclo>
         </S.PrevisaoECiclo>
-        {(fase || enso) && (
-          <S.FaseEEnso>
-            {fase}
-            {enso}
-          </S.FaseEEnso>
-        )}
         {avisos && <S.AvisosLargos>{avisos}</S.AvisosLargos>}
+        {enso}
       </>
     )
   }
@@ -137,12 +166,13 @@ function Conteudo({
   return (
     <>
       {heroi}
+      {resumo}
       {encerrada}
       {abas}
       <Ciclo lavoura={lavoura} />
       {fase}
-      {enso}
       {avisos}
+      {enso}
       {acoes}
     </>
   )

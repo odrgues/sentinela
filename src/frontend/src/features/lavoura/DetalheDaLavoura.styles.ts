@@ -1,4 +1,4 @@
-import styled from 'styled-components'
+import styled, { keyframes } from 'styled-components'
 import folhas from '../../assets/folhas.jpg'
 import { noCelular } from '../../styles/midia'
 import * as D from './components/detalhe/Detalhe.styles'
@@ -82,8 +82,11 @@ export const TopoDoCelular = styled.div`
   align-items: center;
 `
 
-// A faixa do alto, com a foto das folhas escurecida à esquerda para o texto branco aparecer.
-export const Heroi = styled.header`
+// A faixa do alto: a foto de satélite do lugar da lavoura ($foto), escurecida à esquerda para o
+// texto branco aparecer. Sem a foto (nos testes, ou se ela não carregar), aparecem as folhas.
+export const Heroi = styled.header<{ $foto?: string }>`
+  position: relative;
+  overflow: hidden;
   min-height: ${({ theme }) => theme.altura.heroi};
   display: flex;
   flex-wrap: wrap;
@@ -98,12 +101,80 @@ export const Heroi = styled.header`
       ${({ theme }) => theme.cores.heroi.escuro},
       ${({ theme }) => theme.cores.heroi.claro}
     ),
-    ${({ theme }) => theme.cores.fundo.carregando} url(${folhas}) center 40% / cover no-repeat;
+    ${({ $foto }) => ($foto ? `url("${$foto}") center / cover no-repeat,` : '')}
+      ${({ theme }) => theme.cores.fundo.carregando} url(${folhas}) center 40% / cover no-repeat;
   color: ${({ theme }) => theme.cores.texto.sobreDestaque};
 
+  > * {
+    position: relative;
+  }
+
   ${noCelular} {
+    min-height: ${({ theme }) => theme.altura.heroiNoCelular};
     padding: ${({ theme }) => theme.espaco[7]};
   }
+`
+
+// O anel que se abre em volta do ponto da lavoura, como um radar: a Sentinela de olho nela.
+const radar = keyframes`
+  from {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.9;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(3.2);
+    opacity: 0;
+  }
+`
+
+// O ponto amarelo no meio da foto, que é onde a lavoura foi marcada. No celular, o texto ocupa o
+// meio da faixa, então o ponto não aparece.
+export const PontoDaLavoura = styled.span`
+  && {
+    position: absolute;
+  }
+  top: 50%;
+  left: 50%;
+  width: ${({ theme }) => theme.largura.pontoDoHeroi};
+  height: ${({ theme }) => theme.largura.pontoDoHeroi};
+  transform: translate(-50%, -50%);
+  border: ${({ theme }) => theme.espessura.bordaDeErro} solid
+    ${({ theme }) => theme.cores.heroi.contornoDoPonto};
+  border-radius: ${({ theme }) => theme.raio.circulo};
+  background: ${({ theme }) => theme.cores.heroi.ponto};
+  pointer-events: none;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    border-radius: ${({ theme }) => theme.raio.circulo};
+    background: ${({ theme }) => theme.cores.heroi.anel};
+    animation: ${radar} 2.4s ease-out infinite;
+    transform: translate(-50%, -50%);
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  }
+
+  ${noCelular} {
+    display: none;
+  }
+`
+
+// Os créditos da foto, pequenos, no canto de cima.
+export const CreditoDaFoto = styled.small`
+  && {
+    position: absolute;
+  }
+  top: ${({ theme }) => theme.espaco[3]};
+  right: ${({ theme }) => theme.espaco[6]};
+  font-size: ${({ theme }) => theme.fonte.tamanho.mini};
+  opacity: 0.75;
 `
 
 export const TextosDoHeroi = styled.div`
@@ -174,17 +245,6 @@ export const LadoDoCiclo = styled.div`
       color: ${({ theme }) => theme.cores.texto.secundario};
     }
   }
-`
-
-// A fase e o El Niño lado a lado, do mesmo tamanho.
-export const FaseEEnso = styled.div`
-  display: grid;
-  grid-template-columns: repeat(
-    auto-fit,
-    minmax(${({ theme }) => theme.largura.colunaDoDetalhe}, 1fr)
-  );
-  align-items: stretch;
-  gap: ${({ theme }) => theme.espaco[8]};
 `
 
 // Os avisos da semana na largura toda: o dia em destaque à esquerda, o aviso no meio e o que
@@ -278,7 +338,7 @@ export const PaginaDoCelular = styled.main`
     padding: ${({ theme }) => theme.espaco[3]} ${({ theme }) => theme.espaco[2]};
 
     > strong,
-    ${D.Chuva}, ${D.Minima} {
+    ${D.Chuva}, ${D.Minima}, ${D.DataNoGrafico} {
       font-size: ${({ theme }) => theme.fonte.tamanho.mini};
     }
 
@@ -290,9 +350,38 @@ export const PaginaDoCelular = styled.main`
     }
   }
 
-  ${D.Trilha} {
+  ${D.Termometro} {
     height: ${({ theme }) => theme.altura.trilhaDoGraficoPequena};
     margin: 0 -${({ theme }) => theme.espaco[2]};
+  }
+
+  ${D.Escala} {
+    inset: ${({ theme }) => theme.espaco[11]} 0;
+  }
+
+  ${D.ChuvaNoGrafico} {
+    height: ${({ theme }) => theme.altura.chuvaNoGraficoPequena};
+  }
+
+  ${D.Legenda} {
+    font-size: ${({ theme }) => theme.fonte.tamanho.mini};
+  }
+
+  ${D.Resumo} {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding: ${({ theme }) => theme.espaco[6]} ${({ theme }) => theme.espaco[7]};
+  }
+
+  /* O texto ocupa a linha toda ao lado do ícone; o "Ver o que fazer" desce, alinhado com ele. */
+  ${D.TextoDoResumo} {
+    flex-basis: calc(
+      100% - ${({ theme }) => theme.altura.toque} - ${({ theme }) => theme.espaco[6]}
+    );
+  }
+
+  ${D.LinkDoResumo} {
+    margin-left: calc(${({ theme }) => theme.altura.toque} + ${({ theme }) => theme.espaco[6]});
   }
 
   ${D.Ciclo}, ${D.Fase}, ${D.Enso} {

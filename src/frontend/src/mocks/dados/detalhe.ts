@@ -157,6 +157,21 @@ export function detalhe(id: number): DetalheDaLavoura | null {
     fase: FASES[doPainel.cultura] ?? null,
     alertas,
     previsao: previsao(),
+    // Os da soja, do seed (02_dados_iniciais.sql e 03_orientacoes.sql).
+    limites: {
+      mediaIdealMinC: 20,
+      mediaIdealMaxC: 30,
+      criticaBaixaC: 10,
+      criticaAltaC: 35,
+      chuvaSemanaMinMm: 26.5,
+      chuvaSemanaMaxMm: 47.1,
+    },
+    fases: [
+      { nome: 'Emergência', diaInicio: 0, diaFim: 9 },
+      { nome: 'Desenvolvimento vegetativo', diaInicio: 10, diaFim: 47 },
+      { nome: 'Florescimento e enchimento de grãos', diaInicio: 48, diaFim: 89 },
+      { nome: 'Maturação', diaInicio: 90, diaFim: 120 },
+    ],
   }
 }
 

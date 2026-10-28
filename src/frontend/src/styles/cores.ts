@@ -81,10 +81,24 @@ export const cores = {
   heroi: {
     escuro: 'rgba(14, 32, 9, 0.82)',
     claro: 'rgba(14, 32, 9, 0.2)',
+    // O ponto que marca a lavoura na foto de satélite, no amarelo do broto da marca, e o anel
+    // que pulsa em volta dele.
+    ponto: '#F2D27A',
+    anel: 'rgba(242, 210, 122, 0.55)',
+    contornoDoPonto: 'rgba(14, 32, 9, 0.6)',
   },
-  // A linha das máximas no gráfico da semana.
+  // O gráfico da semana: a barrinha de cada dia vai do frio (embaixo) ao quente (em cima); atrás
+  // dela, a faixa ideal da cultura e os limites de calor e de frio, tracejados.
   grafico: {
-    linha: '#E8A33A',
+    quente: '#E8A33A',
+    frio: '#8DB9D4',
+    faixaIdeal: 'rgba(46, 155, 78, 0.13)',
+    bordaDaFaixa: 'rgba(46, 155, 78, 0.35)',
+    limiteDeCalor: '#E5322B',
+    limiteDeFrio: '#2F7DB0',
+    chuva: '#6FA7CB',
+    // O dia do aviso que a pessoa está olhando.
+    diaEmFoco: '#EEF4EA',
   },
   enso: {
     fundo: '#E3EDF3',

@@ -5,8 +5,13 @@ import { diaDaSemana, diaEMes } from '../../../../shared/formato/data'
 import { ICONE_DO_NIVEL, NIVEL, NOME_DO_NIVEL } from '../../../../shared/ui/nivel'
 import type { AlertaDaSemana } from '../../tipos'
 import * as S from './Detalhe.styles'
+import { ID_DOS_AVISOS } from './ResumoDaSemana'
 
-function Aviso({ alerta }: { alerta: AlertaDaSemana }) {
+// aoOlhar: o dia do aviso que a pessoa está olhando (com o mouse ou o teclado), para acender o
+// mesmo dia no gráfico; null quando ela sai.
+type AoOlhar = (data: string | null) => void
+
+function Aviso({ alerta, aoOlhar }: { alerta: AlertaDaSemana; aoOlhar?: AoOlhar }) {
   const tema = useTheme()
   const id = useId()
   const [aberto, setAberto] = useState(false)
@@ -14,7 +19,13 @@ function Aviso({ alerta }: { alerta: AlertaDaSemana }) {
   const Icone = ICONE_DO_NIVEL[nivel]
 
   return (
-    <S.Aviso $nivel={nivel}>
+    <S.Aviso
+      $nivel={nivel}
+      onMouseEnter={() => aoOlhar?.(alerta.data)}
+      onMouseLeave={() => aoOlhar?.(null)}
+      onFocus={() => aoOlhar?.(alerta.data)}
+      onBlur={() => aoOlhar?.(null)}
+    >
       {/* O dia do aviso em destaque: "quarta" e "28/10". */}
       <S.DiaDoAviso $nivel={nivel}>
         <span>{diaDaSemana(alerta.data)}</span>
@@ -54,11 +65,17 @@ function Aviso({ alerta }: { alerta: AlertaDaSemana }) {
   )
 }
 
-export function AvisosDaSemana({ alertas }: { alertas: AlertaDaSemana[] }) {
+export function AvisosDaSemana({
+  alertas,
+  aoOlhar,
+}: {
+  alertas: AlertaDaSemana[]
+  aoOlhar?: AoOlhar
+}) {
   const tema = useTheme()
 
   return (
-    <S.Secao>
+    <S.Secao id={ID_DOS_AVISOS}>
       <h2>Avisos desta semana</h2>
       {alertas.length === 0 ? (
         <S.Aviso $nivel="ok">
@@ -73,7 +90,9 @@ export function AvisosDaSemana({ alertas }: { alertas: AlertaDaSemana[] }) {
           </S.TopoDoAviso>
         </S.Aviso>
       ) : (
-        alertas.map((alerta) => <Aviso key={`${alerta.tipo}-${alerta.data}`} alerta={alerta} />)
+        alertas.map((alerta) => (
+          <Aviso key={`${alerta.tipo}-${alerta.data}`} alerta={alerta} aoOlhar={aoOlhar} />
+        ))
       )}
     </S.Secao>
   )

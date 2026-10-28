@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { explicacaoDoEnso, porcentagemDoCiclo, resumoDaLavoura, tituloDoEnso } from './detalhe'
-import type { DetalheDaLavoura } from './tipos'
+import {
+  escalaDaSemana,
+  explicacaoDoEnso,
+  porcentagemDoCiclo,
+  resumoDaLavoura,
+  tituloDoEnso,
+} from './detalhe'
+import type { DetalheDaLavoura, DiaDePrevisao, LimitesDaCultura } from './tipos'
 
 const enso = {
   fase: 'El Nino',
@@ -72,5 +78,51 @@ describe('explicacaoDoEnso', () => {
     expect(explicacaoDoEnso({ ...enso, fase: 'El Nino' })).toMatch(/mais quente que o normal/)
     expect(explicacaoDoEnso({ ...enso, fase: 'La Nina' })).toMatch(/mais frio que o normal/)
     expect(explicacaoDoEnso({ ...enso, fase: 'Neutro' })).toMatch(/está no normal/)
+  })
+})
+
+describe('escalaDaSemana', () => {
+  const dia = (minC: number, maxC: number): DiaDePrevisao => ({
+    data: '2026-10-28',
+    condicao: 'sol',
+    minC,
+    maxC,
+    chuvaMm: 0,
+    nivel: 'ok',
+    frase: 'Dentro do ideal',
+  })
+  const soja: LimitesDaCultura = {
+    mediaIdealMinC: 20,
+    mediaIdealMaxC: 30,
+    criticaBaixaC: 10,
+    criticaAltaC: 35,
+    chuvaSemanaMinMm: 26.5,
+    chuvaSemanaMaxMm: 47.1,
+  }
+
+  it('sem limites, vai da menor mínima à maior máxima, com um grau de folga', () => {
+    const { y, ideal, calor, frio } = escalaDaSemana([dia(18, 28), dia(20, 30)])
+
+    expect(y(31)).toBe(0)
+    expect(y(17)).toBe(100)
+    expect(ideal).toBeNull()
+    expect(calor).toBeNull()
+    expect(frio).toBeNull()
+  })
+
+  it('abre a escala para a faixa ideal e para o limite de calor que está perto', () => {
+    const { y, ideal, calor } = escalaDaSemana([dia(22, 32), dia(23, 33)], soja)
+
+    expect(ideal).toEqual({ min: 20, max: 30 })
+    expect(calor).toBe(35)
+    expect(y(36)).toBe(0)
+    expect(y(19)).toBe(100)
+  })
+
+  it('deixa de fora o limite de frio longe da semana, para não achatar o gráfico', () => {
+    const { frio, y } = escalaDaSemana([dia(22, 32), dia(23, 33)], soja)
+
+    expect(frio).toBeNull()
+    expect(y(10)).toBeGreaterThan(100)
   })
 })

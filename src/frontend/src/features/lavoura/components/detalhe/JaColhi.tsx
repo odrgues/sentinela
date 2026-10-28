@@ -16,7 +16,9 @@ export function JaColhi({ id, apelido }: { id: string; apelido: string }) {
 
   return (
     <>
-      <Botao onClick={() => setAberta(true)}>Já colhi</Botao>
+      <Botao variante="neutro" onClick={() => setAberta(true)}>
+        Já colhi
+      </Botao>
       {aberta && (
         <Confirmacao
           titulo={`Já colheu o ${apelido}?`}

@@ -129,11 +129,15 @@ export const altura = {
   carregandoTitulo: '24px',
   carregandoCartao: '92px',
   barraDoCiclo: '12px',
-  // A faixa com a foto no alto da página da lavoura.
-  heroi: '104px',
-  // A faixa da linha das máximas no gráfico da semana.
-  trilhaDoGrafico: '32px',
-  trilhaDoGraficoPequena: '24px',
+  // A faixa com a foto de satélite no alto da página da lavoura.
+  heroi: '148px',
+  heroiNoCelular: '132px',
+  // A escala de temperatura do gráfico da semana, com a máxima em cima e a mínima embaixo.
+  trilhaDoGrafico: '150px',
+  trilhaDoGraficoPequena: '124px',
+  // A faixa das barrinhas de chuva, embaixo da escala.
+  chuvaNoGrafico: '32px',
+  chuvaNoGraficoPequena: '24px',
   // A barrinha do ciclo nos cartões das lavouras do painel.
   barraDoCicloPequena: '6px',
   // A altura mínima dos quadrinhos das lavouras no painel do computador (quase a largura deles).
@@ -172,11 +176,17 @@ export const largura = {
   detalhe: '1280px',
   // A página da lavoura no computador: larga, mas com respiro dos lados nas telas grandes.
   paginaDaLavoura: '1440px',
-  colunaDoDetalhe: '340px',
   // O ciclo ao lado do gráfico da semana.
-  colunaDoCiclo: '260px',
+  colunaDoCiclo: '320px',
   // O bloco com o dia do aviso, no computador.
   diaDoAviso: '72px',
+  // A barrinha da temperatura (da mínima à máxima) e a da chuva, em cada dia do gráfico.
+  capsulaDoGrafico: '10px',
+  barraDeChuva: '16px',
+  // A amostra de cor na legenda do gráfico.
+  amostraDaLegenda: '18px',
+  // O ponto que marca a lavoura na foto de satélite do alto.
+  pontoDoHeroi: '14px',
   // Cada dia do gráfico da semana, na página da lavoura.
   diaNoGrafico: '88px',
   diaNoGraficoPequeno: '76px',

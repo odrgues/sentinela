@@ -1,5 +1,5 @@
 import { diaEMes } from '../../shared/formato/data'
-import type { DetalheDaLavoura, Enso } from './tipos'
+import type { DetalheDaLavoura, DiaDePrevisao, Enso, LimitesDaCultura } from './tipos'
 
 const FASES: Record<string, string> = {
   'El Nino': 'El Niño',
@@ -47,4 +47,42 @@ export function resumoDaLavoura(lavoura: DetalheDaLavoura, comMunicipio = false)
 // Quanto do ciclo já passou, de 0 a 100, para a barra.
 export function porcentagemDoCiclo(diaAtual: number, cicloDias: number) {
   return Math.min(100, Math.max(0, Math.round((diaAtual / cicloDias) * 100)))
+}
+
+// Os limites de calor e de frio só entram no gráfico se estiverem a até 4 °C da semana: um limite
+// de frio de 5 °C numa semana de 30 °C achataria tudo.
+const PERTO_DA_SEMANA = 4
+
+// A escala de temperatura da semana, a mesma para todos os dias: da menor mínima à maior máxima,
+// aberta para caber a faixa ideal da cultura e os limites de calor e de frio que estiverem perto.
+// y(°C) é a altura na escala, em % de cima para baixo.
+export function escalaDaSemana(previsao: DiaDePrevisao[], limites?: LimitesDaCultura | null) {
+  const temperaturas = previsao.flatMap((dia) => [dia.minC, dia.maxC])
+  let menor = Math.min(...temperaturas)
+  let maior = Math.max(...temperaturas)
+  const perto = (limite: number | null | undefined): limite is number =>
+    limite != null && limite >= menor - PERTO_DA_SEMANA && limite <= maior + PERTO_DA_SEMANA
+
+  const ideal =
+    limites?.mediaIdealMinC != null && limites.mediaIdealMaxC != null
+      ? { min: limites.mediaIdealMinC, max: limites.mediaIdealMaxC }
+      : null
+  const calor = perto(limites?.criticaAltaC) ? limites.criticaAltaC : null
+  const frio = perto(limites?.criticaBaixaC) ? limites.criticaBaixaC : null
+
+  for (const valor of [ideal?.min, ideal?.max, calor, frio]) {
+    if (valor == null) continue
+    menor = Math.min(menor, valor)
+    maior = Math.max(maior, valor)
+  }
+  // Um grau de folga em cima e embaixo, para a barrinha não encostar na borda.
+  menor -= 1
+  maior += 1
+
+  return {
+    y: (graus: number) => ((maior - graus) / (maior - menor)) * 100,
+    ideal,
+    calor,
+    frio,
+  }
 }

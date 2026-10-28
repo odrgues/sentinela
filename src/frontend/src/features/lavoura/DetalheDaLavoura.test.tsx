@@ -182,6 +182,40 @@ describe('Detalhe da lavoura', () => {
     await abrirTalhao()
 
     expect(screen.getByText('Tudo certo esta semana')).toBeInTheDocument()
+    const resumo = screen.getByRole('region', { name: 'Resumo da semana' })
+    expect(resumo).toHaveTextContent('Semana tranquila para a lavoura')
+    expect(within(resumo).queryByRole('link')).not.toBeInTheDocument()
+  })
+
+  it('resume a semana embaixo da foto pelo aviso mais sério, com o caminho para o que fazer', async () => {
+    await abrirTalhao()
+
+    const resumo = screen.getByRole('region', { name: 'Resumo da semana' })
+    expect(resumo).toHaveTextContent('Risco para a lavoura nesta semana')
+    expect(resumo).toHaveTextContent('Calor de 36 °C.')
+    expect(resumo).toHaveTextContent('E mais 1 aviso.')
+    expect(within(resumo).getByRole('link', { name: 'Ver o que fazer' })).toHaveAttribute(
+      'href',
+      '#avisos-da-semana',
+    )
+  })
+
+  it('o gráfico explica a faixa ideal, o limite de calor e a chuva da semana', async () => {
+    await abrirTalhao()
+
+    const legenda = screen.getByRole('list', { name: 'Como ler o gráfico' })
+    expect(legenda).toHaveTextContent('Média ideal do dia: 20 a 30 °C')
+    expect(legenda).toHaveTextContent('Calor forte acima de 35 °C')
+    expect(legenda).not.toHaveTextContent('Frio forte')
+    expect(legenda).toHaveTextContent('Chuva na semana: 22 mm (o ideal é de 26,5 a 47,1 mm)')
+  })
+
+  it('o ciclo mostra a próxima fase', async () => {
+    await abrirTalhao()
+
+    expect(
+      screen.getByText('Depois: Florescimento e enchimento de grãos, a partir do dia 48'),
+    ).toBeInTheDocument()
   })
 
   it('mostra a previsão dos 7 dias, com a frase e a chuva de cada dia', async () => {
@@ -194,6 +228,7 @@ describe('Detalhe da lavoura', () => {
     expect(dias[0]).toHaveTextContent('Hoje')
     expect(dias[0]).toHaveTextContent('Sem chuva')
     expect(dias[4]).toHaveTextContent('Calor forte: risco')
+    expect(dias[4]).toHaveTextContent('Máxima de 36°, mínima de 22°')
     expect(dias[6]).toHaveTextContent('18 mm de chuva')
     expect(within(dias[6]).getByRole('img', { name: 'Chuva' })).toBeInTheDocument()
   })
@@ -308,5 +343,23 @@ describe('Detalhe da lavoura', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Histórico' }))
     const tabela = await screen.findByRole('table')
     expect(within(tabela).getAllByRole('row')).toHaveLength(21)
+  })
+
+  it('no computador, passar o mouse num aviso acende o dia dele no gráfico', async () => {
+    telaDeComputador()
+    await abrirTalhao()
+
+    const dias = within(screen.getByRole('list', { name: 'Próximos 7 dias' })).getAllByRole(
+      'listitem',
+    )
+    const avisos = screen.getByRole('heading', { level: 2, name: 'Avisos desta semana' })
+      .parentElement as HTMLElement
+    const calor = within(avisos).getByText(/Calor de 36 °C/)
+
+    await userEvent.hover(calor)
+    expect(dias[4]).toHaveAttribute('aria-current', 'date')
+
+    await userEvent.unhover(calor)
+    expect(dias[4]).not.toHaveAttribute('aria-current')
   })
 })

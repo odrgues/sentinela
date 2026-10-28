@@ -54,6 +54,25 @@ export const Preenchida = styled.div`
   background: ${({ theme }) => theme.cores.destaque.base};
 `
 
+// A barra do ciclo em trechos, um por fase, do tamanho de cada fase.
+export const Trechos = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.espaco[1]};
+  height: ${({ theme }) => theme.altura.barraDoCiclo};
+`
+
+// $agora: a fase de hoje, com o fundo verde-claro para se destacar das que ainda vêm.
+export const Trecho = styled.div<{ $agora: boolean }>`
+  flex-basis: 0;
+  min-width: ${({ theme }) => theme.espaco[2]};
+  overflow: hidden;
+  border-radius: ${({ theme }) => theme.raio.barra};
+  background: ${({ theme, $agora }) =>
+    $agora ? theme.cores.destaque.suave : theme.cores.fundo.trilho};
+  box-shadow: ${({ theme, $agora }) =>
+    $agora ? `inset 0 0 0 ${theme.espessura.linha} ${theme.cores.destaque.base}` : 'none'};
+`
+
 export const Enso = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.espaco[5]};
@@ -148,11 +167,73 @@ export const Secao = styled.section`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.espaco[6]};
+  /* O "Ver o que fazer" do resumo rola até aqui sem colar a seção no alto da tela. */
+  scroll-margin-top: ${({ theme }) => theme.espaco[14]};
 
   h2 {
     margin: 0;
     font-size: ${({ theme }) => theme.fonte.tamanho.nomeDaLavoura};
     font-weight: ${({ theme }) => theme.fonte.peso.extra};
+  }
+`
+
+// O resumo da semana, embaixo da foto: o ícone do nível, o aviso mais sério e o link para o que
+// fazer, na cor do nível.
+export const Resumo = styled.section<{ $nivel: NivelDoTema }>`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.espaco[6]};
+  padding: ${({ theme }) => theme.espaco[7]} ${({ theme }) => theme.espaco[8]};
+  border-radius: ${({ theme }) => theme.raio.botao};
+  background: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].fundo};
+  color: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].texto};
+`
+
+export const IconeDoResumo = styled.span<{ $nivel: NivelDoTema }>`
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: ${({ theme }) => theme.altura.toque};
+  height: ${({ theme }) => theme.altura.toque};
+  border-radius: ${({ theme }) => theme.raio.circulo};
+  background: ${({ theme }) => theme.cores.fundo.cartao};
+  color: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].marcador};
+`
+
+export const TextoDoResumo = styled.p`
+  flex: 1;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.espaco[1]};
+
+  strong {
+    font-size: ${({ theme }) => theme.fonte.tamanho.corpo};
+    font-weight: ${({ theme }) => theme.fonte.peso.extra};
+  }
+
+  span {
+    font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
+    line-height: ${({ theme }) => theme.fonte.alturaLinha.media};
+  }
+`
+
+export const LinkDoResumo = styled.a`
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: ${({ theme }) => theme.altura.botaoSecundario};
+  padding: 0 ${({ theme }) => theme.espaco[7]};
+  border-radius: ${({ theme }) => theme.raio.pilula};
+  background: ${({ theme }) => theme.cores.fundo.cartao};
+  color: inherit;
+  font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
+  font-weight: ${({ theme }) => theme.fonte.peso.forte};
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    text-decoration: underline;
   }
 `
 
@@ -345,9 +426,14 @@ export const Chuva = styled.span`
   }
 `
 
-// O gráfico da semana: um dia por coluna, colunas coladas para a linha ficar contínua. No
-// celular, rola para o lado.
-// Solto na página, sem cartão: só as colunas dos dias.
+// A data embaixo do dia da semana, discreta.
+export const DataNoGrafico = styled.span`
+  font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
+  color: ${({ theme }) => theme.cores.texto.secundario};
+`
+
+// O gráfico da semana, solto na página: um dia por coluna, colunas coladas para a faixa ideal e
+// os limites ficarem contínuos. No celular, rola para o lado.
 export const Grafico = styled.ul`
   /* O texto só para o leitor de tela ("de chuva") é absoluto: sem isto, ele escapa da rolagem do
      gráfico e alarga a página no celular. */
@@ -362,65 +448,157 @@ export const Grafico = styled.ul`
   scrollbar-width: thin;
 `
 
-export const DiaNoGrafico = styled.li<{ $nivel: NivelDoDia }>`
+// $emFoco: o dia do aviso que a pessoa está olhando.
+export const DiaNoGrafico = styled.li<{ $nivel: NivelDoDia; $emFoco: boolean }>`
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: ${({ theme }) => theme.espaco[2]};
   padding: ${({ theme }) => theme.espaco[4]} ${({ theme }) => theme.espaco[3]};
   border-radius: ${({ theme }) => theme.raio.campo};
-  background: ${({ theme, $nivel }) =>
-    $nivel === 'critico' ? theme.cores.diaCritico.fundo : 'transparent'};
+  background: ${({ theme, $nivel, $emFoco }) => {
+    if ($nivel === 'critico') return theme.cores.diaCritico.fundo
+    return $emFoco ? theme.cores.grafico.diaEmFoco : 'transparent'
+  }};
+  box-shadow: ${({ theme, $emFoco }) =>
+    $emFoco ? `inset 0 0 0 ${theme.espessura.bordaDeErro} ${theme.cores.destaque.base}` : 'none'};
   text-align: center;
+  transition:
+    background 150ms ease,
+    box-shadow 150ms ease;
 
   > strong {
     font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
     font-weight: ${({ theme }) => theme.fonte.peso.extra};
   }
 
-  /* A chuva numa linha só, embaixo da mínima. */
+  /* A chuva numa linha só, embaixo da barra. */
   ${Chuva} {
     white-space: nowrap;
   }
 `
 
+// A escala de temperatura do dia. Sai para os lados até a borda da coluna, para a faixa ideal e os
+// limites emendarem com os dos outros dias.
+export const Termometro = styled.div`
+  position: relative;
+  align-self: stretch;
+  height: ${({ theme }) => theme.altura.trilhaDoGrafico};
+  margin: 0 -${({ theme }) => theme.espaco[3]};
+`
+
+// O miolo da escala, com espaço em cima e embaixo para a máxima e a mínima.
+export const Escala = styled.div`
+  position: absolute;
+  inset: ${({ theme }) => theme.espaco[12]} 0;
+`
+
+export const FaixaIdeal = styled.span`
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-block: ${({ theme }) => theme.espessura.borda} solid
+    ${({ theme }) => theme.cores.grafico.bordaDaFaixa};
+  background: ${({ theme }) => theme.cores.grafico.faixaIdeal};
+`
+
+export const Limite = styled.span<{ $tipo: 'calor' | 'frio' }>`
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: ${({ theme }) => theme.espessura.borda} dashed
+    ${({ theme, $tipo }) =>
+      $tipo === 'calor' ? theme.cores.grafico.limiteDeCalor : theme.cores.grafico.limiteDeFrio};
+`
+
+// A barrinha do dia, da mínima (embaixo, fria) à máxima (em cima, quente).
+export const Capsula = styled.span`
+  position: absolute;
+  left: 50%;
+  width: ${({ theme }) => theme.largura.capsulaDoGrafico};
+  transform: translateX(-50%);
+  border-radius: ${({ theme }) => theme.raio.pilula};
+  background: linear-gradient(
+    to bottom,
+    ${({ theme }) => theme.cores.grafico.quente},
+    ${({ theme }) => theme.cores.grafico.frio}
+  );
+`
+
+// A máxima logo acima da barrinha e a mínima logo abaixo.
 export const Maxima = styled.span`
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, calc(-100% - ${({ theme }) => theme.espaco[2]}));
   white-space: nowrap;
   font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
   font-weight: ${({ theme }) => theme.fonte.peso.forte};
 `
 
 export const Minima = styled.span`
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, ${({ theme }) => theme.espaco[2]});
+  white-space: nowrap;
   font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
   color: ${({ theme }) => theme.cores.texto.secundario};
 `
 
-// A faixa da linha das máximas: o pedaço da linha deste dia e o ponto, na cor do nível.
-export const Trilha = styled.span`
-  position: relative;
+// A chuva do dia numa barra que sobe do chão: cheia é a maior chuva da semana.
+export const ChuvaNoGrafico = styled.span`
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
   align-self: stretch;
-  height: ${({ theme }) => theme.altura.trilhaDoGrafico};
-  margin: 0 -${({ theme }) => theme.espaco[3]};
+  height: ${({ theme }) => theme.altura.chuvaNoGrafico};
+  border-bottom: ${({ theme }) => theme.espessura.borda} solid
+    ${({ theme }) => theme.cores.borda.divisoria};
+`
 
-  svg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    overflow: visible;
+export const BarraDeChuva = styled.span`
+  width: ${({ theme }) => theme.largura.barraDeChuva};
+  border-radius: ${({ theme }) => theme.raio.barra} ${({ theme }) => theme.raio.barra} 0 0;
+  background: ${({ theme }) => theme.cores.grafico.chuva};
+`
+
+// Como ler o gráfico: a faixa ideal, os limites e a chuva da semana.
+export const Legenda = styled.ul`
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.espaco[3]} ${({ theme }) => theme.espaco[10]};
+  font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
+  color: ${({ theme }) => theme.cores.texto.secundario};
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: ${({ theme }) => theme.espaco[3]};
   }
 `
 
-export const Ponto = styled.span<{ $nivel: NivelDoDia }>`
-  position: absolute;
-  left: 50%;
-  width: ${({ theme }) => theme.espaco[4]};
-  height: ${({ theme }) => theme.espaco[4]};
-  transform: translate(-50%, -50%);
-  border: ${({ theme }) => theme.espessura.bordaDeErro} solid
-    ${({ theme }) => theme.cores.fundo.cartao};
-  border-radius: ${({ theme }) => theme.raio.circulo};
-  background: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].marcador};
+export const AmostraDaFaixa = styled.span`
+  width: ${({ theme }) => theme.largura.amostraDaLegenda};
+  height: ${({ theme }) => theme.espaco[6]};
+  border-block: ${({ theme }) => theme.espessura.borda} solid
+    ${({ theme }) => theme.cores.grafico.bordaDaFaixa};
+  background: ${({ theme }) => theme.cores.grafico.faixaIdeal};
+`
+
+export const AmostraDoLimite = styled.span<{ $tipo: 'calor' | 'frio' }>`
+  width: ${({ theme }) => theme.largura.amostraDaLegenda};
+  border-top: ${({ theme }) => theme.espessura.bordaDeErro} dashed
+    ${({ theme, $tipo }) =>
+      $tipo === 'calor' ? theme.cores.grafico.limiteDeCalor : theme.cores.grafico.limiteDeFrio};
+`
+
+export const AmostraDaChuva = styled.span`
+  width: ${({ theme }) => theme.espaco[5]};
+  height: ${({ theme }) => theme.espaco[7]};
+  border-radius: ${({ theme }) => theme.raio.barra} ${({ theme }) => theme.raio.barra} 0 0;
+  background: ${({ theme }) => theme.cores.grafico.chuva};
 `
 
 // Os ícones do tempo se mexem de leve, cada um do seu jeito. As partes do ícone (a nuvem, as

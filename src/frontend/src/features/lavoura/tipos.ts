@@ -54,6 +54,24 @@ export type FaseDoCiclo = {
   fonte: string
 }
 
+// Os limites da cultura, para o gráfico da semana: a faixa ideal vale para a média do dia; os
+// críticos, para a máxima e a mínima; a chuva, para a soma da semana.
+export type LimitesDaCultura = {
+  mediaIdealMinC: number | null
+  mediaIdealMaxC: number | null
+  criticaBaixaC: number | null
+  criticaAltaC: number | null
+  chuvaSemanaMinMm: number | null
+  chuvaSemanaMaxMm: number | null
+}
+
+// Uma fase do ciclo, sem os textos: o desenho da linha do tempo.
+export type TrechoDoCiclo = {
+  nome: string
+  diaInicio: number
+  diaFim: number
+}
+
 export type DiaDePrevisao = {
   data: string
   condicao: Condicao
@@ -101,6 +119,9 @@ export type DetalheDaLavoura = {
   fase?: FaseDoCiclo | null
   alertas: AlertaDaSemana[]
   previsao: DiaDePrevisao[]
+  // Opcionais: a API antiga não manda.
+  limites?: LimitesDaCultura | null
+  fases?: TrechoDoCiclo[]
 }
 
 export type AvisoDoHistorico = {
