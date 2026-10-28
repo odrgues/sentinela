@@ -1,5 +1,6 @@
-import styled, { css } from 'styled-components'
+import styled, { css, keyframes } from 'styled-components'
 import type { NivelDoTema } from '../../../../shared/ui/nivel'
+import type { Condicao } from '../../../../shared/ui/tempo'
 import type { NivelDoDia } from '../../tipos'
 
 const cartao = css`
@@ -346,13 +347,13 @@ export const Chuva = styled.span`
 
 // O gráfico da semana: um dia por coluna, colunas coladas para a linha ficar contínua. No
 // celular, rola para o lado.
+// Solto na página, sem cartão: só as colunas dos dias.
 export const Grafico = styled.ul`
-  ${cartao}
   /* O texto só para o leitor de tela ("de chuva") é absoluto: sem isto, ele escapa da rolagem do
      gráfico e alarga a página no celular. */
   position: relative;
   margin: 0;
-  padding: ${({ theme }) => theme.espaco[7]} ${({ theme }) => theme.espaco[5]};
+  padding: 0;
   list-style: none;
   display: grid;
   grid-auto-flow: column;
@@ -422,9 +423,122 @@ export const Ponto = styled.span<{ $nivel: NivelDoDia }>`
   background: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].marcador};
 `
 
-export const IconeDoTempo = styled.span<{ $cor: 'sol' | 'nuvem' | 'chuva' }>`
+// Os ícones do tempo se mexem de leve, cada um do seu jeito. As partes do ícone (a nuvem, as
+// gotas, o raio, os raios do sol) são os filhos do <svg> do Lucide, na ordem do desenho.
+const gotaCaindo = keyframes`
+  0% {
+    opacity: 0;
+    transform: translateY(-40%);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(70%);
+  }
+`
+
+// Aceso quase o tempo todo, com duas piscadas rápidas, como um relâmpago.
+const raioPiscando = keyframes`
+  0%, 66%, 72%, 80%, 100% {
+    opacity: 1;
+  }
+  69%, 76% {
+    opacity: 0.15;
+  }
+`
+
+const girando = keyframes`
+  to {
+    transform: rotate(360deg);
+  }
+`
+
+const nuvemBalancando = keyframes`
+  from {
+    transform: translateX(-6%);
+  }
+  to {
+    transform: translateX(6%);
+  }
+`
+
+const solPulsando = keyframes`
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.45;
+  }
+`
+
+const ANIMACAO_DO_TEMPO: Record<Condicao, ReturnType<typeof css>> = {
+  chuva: css`
+    > :nth-child(n + 2) {
+      animation: ${gotaCaindo} 1.2s linear infinite;
+      animation-delay: var(--atraso);
+    }
+    > :nth-child(3) {
+      animation-delay: calc(var(--atraso) - 0.4s);
+    }
+    > :nth-child(4) {
+      animation-delay: calc(var(--atraso) - 0.8s);
+    }
+  `,
+  tempestade: css`
+    > :nth-child(2) {
+      animation: ${raioPiscando} 3s linear infinite;
+      animation-delay: var(--atraso);
+    }
+  `,
+  sol: css`
+    animation: ${girando} 20s linear infinite;
+    animation-delay: var(--atraso);
+  `,
+  sol_nuvens: css`
+    > :nth-child(-n + 5) {
+      animation: ${solPulsando} 2s ease-in-out infinite alternate;
+      animation-delay: var(--atraso);
+    }
+    > :nth-child(6) {
+      animation: ${nuvemBalancando} 3s ease-in-out infinite alternate;
+      animation-delay: var(--atraso);
+    }
+  `,
+  nublado: css`
+    > * {
+      animation: ${nuvemBalancando} 3s ease-in-out infinite alternate;
+      animation-delay: var(--atraso);
+    }
+  `,
+}
+
+// $dia: a posição do dia na semana, para cada ícone começar a se mexer num momento diferente.
+export const IconeDoTempo = styled.span<{
+  $cor: 'sol' | 'nuvem' | 'chuva'
+  $condicao: Condicao
+  $dia: number
+}>`
+  --atraso: ${({ $dia }) => -$dia * 0.37}s;
   display: flex;
   color: ${({ theme, $cor }) => theme.cores.tempo[$cor]};
+
+  svg {
+    overflow: visible;
+  }
+
+  svg * {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  /* Quem pediu menos movimento no sistema vê os ícones parados. */
+  @media (prefers-reduced-motion: no-preference) {
+    svg {
+      ${({ $condicao }) => ANIMACAO_DO_TEMPO[$condicao]}
+    }
+  }
 `
 
 export const ListaDoHistorico = styled.ul`

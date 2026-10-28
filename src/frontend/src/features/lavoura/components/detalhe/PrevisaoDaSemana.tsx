@@ -57,7 +57,7 @@ export function PrevisaoDaSemana({ previsao }: { previsao: DiaDePrevisao[] }) {
           <S.DiaNoGrafico key={dia.data} $nivel={dia.nivel}>
             <strong>{diaCurto(dia.data)}</strong>
             <S.Chuva>{diaEMes(dia.data)}</S.Chuva>
-            <S.IconeDoTempo $cor={COR_DO_TEMPO[dia.condicao]}>
+            <S.IconeDoTempo $cor={COR_DO_TEMPO[dia.condicao]} $condicao={dia.condicao} $dia={i}>
               <Icone
                 size={tema.icone.tempoNoCartao}
                 role="img"

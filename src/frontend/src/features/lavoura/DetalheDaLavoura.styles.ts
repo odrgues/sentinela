@@ -272,7 +272,6 @@ export const PaginaDoCelular = styled.main`
 
   ${D.Grafico} {
     grid-auto-columns: minmax(${({ theme }) => theme.largura.diaNoGraficoPequeno}, 1fr);
-    padding: ${({ theme }) => theme.espaco[5]} ${({ theme }) => theme.espaco[3]};
   }
 
   ${D.DiaNoGrafico} {
