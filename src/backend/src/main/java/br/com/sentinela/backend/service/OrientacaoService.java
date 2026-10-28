@@ -8,6 +8,7 @@ import br.com.sentinela.backend.repository.RecomendacaoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 // O "O que fazer" de cada aviso e a fase do ciclo. São textos do banco, cada um com a sua fonte:
@@ -31,5 +32,10 @@ public class OrientacaoService {
         if (diaAtual == null) return Optional.empty();
         return faseCulturaRepository
                 .findFirstByCulturaIdAndDiaInicioLessThanEqualAndDiaFimGreaterThanEqual(cultura.getId(), diaAtual, diaAtual);
+    }
+
+    // As fases do ciclo inteiro, para a linha do tempo da lavoura.
+    public List<FaseCultura> fases(Cultura cultura) {
+        return faseCulturaRepository.findByCulturaIdOrderByDiaInicio(cultura.getId());
     }
 }

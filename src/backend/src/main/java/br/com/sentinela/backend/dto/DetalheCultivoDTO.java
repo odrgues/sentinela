@@ -28,7 +28,9 @@ public record DetalheCultivoDTO(
         EnsoDTO enso,
         FaseDTO fase,
         List<AlertaDaSemanaDTO> alertas,
-        List<DiaDaPrevisaoDTO> previsao
+        List<DiaDaPrevisaoDTO> previsao,
+        LimitesDTO limites,
+        List<TrechoDoCicloDTO> fases
 ) {
     // efeito e oQueFazer vêm da tabela orientacao_enso (nulos se a fase não tiver orientação com fonte).
     public record EnsoDTO(String fase, String intensidade, BigDecimal indice, String mesPlantio, String frase,
@@ -39,6 +41,14 @@ public record DetalheCultivoDTO(
 
     public record AlertaDaSemanaDTO(String tipo, String severidade, LocalDate data, String mensagem,
                                     String porque, String oQueFazer) {}
+
+    // Os limites da cultura, para o gráfico da semana: a faixa ideal vale para a média do dia; os
+    // críticos, para a máxima e a mínima; a chuva, para a soma da semana.
+    public record LimitesDTO(Double mediaIdealMinC, Double mediaIdealMaxC, Double criticaBaixaC,
+                             Double criticaAltaC, Double chuvaSemanaMinMm, Double chuvaSemanaMaxMm) {}
+
+    // Uma fase do ciclo, sem os textos: o desenho da linha do tempo.
+    public record TrechoDoCicloDTO(String nome, int diaInicio, int diaFim) {}
 
     public record DiaDaPrevisaoDTO(LocalDate data, String condicao, long minC, long maxC, double chuvaMm,
                                    String nivel, String frase) {}

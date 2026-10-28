@@ -166,6 +166,14 @@ public class CultivoService {
                 .map(f -> new DetalheCultivoDTO.FaseDTO(f.getNome(), f.getDiaInicio(), f.getDiaFim(), f.getOrientacao(), f.getFonte()))
                 .orElse(null);
 
+        List<DetalheCultivoDTO.TrechoDoCicloDTO> fases = orientacaoService.fases(cultura).stream()
+                .map(f -> new DetalheCultivoDTO.TrechoDoCicloDTO(f.getNome(), f.getDiaInicio(), f.getDiaFim()))
+                .toList();
+        DetalheCultivoDTO.LimitesDTO limites = new DetalheCultivoDTO.LimitesDTO(
+                cultura.getTempMinIdealC(), cultura.getTempMaxIdealC(),
+                cultura.getTempCriticaBaixaC(), cultura.getTempCriticaAltaC(),
+                cultura.getChuvaSemMinMm(), cultura.getChuvaSemMaxMm());
+
         return new DetalheCultivoDTO(
                 cultivo.getId(),
                 cultivo.getApelido(),
@@ -188,7 +196,9 @@ public class CultivoService {
                 faseEnsoService.ensoDoCultivo(cultivo),
                 fase,
                 alertas,
-                previsao
+                previsao,
+                limites,
+                fases
         );
     }
 
