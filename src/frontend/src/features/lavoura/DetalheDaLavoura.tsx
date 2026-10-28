@@ -104,9 +104,7 @@ function Conteudo({
 
   const acoes = emAndamento && (
     <S.Acoes>
-      <BotaoLink to={`/lavouras/${id}/editar`} variante="neutro">
-        Editar
-      </BotaoLink>
+      <BotaoLink to={`/lavouras/${id}/editar`}>Editar</BotaoLink>
       <JaColhi id={id} apelido={lavoura.apelido} />
     </S.Acoes>
   )
