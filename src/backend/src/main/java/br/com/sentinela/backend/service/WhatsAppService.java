@@ -25,6 +25,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -51,8 +52,6 @@ public class WhatsAppService {
     private String evolutionApiKey;
 
     public record RespostaWebhook(boolean naoCadastrado, String mensagem) {}
-
-    private static final int LIMITE_DA_MENSAGEM = 3500;
 
     @Transactional
     public String processarMensagemRecebida(String chatId, String conteudo) {
@@ -102,7 +101,6 @@ public class WhatsAppService {
         String lidAlvo = (lid != null && !lid.isBlank()) ? lid : (chatId.contains("@lid") ? chatId : null);
         Usuario usuario = null;
 
-        // 1. Busca por LID (identificador do dispositivo no WhatsApp)
         if (lidAlvo != null) {
             Optional<Usuario> usuarioPorLid = usuarioRepository.findByWhatsappLid(lidAlvo);
             if (usuarioPorLid.isPresent()) {
@@ -110,7 +108,6 @@ public class WhatsAppService {
             }
         }
 
-        // 2. Busca por número de telefone caso não tenha achado por LID
         if (usuario == null && !chatId.contains("@lid")) {
             String apenasNumerosChat = chatId.replaceAll("[^0-9]", "");
             if (!apenasNumerosChat.isBlank()) {
@@ -163,10 +160,7 @@ public class WhatsAppService {
         // Fluxo normal para usuário já autenticado e vinculado
         String intencao = identificarIntencao(conteudo, intencaoEntrada);
         registrarMensagemRecebida(usuario, chatId, conteudo, intencao);
-
-        String resposta = MenuDoBot.ehPedidoDeSaida(conteudo)
-                ? MenuDoBot.despedida(usuario.getNome())
-                : gerarRespostaDoAgente(usuario, intencao);
+        String resposta = gerarRespostaDoAgente(usuario, intencao);
 
         enviarEManterHistorico(usuario, resposta, intencao, destinoResposta(chatId, usuario));
 
@@ -282,7 +276,6 @@ public class WhatsAppService {
         dispararParaWhatsappReal(usuario, chatIdFinal, textoMensagem);
     }
 
-    // RETORNADO À LÓGICA ANTERIOR QUE FUNCIONAVA
     private String destinoResposta(String chatId, Usuario usuario) {
         if (usuario != null && usuario.getWhatsappNumero() != null && !usuario.getWhatsappNumero().isBlank()) {
             return usuario.getWhatsappNumero();
@@ -322,26 +315,24 @@ public class WhatsAppService {
                 headers.setContentType(MediaType.APPLICATION_JSON);
                 headers.set("apikey", evolutionApiKey);
 
+                Map<String, Object> body = Map.of(
+                        "number", numeroOuLidFinal,
+                        "textMessage", Map.of("text", mensagem)
+                );
+
+                HttpEntity<?> requestEntity = new HttpEntity<>(body, headers);
+
                 String baseUrl = evolutionApiUrl != null ? evolutionApiUrl.replaceAll("/$", "") : "http://localhost:8082";
                 String urlEndpoint = baseUrl + "/message/sendText/sentinela-bot";
 
-                for (String parte : FormatoDoBot.dividirEmMensagens(mensagem, LIMITE_DA_MENSAGEM)) {
-                    Map<String, Object> body = Map.of(
-                            "number", numeroOuLidFinal,
-                            "textMessage", Map.of("text", parte)
-                    );
+                ResponseEntity<JsonNode> response = restTemplate.postForEntity(
+                        urlEndpoint,
+                        requestEntity,
+                        JsonNode.class
+                );
 
-                    HttpEntity<?> requestEntity = new HttpEntity<>(body, headers);
-
-                    ResponseEntity<JsonNode> response = restTemplate.postForEntity(
-                            urlEndpoint,
-                            requestEntity,
-                            JsonNode.class
-                    );
-
-                    if (response.getStatusCode().is2xxSuccessful()) {
-                        log.info("[WHATSAPP] Parte da resposta enviada com sucesso para {}. Status: {}", numeroOuLidFinal, response.getStatusCode());
-                    }
+                if (response.getStatusCode().is2xxSuccessful()) {
+                    log.info("[WHATSAPP] Resposta enviada com sucesso para {}. Status: {}", numeroOuLidFinal, response.getStatusCode());
                 }
             } catch (HttpStatusCodeException e) {
                 log.error("[WHATSAPP] Evolution API recusou o envio para {}: {} - {}",
@@ -391,10 +382,6 @@ public class WhatsAppService {
         String doMenu = MenuDoBot.intencaoDaOpcao(conteudo);
         if (doMenu != null) {
             return doMenu;
-        }
-
-        if (MenuDoBot.ehPedidoDeSaida(conteudo)) {
-            return "saudacao";
         }
 
         String texto = conteudo.toLowerCase();
