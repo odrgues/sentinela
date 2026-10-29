@@ -126,11 +126,14 @@ public class WhatsAppService {
             if (usuarioPorEmail.isPresent()) {
                 usuario = usuarioPorEmail.get();
 
+                if (chatId.contains("@lid")) {
+                    usuario.setWhatsappLid(chatId);
+                } else {
+                    usuario.setWhatsappNumero(chatId.replaceAll("[^0-9]", ""));
+                }
+
                 if (lidAlvo != null) {
                     usuario.setWhatsappLid(lidAlvo);
-                }
-                if (!chatId.contains("@lid")) {
-                    usuario.setWhatsappNumero(chatId.replaceAll("[^0-9]", ""));
                 }
 
                 usuarioRepository.save(usuario);
