@@ -284,13 +284,22 @@ public class WhatsAppService {
     }
 
     private String destinoResposta(String chatId, Usuario usuario) {
+        // Se a conversa atual veio por @lid, prioriza ele para manter a sessão sincronizada
+        if (chatId != null && chatId.contains("@lid")) {
+            return chatId;
+        }
+        // Se o usuário tem um LID salvo e a interação se beneficia dele, usa o LID
+        if (usuario != null && usuario.getWhatsappLid() != null && !usuario.getWhatsappLid().isBlank()) {
+            return usuario.getWhatsappLid();
+        }
+        // Caso contrário, usa o número de telefone limpo
         if (usuario != null && usuario.getWhatsappNumero() != null && !usuario.getWhatsappNumero().isBlank()) {
             return usuario.getWhatsappNumero();
         }
-        if (chatId != null && !chatId.contains("@lid")) {
+        if (chatId != null && !chatId.isBlank()) {
             return chatId;
         }
-        return chatId;
+        return "desconhecido";
     }
 
     private void dispararParaWhatsappReal(Usuario usuario, String destino, String mensagem) {
