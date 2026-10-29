@@ -1,6 +1,6 @@
 package br.com.sentinela.backend.service;
 
-import br.com.sentinela.backend.dto.DiaPrevistoDTO;
+import br.com.sentinela.backend.dto.ClimaResponseDTO;
 import br.com.sentinela.backend.model.Alerta;
 import br.com.sentinela.backend.model.Cultivo;
 import br.com.sentinela.backend.model.Mensagem;
@@ -25,7 +25,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -41,9 +40,9 @@ public class WhatsAppService {
     private final UsuarioRepository usuarioRepository;
     private final CultivoRepository cultivoRepository;
     private final AlertaRepository alertaRepository;
+    private final ClimaService climaService;
     private final OrientacaoService orientacaoService;
     private final AvisosService avisosService;
-    private final PrevisaoService previsaoService;
 
     @Value("${evolution.api.url:http://localhost:8082}")
     private String evolutionApiUrl;
@@ -53,7 +52,6 @@ public class WhatsAppService {
 
     public record RespostaWebhook(boolean naoCadastrado, String mensagem) {}
 
-    // O WhatsApp aceita uns 4 mil caracteres por mensagem; deixo folga.
     private static final int LIMITE_DA_MENSAGEM = 3500;
 
     @Transactional
@@ -104,6 +102,7 @@ public class WhatsAppService {
         String lidAlvo = (lid != null && !lid.isBlank()) ? lid : (chatId.contains("@lid") ? chatId : null);
         Usuario usuario = null;
 
+        // 1. Busca por LID (identificador do dispositivo no WhatsApp)
         if (lidAlvo != null) {
             Optional<Usuario> usuarioPorLid = usuarioRepository.findByWhatsappLid(lidAlvo);
             if (usuarioPorLid.isPresent()) {
@@ -111,22 +110,16 @@ public class WhatsAppService {
             }
         }
 
+        // 2. Busca por número de telefone caso não tenha achado por LID
         if (usuario == null && !chatId.contains("@lid")) {
             String apenasNumerosChat = chatId.replaceAll("[^0-9]", "");
             if (!apenasNumerosChat.isBlank()) {
-                // Com ou sem o 9º dígito, porque o WhatsApp às vezes manda o número sem ele.
                 usuario = usuarioRepository.findAll().stream()
-                        .filter(u -> FormatoDoBot.mesmoNumero(u.getWhatsappNumero(), apenasNumerosChat))
+                        .filter(u -> u.getWhatsappNumero() != null && !u.getWhatsappNumero().isBlank())
+                        .filter(u -> u.getWhatsappNumero().replaceAll("[^0-9]", "").equals(apenasNumerosChat))
                         .findFirst()
                         .orElse(null);
             }
-        }
-
-        // 2b. Quem acabou de criar a conta e responde à boas-vindas: o WhatsApp escreve pelo @lid, sem
-        // o número, e a Evolution desta instalação não diz qual é. Se houve exatamente um cadastro
-        // com número, sem vínculo, que recebeu a boas-vindas nos últimos minutos, é dele.
-        if (usuario == null && lidAlvo != null) {
-            usuario = vincularPeloCadastroRecente(lidAlvo);
         }
 
         // 3. Vínculo por e-mail enviado pelo usuário
@@ -156,20 +149,22 @@ public class WhatsAppService {
         // 4. Se ainda não encontrou o usuário, pede o e-mail educadamente
         if (usuario == null) {
             log.warn("Mensagem recebida de dispositivo/número não vinculado: chatId={}, lid={}", chatId, lidAlvo);
-            registrarMensagemDeQuemNaoEstaVinculado(chatId, conteudo, "recebida");
             String aviso = "Olá! 👋 Sou o assistente virtual do Sentinela, mas ainda não reconheço este número ou dispositivo.\n\n"
-                    + "Por favor, digite o *e-mail* cadastrado na sua conta para ativarmos o seu acesso por aqui:";
+                    + "Por favor, digite o **e-mail** cadastrado na sua conta para ativarmos o seu acesso por aqui:";
 
-            // Antes, quem escrevia por @lid não recebia nada: a resposta só voltava no corpo do webhook,
-            // que a Evolution ignora. O envio aceita o @lid como destino, então vai pelo WhatsApp também.
-            registrarMensagemDeQuemNaoEstaVinculado(chatId, aviso, "enviada");
+            if (chatId.contains("@lid")) {
+                return new RespostaWebhook(true, aviso);
+            }
+
             dispararParaWhatsappReal(null, chatId, aviso);
-            return new RespostaWebhook(chatId.contains("@lid"), aviso);
+            return new RespostaWebhook(false, aviso);
         }
 
         // Fluxo normal para usuário já autenticado e vinculado
         String intencao = identificarIntencao(conteudo, intencaoEntrada);
         registrarMensagemRecebida(usuario, chatId, conteudo, intencao);
+
+        // Mantém a saída amigável que ela adicionou caso o usuário queira sair/encerrar
         String resposta = MenuDoBot.ehPedidoDeSaida(conteudo)
                 ? MenuDoBot.despedida(usuario.getNome())
                 : gerarRespostaDoAgente(usuario, intencao);
@@ -288,44 +283,6 @@ public class WhatsAppService {
         dispararParaWhatsappReal(usuario, chatIdFinal, textoMensagem);
     }
 
-    // Quantos minutos depois do cadastro o primeiro @lid pode ser ligado à conta sem pedir o e-mail.
-    private static final int MINUTOS_DO_CADASTRO_RECENTE = 20;
-
-    private Usuario vincularPeloCadastroRecente(String lid) {
-        LocalDateTime desde = LocalDateTime.now().minusMinutes(MINUTOS_DO_CADASTRO_RECENTE);
-        List<Usuario> candidatos = usuarioRepository.findAll().stream()
-                .filter(u -> u.getWhatsappNumero() != null && !u.getWhatsappNumero().isBlank())
-                .filter(u -> u.getWhatsappLid() == null || u.getWhatsappLid().isBlank())
-                .filter(u -> mensagemRepository.existsByUsuarioIdAndDirecaoAndIntencaoAndRegistradoEmAfter(
-                        u.getId(), "enviada", "saudacao", desde))
-                .toList();
-
-        // Mais de um (ou nenhum) cadastro recente: não dá para saber de quem é, e o bot pede o e-mail.
-        if (candidatos.size() != 1) {
-            return null;
-        }
-        Usuario usuario = candidatos.get(0);
-        usuario.setWhatsappLid(lid);
-        usuarioRepository.save(usuario);
-        log.info("[WHATSAPP] @lid {} ligado ao único cadastro recente: usuário {}.", lid, usuario.getId());
-        return usuario;
-    }
-
-    // Guarda a conversa de quem ainda não tem conta ligada, para dar para ver o que aconteceu.
-    private void registrarMensagemDeQuemNaoEstaVinculado(String chatId, String conteudo, String direcao) {
-        try {
-            Mensagem mensagem = new Mensagem();
-            mensagem.setChatId(chatId.length() > 32 ? chatId.substring(0, 32) : chatId);
-            mensagem.setConteudo(conteudo);
-            mensagem.setDirecao(direcao);
-            mensagem.setIntencao("nao_identificada");
-            mensagem.setRegistradoEm(LocalDateTime.now());
-            mensagemRepository.save(mensagem);
-        } catch (Exception e) {
-            log.warn("[WHATSAPP] Não consegui gravar a mensagem de quem não está vinculado: {}", e.getMessage());
-        }
-    }
-
     private String destinoResposta(String chatId, Usuario usuario) {
         if (usuario != null && usuario.getWhatsappNumero() != null && !usuario.getWhatsappNumero().isBlank()) {
             return usuario.getWhatsappNumero();
@@ -368,7 +325,7 @@ public class WhatsAppService {
                 String baseUrl = evolutionApiUrl != null ? evolutionApiUrl.replaceAll("/$", "") : "http://localhost:8082";
                 String urlEndpoint = baseUrl + "/message/sendText/sentinela-bot";
 
-                // Texto longo (a previsão de várias lavouras) vai em mais de uma mensagem, em ordem.
+                // Divide mensagens longas se necessário
                 for (String parte : FormatoDoBot.dividirEmMensagens(mensagem, LIMITE_DA_MENSAGEM)) {
                     Map<String, Object> body = Map.of(
                             "number", numeroOuLidFinal,
@@ -404,66 +361,12 @@ public class WhatsAppService {
 
         String nome = (usuario.getNome() != null && !usuario.getNome().isBlank()) ? usuario.getNome() : "Produtor(a)";
 
-        // Quem acabou de cadastrar o número já está reconhecido: aqui não se pede o e-mail. O pedido
-        // de e-mail é só para quem escreve de um número que não tem conta.
-        String mensagem = "👋 *Olá, " + nome + "!*\n\n"
-                + "Seja bem-vindo(a) ao *Sentinela*, o seu assistente do tempo na lavoura.\n"
-                + "Seu número foi cadastrado, e por aqui eu aviso quando o clima ameaçar a sua plantação.\n\n"
-                + "*O que você quer ver?* Responda com o número:\n\n"
-                + MenuDoBot.opcoes() + "\n\n"
-                + "_Digite *menu* a qualquer momento para ver as opções de novo._";
+        String mensagem = "Olá, " + nome + "! 👋\n\n"
+                + "Seja bem-vindo(a) ao *Sentinela*!\n"
+                + "Seu número foi cadastrado com sucesso na nossa plataforma.\n\n"
+                + "Por favor, digite o seu **e-mail** de cadastro para vincularmos o seu acesso por aqui.";
 
         enviarEManterHistorico(usuario, mensagem, "saudacao", usuario.getWhatsappNumero());
-
-        // O WhatsApp às vezes escreve para o bot pelo @lid, sem o número. Guardar o @lid agora faz
-        // a primeira mensagem da pessoa já ser reconhecida.
-        CompletableFuture.runAsync(() -> {
-            try {
-                Thread.sleep(2000);
-                capturarEVincularLidNoCadastro(usuario);
-            } catch (Exception e) {
-                log.error("[WHATSAPP] Erro ao sincronizar LID automático no onboarding: {}", e.getMessage());
-            }
-        });
-    }
-
-    private void capturarEVincularLidNoCadastro(Usuario usuario) {
-        String numeroLimpo = usuario.getWhatsappNumero().replaceAll("[^0-9]", "");
-        if (numeroLimpo.isBlank()) {
-            return;
-        }
-
-        try {
-            SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-            factory.setConnectTimeout(4000);
-            factory.setReadTimeout(4000);
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("apikey", evolutionApiKey);
-
-            String baseUrl = evolutionApiUrl != null ? evolutionApiUrl.replaceAll("/$", "") : "http://localhost:8082";
-            ResponseEntity<JsonNode> response = new RestTemplate(factory).postForEntity(
-                    baseUrl + "/chat/whatsappNumbers/sentinela-bot",
-                    new HttpEntity<>(Map.of("numbers", List.of(numeroLimpo)), headers),
-                    JsonNode.class);
-
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                JsonNode corpo = response.getBody();
-                JsonNode item = corpo.isArray() && !corpo.isEmpty() ? corpo.get(0) : corpo;
-                String lid = item.path("lid").asText("");
-                if (lid.isBlank()) {
-                    lid = item.path("jid").asText("");
-                }
-                if (lid.contains("@lid")) {
-                    usuario.setWhatsappLid(lid.trim());
-                    usuarioRepository.save(usuario);
-                    log.info("[WHATSAPP] whatsapp_lid {} vinculado ao usuário {} no cadastro.", lid, usuario.getId());
-                }
-            }
-        } catch (Exception e) {
-            log.warn("[WHATSAPP] Falha ao capturar o LID no cadastro de {}: {}", numeroLimpo, e.getMessage());
-        }
     }
 
     private String identificarIntencao(
@@ -491,13 +394,7 @@ public class WhatsAppService {
             return doMenu;
         }
 
-        // "sair" também é "saudacao" para o banco, que só guarda cinco intenções; a resposta é a despedida.
         if (MenuDoBot.ehPedidoDeSaida(conteudo)) {
-            return "saudacao";
-        }
-
-        // "menu" sozinho abre o menu antes de qualquer palavra-chave.
-        if (MenuDoBot.ehPedidoDeMenu(conteudo)) {
             return "saudacao";
         }
 
@@ -618,7 +515,7 @@ public class WhatsAppService {
                         continue;
                     }
                     blocos.add(FormatoDoBot.nivel(alerta.getSeveridade()) + " · " + cultivo.getApelido() + "\n"
-                            + alerta.getMensagem() + oQueFazerDoAviso(cultivo, alerta));
+                            + alerta.getMensagem());
                 }
             }
 
@@ -633,77 +530,46 @@ public class WhatsAppService {
         }
     }
 
-    // "\n\n🛠️ *O que fazer*\n..." do aviso, ou vazio se não há texto para esse tipo de aviso.
-    private String oQueFazerDoAviso(Cultivo cultivo, Alerta alerta) {
-        String orientacao = orientacaoService.oQueFazer(cultivo.getCultura(), alerta.getTipo());
-        return (orientacao == null || orientacao.isBlank()) ? "" : "\n🛠️ *O que fazer*\n" + orientacao;
-    }
-
-    // A previsão de 7 dias de cada lavoura em andamento, a mais urgente primeiro, com os avisos e
-    // o que fazer embaixo dos dias. É a mesma previsão guardada que o site mostra.
     private String responderConsultaPrevisao(Usuario usuario) {
         try {
-            List<Cultivo> cultivos = cultivoRepository.findByUsuarioId(usuario.getId()).stream()
-                    .filter(cultivo -> "em_andamento".equals(cultivo.getStatus()))
-                    .toList();
+            List<Cultivo> cultivos = cultivoRepository.findByUsuarioId(usuario.getId());
 
-            if (cultivos.isEmpty()) {
+            if (cultivos == null || cultivos.isEmpty()) {
                 return "☀️ Cadastre uma lavoura no site para eu mostrar a previsão do lugar dela.";
             }
 
-            record Lavoura(Cultivo cultivo, List<Alerta> avisos) {
-                int gravidade() {
-                    return avisos.stream().mapToInt(a -> AvisosService.peso(a.getSeveridade())).max().orElse(0);
-                }
+            Cultivo cultivo = cultivos.get(0);
+
+            if (cultivo.getMunicipio() == null) {
+                return "☀️ A sua lavoura *" + cultivo.getApelido() + "* não tem município, e sem ele não consigo buscar a previsão.";
             }
 
-            List<Lavoura> lavouras = cultivos.stream()
-                    .map(cultivo -> new Lavoura(cultivo, avisosService.daSemana(cultivo)))
-                    .sorted((a, b) -> b.gravidade() - a.gravidade())
-                    .toList();
+            ClimaResponseDTO clima = climaService.buscarPrevisaoPorMunicipio(
+                    cultivo.getMunicipio().getId()
+            );
 
-            List<String> blocos = new ArrayList<>();
-            blocos.add("🌤️ *Previsão das suas lavouras*\n_Próximos 7 dias_");
+            StringBuilder resposta = new StringBuilder("🌤️ *Previsão para ")
+                    .append(cultivo.getMunicipio().getNome())
+                    .append("*\n_")
+                    .append(cultivo.getApelido())
+                    .append("_\n\n");
 
-            for (Lavoura lavoura : lavouras) {
-                Cultivo cultivo = lavoura.cultivo();
-                StringBuilder bloco = new StringBuilder("*").append(cultivo.getApelido()).append("*");
-                if (cultivo.getCultura() != null) {
-                    bloco.append(" · ").append(cultivo.getCultura().getNome());
+            if (clima.previsaoDiaria() != null) {
+                for (ClimaResponseDTO.PrevisaoDiariaDTO dia : clima.previsaoDiaria()) {
+                    resposta.append("*").append(FormatoDoBot.diaDaSemana(LocalDate.parse(dia.data()))).append("*  ")
+                            .append(FormatoDoBot.temperaturas(dia.tempMin(), dia.tempMax()))
+                            .append("  ")
+                            .append(dia.chuvaMm() > 0 ? "🌧️ " + FormatoDoBot.milimetros(dia.chuvaMm()) : "☀️ sem chuva")
+                            .append("\n");
                 }
-                if (cultivo.getMunicipio() != null) {
-                    bloco.append("\n📍 ").append(cultivo.getMunicipio().getNome());
-                }
-
-                List<DiaPrevistoDTO> dias = previsaoService.semana(cultivo.getId());
-                if (dias.isEmpty()) {
-                    bloco.append("\nSem previsão disponível agora.");
-                } else {
-                    double chuvaDaSemana = 0;
-                    for (DiaPrevistoDTO dia : dias) {
-                        chuvaDaSemana += dia.chuvaMm();
-                        bloco.append("\n*").append(FormatoDoBot.diaDaSemana(dia.data())).append("*  ")
-                                .append(FormatoDoBot.temperaturas(dia.tempMinC(), dia.tempMaxC()))
-                                .append("  ")
-                                .append(dia.chuvaMm() > 0 ? "🌧️ " + FormatoDoBot.milimetros(dia.chuvaMm()) : "☀️ sem chuva");
-                    }
-                    bloco.append("\n💧 Chuva na semana: *").append(FormatoDoBot.milimetros(chuvaDaSemana)).append("*");
-                }
-
-                List<Alerta> comRisco = lavoura.avisos().stream()
-                        .filter(alerta -> !"info".equalsIgnoreCase(alerta.getSeveridade()))
-                        .toList();
-                if (comRisco.isEmpty()) {
-                    bloco.append("\n\n🟢 *Tudo certo esta semana*");
-                }
-                for (Alerta alerta : comRisco) {
-                    bloco.append("\n\n").append(FormatoDoBot.nivel(alerta.getSeveridade())).append("\n")
-                            .append(alerta.getMensagem()).append(oQueFazerDoAviso(cultivo, alerta));
-                }
-                blocos.add(bloco.toString());
+                resposta.append("\n");
             }
 
-            return String.join("\n\n", blocos);
+            resposta.append("💧 Chuva na semana: *")
+                    .append(FormatoDoBot.milimetros(clima.chuvaAcumuladaSemanaMm()))
+                    .append("*");
+
+            return resposta.toString();
         } catch (Exception e) {
             log.error("[WHATSAPP] Erro ao buscar previsão para o usuário {}: {}", usuario.getId(), e.getMessage());
             return "🌤️ Não consegui carregar a previsão agora. Tente de novo em instantes.";
