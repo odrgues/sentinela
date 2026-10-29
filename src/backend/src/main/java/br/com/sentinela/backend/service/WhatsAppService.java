@@ -113,7 +113,7 @@ public class WhatsAppService {
         String texto = "⚠️ Aviso do Sentinela para "
                 + alerta.getCultivo().getApelido() + ": "
                 + alerta.getMensagem()
-                + " Responda AVISOS para ver os detalhes ou PARAR "
+                + " Responda 2 para ver os detalhes ou PARAR "
                 + "para não receber mais avisos.";
 
         String orientacao = orientacaoService.oQueFazer(
@@ -268,11 +268,9 @@ public class WhatsAppService {
         String mensagem = "Olá, " + nome + "! 👋\n\n"
                 + "Seja bem-vindo(a) ao *Sentinela*!\n"
                 + "Seu número foi cadastrado com sucesso na nossa plataforma.\n\n"
-                + "Por aqui você pode consultar facilmente:\n"
-                + "🌱 *Cultivos e Lavouras*\n"
-                + "🌦️ *Previsão do Tempo*\n"
-                + "⚠️ *Alertas Climáticos e de Riscos*\n\n"
-                + "Digite *menu* ou *oi* a qualquer momento para ver as opções!";
+                + "Para começar, responda com o número da opção:\n\n"
+                + MenuDoBot.opcoes() + "\n\n"
+                + "Digite *menu* a qualquer momento para ver as opções de novo.";
 
         enviarEManterHistorico(usuario, mensagem, "saudacao", usuario.getWhatsappNumero());
 
@@ -432,6 +430,11 @@ public class WhatsAppService {
             }
         }
 
+        String doMenu = MenuDoBot.intencaoDaOpcao(conteudo);
+        if (doMenu != null) {
+            return doMenu;
+        }
+
         String texto = conteudo.toLowerCase();
 
         if (texto.contains("cultivo")
@@ -473,9 +476,9 @@ public class WhatsAppService {
             String intencao
     ) {
         return switch (intencao) {
-            case "consulta_cultivos" -> responderConsultaCultivos(usuario);
-            case "consulta_alertas" -> responderConsultaAlertas(usuario);
-            case "consulta_previsao" -> responderConsultaPrevisao(usuario);
+            case "consulta_cultivos" -> responderConsultaCultivos(usuario) + MenuDoBot.rodape();
+            case "consulta_alertas" -> responderConsultaAlertas(usuario) + MenuDoBot.rodape();
+            case "consulta_previsao" -> responderConsultaPrevisao(usuario) + MenuDoBot.rodape();
             case "saudacao" -> mensagemBoasVindas(usuario);
             default -> mensagemAjuda(usuario);
         };
@@ -484,17 +487,15 @@ public class WhatsAppService {
     private String mensagemBoasVindas(Usuario usuario) {
         return "Olá, " + usuario.getNome()
                 + "! 👋 Sou o assistente virtual do Sentinela.\n\n"
-                + "Como posso ajudar?\n"
-                + "1. Digite *cultivos* para consultar suas lavouras.\n"
-                + "2. Digite *alertas* para consultar os riscos.\n"
-                + "3. Digite *previsão* para consultar o tempo.";
+                + "O que você quer ver? Responda com o número:\n\n"
+                + MenuDoBot.opcoes();
     }
 
     private String mensagemAjuda(Usuario usuario) {
         return "Desculpe, " + usuario.getNome()
-                + ", não entendi sua solicitação.\n\n"
-                + "Você pode perguntar sobre *cultivos*, "
-                + "*alertas* ou *previsão do tempo*.";
+                + ", não entendi sua mensagem.\n\n"
+                + "Responda com o número da opção:\n\n"
+                + MenuDoBot.opcoes();
     }
 
     private String responderConsultaCultivos(Usuario usuario) {
