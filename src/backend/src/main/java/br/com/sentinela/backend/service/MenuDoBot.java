@@ -46,7 +46,8 @@ public final class MenuDoBot {
                 + "*3* - Previsão do tempo";
     }
 
+    // O fim de toda resposta de consulta: o menu de novo, para a pessoa escolher a próxima sem digitar "menu".
     public static String rodape() {
-        return "\n\nDigite *menu* para ver as opções.";
+        return "\n\n*Quer ver mais?* Responda com o número:\n\n" + opcoes();
     }
 }

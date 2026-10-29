@@ -152,12 +152,10 @@ public class WhatsAppService {
             String aviso = "Olá! 👋 Sou o assistente virtual do Sentinela, mas ainda não reconheço este número ou dispositivo.\n\n"
                     + "Por favor, digite o *e-mail* cadastrado na sua conta para ativarmos o seu acesso por aqui:";
 
-            if (chatId.contains("@lid")) {
-                return new RespostaWebhook(true, aviso);
-            }
-
+            // Antes, quem escrevia por @lid não recebia nada: a resposta só voltava no corpo do webhook,
+            // que a Evolution ignora. O envio aceita o @lid como destino, então vai pelo WhatsApp também.
             dispararParaWhatsappReal(null, chatId, aviso);
-            return new RespostaWebhook(false, aviso);
+            return new RespostaWebhook(chatId.contains("@lid"), aviso);
         }
 
         // Fluxo normal para usuário já autenticado e vinculado
@@ -367,6 +365,56 @@ public class WhatsAppService {
                 + "_Digite *menu* a qualquer momento para ver as opções de novo._";
 
         enviarEManterHistorico(usuario, mensagem, "saudacao", usuario.getWhatsappNumero());
+
+        // O WhatsApp às vezes escreve para o bot pelo @lid, sem o número. Guardar o @lid agora faz
+        // a primeira mensagem da pessoa já ser reconhecida.
+        CompletableFuture.runAsync(() -> {
+            try {
+                Thread.sleep(2000);
+                capturarEVincularLidNoCadastro(usuario);
+            } catch (Exception e) {
+                log.error("[WHATSAPP] Erro ao sincronizar LID automático no onboarding: {}", e.getMessage());
+            }
+        });
+    }
+
+    private void capturarEVincularLidNoCadastro(Usuario usuario) {
+        String numeroLimpo = usuario.getWhatsappNumero().replaceAll("[^0-9]", "");
+        if (numeroLimpo.isBlank()) {
+            return;
+        }
+
+        try {
+            SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+            factory.setConnectTimeout(4000);
+            factory.setReadTimeout(4000);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("apikey", evolutionApiKey);
+
+            String baseUrl = evolutionApiUrl != null ? evolutionApiUrl.replaceAll("/$", "") : "http://localhost:8082";
+            ResponseEntity<JsonNode> response = new RestTemplate(factory).postForEntity(
+                    baseUrl + "/chat/whatsappNumbers/sentinela-bot",
+                    new HttpEntity<>(Map.of("numbers", List.of(numeroLimpo)), headers),
+                    JsonNode.class);
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                JsonNode corpo = response.getBody();
+                JsonNode item = corpo.isArray() && !corpo.isEmpty() ? corpo.get(0) : corpo;
+                String lid = item.path("lid").asText("");
+                if (lid.isBlank()) {
+                    lid = item.path("jid").asText("");
+                }
+                if (lid.contains("@lid")) {
+                    usuario.setWhatsappLid(lid.trim());
+                    usuarioRepository.save(usuario);
+                    log.info("[WHATSAPP] whatsapp_lid {} vinculado ao usuário {} no cadastro.", lid, usuario.getId());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("[WHATSAPP] Falha ao capturar o LID no cadastro de {}: {}", numeroLimpo, e.getMessage());
+        }
     }
 
     private String identificarIntencao(

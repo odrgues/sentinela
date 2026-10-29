@@ -60,4 +60,13 @@ class MenuDoBotTest {
         assertFalse(MenuDoBot.ehPedidoDeMenu(""));
         assertFalse(MenuDoBot.ehPedidoDeMenu(null));
     }
+
+    @Test
+    void oRodapeMostraAsTresOpcoesDeNovo() {
+        String rodape = MenuDoBot.rodape();
+
+        assertTrue(rodape.contains("*1* - Minhas lavouras"));
+        assertTrue(rodape.contains("*2* - Avisos da semana"));
+        assertTrue(rodape.contains("*3* - Previsão do tempo"));
+    }
 }
