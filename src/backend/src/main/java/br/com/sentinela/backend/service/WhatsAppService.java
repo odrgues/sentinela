@@ -282,11 +282,12 @@ public class WhatsAppService {
         dispararParaWhatsappReal(usuario, chatIdFinal, textoMensagem);
     }
 
+    // RETORNADO À LÓGICA ANTERIOR QUE FUNCIONAVA
     private String destinoResposta(String chatId, Usuario usuario) {
         if (usuario != null && usuario.getWhatsappNumero() != null && !usuario.getWhatsappNumero().isBlank()) {
             return usuario.getWhatsappNumero();
         }
-        if (chatId != null && !chatId.contains("@lid") && !chatId.isBlank()) {
+        if (chatId != null && !chatId.contains("@lid")) {
             return chatId;
         }
         return chatId;
