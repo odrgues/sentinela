@@ -126,9 +126,9 @@ public class WhatsAppService {
             if (usuarioPorEmail.isPresent()) {
                 usuario = usuarioPorEmail.get();
 
-                if (chatId.contains("@lid")) {
+                if (chatId != null && chatId.contains("@lid")) {
                     usuario.setWhatsappLid(chatId);
-                } else {
+                } else if (chatId != null) {
                     usuario.setWhatsappNumero(chatId.replaceAll("[^0-9]", ""));
                 }
 
