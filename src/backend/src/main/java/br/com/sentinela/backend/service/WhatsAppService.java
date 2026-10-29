@@ -164,7 +164,6 @@ public class WhatsAppService {
         String intencao = identificarIntencao(conteudo, intencaoEntrada);
         registrarMensagemRecebida(usuario, chatId, conteudo, intencao);
 
-        // Mantém a saída amigável que ela adicionou caso o usuário queira sair/encerrar
         String resposta = MenuDoBot.ehPedidoDeSaida(conteudo)
                 ? MenuDoBot.despedida(usuario.getNome())
                 : gerarRespostaDoAgente(usuario, intencao);
@@ -284,22 +283,13 @@ public class WhatsAppService {
     }
 
     private String destinoResposta(String chatId, Usuario usuario) {
-        // Se a conversa atual veio por @lid, prioriza ele para manter a sessão sincronizada
-        if (chatId != null && chatId.contains("@lid")) {
-            return chatId;
-        }
-        // Se o usuário tem um LID salvo e a interação se beneficia dele, usa o LID
-        if (usuario != null && usuario.getWhatsappLid() != null && !usuario.getWhatsappLid().isBlank()) {
-            return usuario.getWhatsappLid();
-        }
-        // Caso contrário, usa o número de telefone limpo
         if (usuario != null && usuario.getWhatsappNumero() != null && !usuario.getWhatsappNumero().isBlank()) {
             return usuario.getWhatsappNumero();
         }
-        if (chatId != null && !chatId.isBlank()) {
+        if (chatId != null && !chatId.contains("@lid") && !chatId.isBlank()) {
             return chatId;
         }
-        return "desconhecido";
+        return chatId;
     }
 
     private void dispararParaWhatsappReal(Usuario usuario, String destino, String mensagem) {
@@ -334,7 +324,6 @@ public class WhatsAppService {
                 String baseUrl = evolutionApiUrl != null ? evolutionApiUrl.replaceAll("/$", "") : "http://localhost:8082";
                 String urlEndpoint = baseUrl + "/message/sendText/sentinela-bot";
 
-                // Divide textos longos (como lista de lavouras ou previsão) em partes menores e sequenciais
                 for (String parte : FormatoDoBot.dividirEmMensagens(mensagem, LIMITE_DA_MENSAGEM)) {
                     Map<String, Object> body = Map.of(
                             "number", numeroOuLidFinal,
@@ -361,6 +350,7 @@ public class WhatsAppService {
             }
         });
     }
+
     public void enviarBoasVindasOnboarding(Usuario usuario) {
         if (usuario == null || usuario.getWhatsappNumero() == null || usuario.getWhatsappNumero().isBlank()) {
             log.warn("[WHATSAPP] Tentativa de enviar boas-vindas para usuário sem número cadastrado.");
