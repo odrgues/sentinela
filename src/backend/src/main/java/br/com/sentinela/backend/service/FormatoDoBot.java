@@ -70,6 +70,22 @@ public final class FormatoDoBot {
         return "🟢 *Tudo certo*";
     }
 
+    // Os dois números são da mesma linha? Compara só os dígitos e aceita o celular do Brasil com ou
+    // sem o 9 depois do DDD, porque o WhatsApp às vezes manda sem ele: 553491417580 e 5534991417580.
+    public static boolean mesmoNumero(String a, String b) {
+        if (a == null || b == null) return false;
+        String x = semNonoDigito(a.replaceAll("[^0-9]", ""));
+        String y = semNonoDigito(b.replaceAll("[^0-9]", ""));
+        return !x.isEmpty() && x.equals(y);
+    }
+
+    private static String semNonoDigito(String digitos) {
+        if (digitos.length() == 13 && digitos.startsWith("55") && digitos.charAt(4) == '9') {
+            return digitos.substring(0, 4) + digitos.substring(5);
+        }
+        return digitos;
+    }
+
     // O WhatsApp aceita até uns 4 mil caracteres por mensagem. Um texto maior vai em várias, cortado
     // sempre entre blocos (linha em branco), para nenhuma lavoura ficar partida ao meio.
     public static List<String> dividirEmMensagens(String texto, int limite) {

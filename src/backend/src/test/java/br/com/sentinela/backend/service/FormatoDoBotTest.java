@@ -1,6 +1,7 @@
 package br.com.sentinela.backend.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
@@ -73,5 +74,20 @@ class FormatoDoBotTest {
     void textoVazioNaoGeraMensagem() {
         assertTrue(FormatoDoBot.dividirEmMensagens("  ", 100).isEmpty());
         assertTrue(FormatoDoBot.dividirEmMensagens(null, 100).isEmpty());
+    }
+
+    @Test
+    void mesmoNumeroComOuSemONonoDigito() {
+        assertTrue(FormatoDoBot.mesmoNumero("+5534991417580", "553491417580"));
+        assertTrue(FormatoDoBot.mesmoNumero("553491417580", "+55 (34) 99141-7580"));
+        assertTrue(FormatoDoBot.mesmoNumero("+5534991417580", "5534991417580"));
+    }
+
+    @Test
+    void numerosDiferentesNaoSaoOMesmo() {
+        assertFalse(FormatoDoBot.mesmoNumero("+5534991417580", "+5534991417581"));
+        assertFalse(FormatoDoBot.mesmoNumero("+5534991417580", "+5585991417580"));
+        assertFalse(FormatoDoBot.mesmoNumero(null, "5534991417580"));
+        assertFalse(FormatoDoBot.mesmoNumero("", ""));
     }
 }

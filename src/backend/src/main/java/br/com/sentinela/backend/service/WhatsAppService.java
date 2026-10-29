@@ -114,12 +114,19 @@ public class WhatsAppService {
         if (usuario == null && !chatId.contains("@lid")) {
             String apenasNumerosChat = chatId.replaceAll("[^0-9]", "");
             if (!apenasNumerosChat.isBlank()) {
+                // Com ou sem o 9º dígito, porque o WhatsApp às vezes manda o número sem ele.
                 usuario = usuarioRepository.findAll().stream()
-                        .filter(u -> u.getWhatsappNumero() != null && !u.getWhatsappNumero().isBlank())
-                        .filter(u -> u.getWhatsappNumero().replaceAll("[^0-9]", "").equals(apenasNumerosChat))
+                        .filter(u -> FormatoDoBot.mesmoNumero(u.getWhatsappNumero(), apenasNumerosChat))
                         .findFirst()
                         .orElse(null);
             }
+        }
+
+        // 2b. Quem acabou de criar a conta e responde à boas-vindas: o WhatsApp escreve pelo @lid, sem
+        // o número, e a Evolution desta instalação não diz qual é. Se houve exatamente um cadastro
+        // com número, sem vínculo, que recebeu a boas-vindas nos últimos minutos, é dele.
+        if (usuario == null && lidAlvo != null) {
+            usuario = vincularPeloCadastroRecente(lidAlvo);
         }
 
         // 3. Vínculo por e-mail enviado pelo usuário
@@ -149,11 +156,13 @@ public class WhatsAppService {
         // 4. Se ainda não encontrou o usuário, pede o e-mail educadamente
         if (usuario == null) {
             log.warn("Mensagem recebida de dispositivo/número não vinculado: chatId={}, lid={}", chatId, lidAlvo);
+            registrarMensagemDeQuemNaoEstaVinculado(chatId, conteudo, "recebida");
             String aviso = "Olá! 👋 Sou o assistente virtual do Sentinela, mas ainda não reconheço este número ou dispositivo.\n\n"
                     + "Por favor, digite o *e-mail* cadastrado na sua conta para ativarmos o seu acesso por aqui:";
 
             // Antes, quem escrevia por @lid não recebia nada: a resposta só voltava no corpo do webhook,
             // que a Evolution ignora. O envio aceita o @lid como destino, então vai pelo WhatsApp também.
+            registrarMensagemDeQuemNaoEstaVinculado(chatId, aviso, "enviada");
             dispararParaWhatsappReal(null, chatId, aviso);
             return new RespostaWebhook(chatId.contains("@lid"), aviso);
         }
@@ -277,6 +286,44 @@ public class WhatsAppService {
         log.info("[WHATSAPP] Mensagem gravada no banco para o usuário {}.", usuario.getId());
 
         dispararParaWhatsappReal(usuario, chatIdFinal, textoMensagem);
+    }
+
+    // Quantos minutos depois do cadastro o primeiro @lid pode ser ligado à conta sem pedir o e-mail.
+    private static final int MINUTOS_DO_CADASTRO_RECENTE = 20;
+
+    private Usuario vincularPeloCadastroRecente(String lid) {
+        LocalDateTime desde = LocalDateTime.now().minusMinutes(MINUTOS_DO_CADASTRO_RECENTE);
+        List<Usuario> candidatos = usuarioRepository.findAll().stream()
+                .filter(u -> u.getWhatsappNumero() != null && !u.getWhatsappNumero().isBlank())
+                .filter(u -> u.getWhatsappLid() == null || u.getWhatsappLid().isBlank())
+                .filter(u -> mensagemRepository.existsByUsuarioIdAndDirecaoAndIntencaoAndRegistradoEmAfter(
+                        u.getId(), "enviada", "saudacao", desde))
+                .toList();
+
+        // Mais de um (ou nenhum) cadastro recente: não dá para saber de quem é, e o bot pede o e-mail.
+        if (candidatos.size() != 1) {
+            return null;
+        }
+        Usuario usuario = candidatos.get(0);
+        usuario.setWhatsappLid(lid);
+        usuarioRepository.save(usuario);
+        log.info("[WHATSAPP] @lid {} ligado ao único cadastro recente: usuário {}.", lid, usuario.getId());
+        return usuario;
+    }
+
+    // Guarda a conversa de quem ainda não tem conta ligada, para dar para ver o que aconteceu.
+    private void registrarMensagemDeQuemNaoEstaVinculado(String chatId, String conteudo, String direcao) {
+        try {
+            Mensagem mensagem = new Mensagem();
+            mensagem.setChatId(chatId.length() > 32 ? chatId.substring(0, 32) : chatId);
+            mensagem.setConteudo(conteudo);
+            mensagem.setDirecao(direcao);
+            mensagem.setIntencao("nao_identificada");
+            mensagem.setRegistradoEm(LocalDateTime.now());
+            mensagemRepository.save(mensagem);
+        } catch (Exception e) {
+            log.warn("[WHATSAPP] Não consegui gravar a mensagem de quem não está vinculado: {}", e.getMessage());
+        }
     }
 
     private String destinoResposta(String chatId, Usuario usuario) {
