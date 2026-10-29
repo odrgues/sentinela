@@ -23,8 +23,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,6 +43,7 @@ public class WhatsAppService {
     private final AlertaRepository alertaRepository;
     private final ClimaService climaService;
     private final OrientacaoService orientacaoService;
+    private final AvisosService avisosService;
 
     @Value("${evolution.api.url:http://localhost:8082}")
     private String evolutionApiUrl;
@@ -135,7 +138,6 @@ public class WhatsAppService {
 
                 String mensagemSucesso = "Conta vinculada com sucesso, " + usuario.getNome() + "! 🎉 Agora você já pode usar o bot. Digite *menu* para ver as opções.";
 
-                // Registra e dispara ativamente para o número real cadastrado (evita erro 400 do @lid)
                 enviarEManterHistorico(usuario, mensagemSucesso, "saudacao", destinoResposta(chatId, usuario));
                 return new RespostaWebhook(false, mensagemSucesso);
             }
@@ -160,7 +162,6 @@ public class WhatsAppService {
         registrarMensagemRecebida(usuario, chatId, conteudo, intencao);
         String resposta = gerarRespostaDoAgente(usuario, intencao);
 
-        // Dispara a resposta utilizando o número real de telefone do usuário para garantir entrega sem Erro 400
         enviarEManterHistorico(usuario, resposta, intencao, destinoResposta(chatId, usuario));
 
         return new RespostaWebhook(false, resposta);
@@ -178,11 +179,8 @@ public class WhatsAppService {
             return;
         }
 
-        String texto = "⚠️ Aviso do Sentinela para "
-                + alerta.getCultivo().getApelido() + ": "
-                + alerta.getMensagem()
-                + " Responda AVISOS para ver os detalhes ou PARAR "
-                + "para não receber mais avisos.";
+        String texto = "🔴 *Aviso crítico · " + alerta.getCultivo().getApelido() + "*\n\n"
+                + alerta.getMensagem();
 
         String orientacao = orientacaoService.oQueFazer(
                 alerta.getCultivo().getCultura(),
@@ -190,8 +188,10 @@ public class WhatsAppService {
         );
 
         if (orientacao != null && !orientacao.isBlank()) {
-            texto += "\n\nO que fazer: " + orientacao;
+            texto += "\n\n🛠️ *O que fazer*\n" + orientacao;
         }
+
+        texto += "\n\nResponda *2* para ver todos os avisos.\n_" + FormatoDoBot.COMO_PARAR + "_";
 
         enviarEManterHistorico(usuario, texto, "consulta_alertas", usuario.getWhatsappNumero());
     }
@@ -201,10 +201,10 @@ public class WhatsAppService {
             return;
         }
 
-        String texto = "Bom dia, " + usuario.getNome()
-                + "! Sua semana no Sentinela: " + resumo
-                + " Responda 1 para ver cada lavoura ou PARAR "
-                + "para não receber mais avisos.";
+        String texto = "☀️ *Bom dia, " + usuario.getNome() + "!*\n\n"
+                + "*Sua semana no Sentinela*\n" + resumo + "\n\n"
+                + "Responda *1* para ver suas lavouras ou *2* para ver os avisos.\n_"
+                + FormatoDoBot.COMO_PARAR + "_";
 
         enviarEManterHistorico(usuario, texto, "consulta_cultivos", usuario.getWhatsappNumero());
     }
@@ -277,7 +277,6 @@ public class WhatsAppService {
     }
 
     private String destinoResposta(String chatId, Usuario usuario) {
-        // Se o usuário já tiver número cadastrado, prioriza o número real para evitar o Erro 400 do @lid na Evolution
         if (usuario != null && usuario.getWhatsappNumero() != null && !usuario.getWhatsappNumero().isBlank()) {
             return usuario.getWhatsappNumero();
         }
@@ -380,6 +379,11 @@ public class WhatsAppService {
             }
         }
 
+        String doMenu = MenuDoBot.intencaoDaOpcao(conteudo);
+        if (doMenu != null) {
+            return doMenu;
+        }
+
         String texto = conteudo.toLowerCase();
 
         if (texto.contains("cultivo")
@@ -421,28 +425,25 @@ public class WhatsAppService {
             String intencao
     ) {
         return switch (intencao) {
-            case "consulta_cultivos" -> responderConsultaCultivos(usuario);
-            case "consulta_alertas" -> responderConsultaAlertas(usuario);
-            case "consulta_previsao" -> responderConsultaPrevisao(usuario);
+            case "consulta_cultivos" -> responderConsultaCultivos(usuario) + MenuDoBot.rodape();
+            case "consulta_alertas" -> responderConsultaAlertas(usuario) + MenuDoBot.rodape();
+            case "consulta_previsao" -> responderConsultaPrevisao(usuario) + MenuDoBot.rodape();
             case "saudacao" -> mensagemBoasVindas(usuario);
             default -> mensagemAjuda(usuario);
         };
     }
 
     private String mensagemBoasVindas(Usuario usuario) {
-        return "Olá, " + usuario.getNome()
-                + "! 👋 Sou o assistente virtual do Sentinela.\n\n"
-                + "Como posso ajudar?\n"
-                + "1. Digite *cultivos* para consultar suas lavouras.\n"
-                + "2. Digite *alertas* para consultar os riscos.\n"
-                + "3. Digite *previsão* para consultar o tempo.";
+        return "👋 *Olá, " + usuario.getNome() + "!*\n"
+                + "Sou o assistente do *Sentinela*.\n\n"
+                + "*O que você quer ver?* Responda com o número:\n\n"
+                + MenuDoBot.opcoes();
     }
 
     private String mensagemAjuda(Usuario usuario) {
-        return "Desculpe, " + usuario.getNome()
-                + ", não entendi sua solicitação.\n\n"
-                + "Você pode perguntar sobre *cultivos*, "
-                + "*alertas* ou *previsão do tempo*.";
+        return "🤔 Não entendi sua mensagem, " + usuario.getNome() + ".\n\n"
+                + "Responda com o número da opção:\n\n"
+                + MenuDoBot.opcoes();
     }
 
     private String responderConsultaCultivos(Usuario usuario) {
@@ -450,28 +451,35 @@ public class WhatsAppService {
             List<Cultivo> cultivos = cultivoRepository.findByUsuarioId(usuario.getId());
 
             if (cultivos == null || cultivos.isEmpty()) {
-                return "🌾 Você ainda não possui cultivos cadastrados no Sentinela.";
+                return "🌾 Você ainda não tem lavouras cadastradas.\nCadastre a primeira no site do Sentinela.";
             }
 
-            StringBuilder resposta = new StringBuilder("🌾 SEUS CULTIVOS:\n\n");
-
+            List<String> blocos = new ArrayList<>();
             for (Cultivo cultivo : cultivos) {
-                String nomeCultura = (cultivo.getCultura() != null) ? cultivo.getCultura().getNome() : "Não informada";
-                String nomeMunicipio = (cultivo.getMunicipio() != null) ? cultivo.getMunicipio().getNome() : "Não informado";
+                StringBuilder bloco = new StringBuilder("*")
+                        .append(cultivo.getApelido() != null ? cultivo.getApelido() : "Lavoura")
+                        .append("*\n🌱 ")
+                        .append(cultivo.getCultura() != null ? cultivo.getCultura().getNome() : "Cultura não informada");
 
-                resposta.append("• ")
-                        .append(cultivo.getApelido() != null ? cultivo.getApelido() : "Cultivo")
-                        .append(" (").append(nomeCultura).append(")\n")
-                        .append("Status: ").append(cultivo.getStatus() != null ? cultivo.getStatus() : "Ativo")
-                        .append(" | Área: ").append(cultivo.getAreaHa()).append(" ha")
-                        .append(" | Município: ").append(nomeMunicipio)
-                        .append("\n\n");
+                String area = FormatoDoBot.area(cultivo.getAreaHa());
+                if (!area.isEmpty()) {
+                    bloco.append(" · ").append(area);
+                }
+
+                bloco.append("\n📍 ")
+                        .append(cultivo.getMunicipio() != null ? cultivo.getMunicipio().getNome() : "Município não informado")
+                        .append(" · ").append(FormatoDoBot.status(cultivo.getStatus()));
+
+                if (cultivo.getDataPlantio() != null) {
+                    bloco.append("\n🗓️ Plantada em ").append(FormatoDoBot.dia(cultivo.getDataPlantio()));
+                }
+                blocos.add(bloco.toString());
             }
 
-            return resposta.toString().trim();
+            return "🌾 *Suas lavouras*\n\n" + String.join("\n\n", blocos);
         } catch (Exception e) {
             log.error("[WHATSAPP] Erro ao buscar cultivos para o usuário {}: {}", usuario.getId(), e.getMessage());
-            return "🌾 Não foi possível carregar seus cultivos no momento. Tente novamente em instantes.";
+            return "🌾 Não consegui carregar suas lavouras agora. Tente de novo em instantes.";
         }
     }
 
@@ -480,39 +488,31 @@ public class WhatsAppService {
             List<Cultivo> cultivos = cultivoRepository.findByUsuarioId(usuario.getId());
 
             if (cultivos == null || cultivos.isEmpty()) {
-                return "Você ainda não possui cultivos cadastrados para verificar alertas.";
+                return "🌾 Você ainda não tem lavouras cadastradas.\nCadastre a primeira no site do Sentinela.";
             }
 
-            List<Alerta> alertas = alertaRepository.findByCultivoUsuarioId(usuario.getId());
-
-            if (alertas == null || alertas.isEmpty()) {
-                return "✅ Não há alertas agroclimáticos cadastrados para seus cultivos.";
+            List<String> blocos = new ArrayList<>();
+            for (Cultivo cultivo : cultivos) {
+                if (!"em_andamento".equals(cultivo.getStatus())) {
+                    continue;
+                }
+                for (Alerta alerta : avisosService.daSemana(cultivo)) {
+                    if ("info".equalsIgnoreCase(alerta.getSeveridade())) {
+                        continue;
+                    }
+                    blocos.add(FormatoDoBot.nivel(alerta.getSeveridade()) + " · " + cultivo.getApelido() + "\n"
+                            + alerta.getMensagem());
+                }
             }
 
-            StringBuilder resposta = new StringBuilder("🚨 ALERTAS AGROCLIMÁTICOS:\n\n");
-            DateTimeFormatter formato = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-
-            for (Alerta alerta : alertas) {
-                String icone = "critico".equalsIgnoreCase(alerta.getSeveridade()) ? "🚨" : "⚠️";
-
-                resposta.append(icone)
-                        .append(" ")
-                        .append(alerta.getTipo())
-                        .append(" (")
-                        .append(alerta.getSeveridade())
-                        .append(")\nLavoura: ")
-                        .append(alerta.getCultivo() != null ? alerta.getCultivo().getApelido() : "Cultivo")
-                        .append("\nData prevista: ")
-                        .append(alerta.getDataPrevista() != null ? alerta.getDataPrevista().format(formato) : "Indefinida")
-                        .append("\nDetalhes: ")
-                        .append(alerta.getMensagem())
-                        .append("\n\n");
+            if (blocos.isEmpty()) {
+                return "✅ *Tudo certo esta semana!*\n\nNenhum aviso de calor, frio ou chuva para as suas lavouras nos próximos 7 dias.";
             }
 
-            return resposta.toString().trim();
+            return "🚨 *Avisos da semana*\n\n" + String.join("\n\n", blocos);
         } catch (Exception e) {
             log.error("[WHATSAPP] Erro ao buscar alertas para o usuário {}: {}", usuario.getId(), e.getMessage());
-            return "🚨 Não foi possível consultar os alertas no momento.";
+            return "🚨 Não consegui consultar os avisos agora. Tente de novo em instantes.";
         }
     }
 
@@ -521,31 +521,44 @@ public class WhatsAppService {
             List<Cultivo> cultivos = cultivoRepository.findByUsuarioId(usuario.getId());
 
             if (cultivos == null || cultivos.isEmpty()) {
-                return "☀️ Cadastre um cultivo com município para consultar a previsão.";
+                return "☀️ Cadastre uma lavoura no site para eu mostrar a previsão do lugar dela.";
             }
 
             Cultivo cultivo = cultivos.get(0);
 
             if (cultivo.getMunicipio() == null) {
-                return "☀️ Seu cultivo principal não possui município associado para previsão.";
+                return "☀️ A sua lavoura *" + cultivo.getApelido() + "* não tem município, e sem ele não consigo buscar a previsão.";
             }
 
             ClimaResponseDTO clima = climaService.buscarPrevisaoPorMunicipio(
                     cultivo.getMunicipio().getId()
             );
 
-            return String.format(
-                    "🌤️ PREVISÃO DO TEMPO — %s\n\n"
-                            + "• Chuva acumulada nos próximos 7 dias: %.1f mm\n"
-                            + "• Lavoura principal: %s (%s)",
-                    cultivo.getMunicipio().getNome(),
-                    clima.chuvaAcumuladaSemanaMm(),
-                    cultivo.getApelido(),
-                    cultivo.getCultura() != null ? cultivo.getCultura().getNome() : "Não informada"
-            );
+            StringBuilder resposta = new StringBuilder("🌤️ *Previsão para ")
+                    .append(cultivo.getMunicipio().getNome())
+                    .append("*\n_")
+                    .append(cultivo.getApelido())
+                    .append("_\n\n");
+
+            if (clima.previsaoDiaria() != null) {
+                for (ClimaResponseDTO.PrevisaoDiariaDTO dia : clima.previsaoDiaria()) {
+                    resposta.append("*").append(FormatoDoBot.diaDaSemana(LocalDate.parse(dia.data()))).append("*  ")
+                            .append(FormatoDoBot.temperaturas(dia.tempMin(), dia.tempMax()))
+                            .append("  ")
+                            .append(dia.chuvaMm() > 0 ? "🌧️ " + FormatoDoBot.milimetros(dia.chuvaMm()) : "☀️ sem chuva")
+                            .append("\n");
+                }
+                resposta.append("\n");
+            }
+
+            resposta.append("💧 Chuva na semana: *")
+                    .append(FormatoDoBot.milimetros(clima.chuvaAcumuladaSemanaMm()))
+                    .append("*");
+
+            return resposta.toString();
         } catch (Exception e) {
             log.error("[WHATSAPP] Erro ao buscar previsão para o usuário {}: {}", usuario.getId(), e.getMessage());
-            return "🌤️ Não foi possível carregar a previsão do tempo no momento.";
+            return "🌤️ Não consegui carregar a previsão agora. Tente de novo em instantes.";
         }
     }
 

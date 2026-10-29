@@ -1,6 +1,6 @@
 import { latLngBounds } from 'leaflet'
-import { useEffect } from 'react'
-import { AttributionControl, MapContainer, ZoomControl, useMap } from 'react-leaflet'
+import { useEffect, useState } from 'react'
+import { AttributionControl, MapContainer, ZoomControl, useMap, useMapEvents } from 'react-leaflet'
 import { useNavigate } from 'react-router'
 import { useTheme } from 'styled-components'
 import { GOTA_VAZADA } from '../../../shared/mapa/gota'
@@ -9,17 +9,28 @@ import { CamadasDeSatelite } from '../../../shared/mapa/CamadasDeSatelite'
 import { CENTRO_DO_BRASIL, SATELITE, ZOOM_DO_BRASIL, mapaLigado } from '../../../shared/mapa/mapa'
 import { NIVEL, NOME_DO_NIVEL, type NivelDoTema } from '../../../shared/ui/nivel'
 import type { LavouraNoPainel } from '../tipos'
+import { etiquetasVisiveis } from './etiquetas'
 import * as S from './MapaDoPainel.styles'
 
 const ZOOM_DE_UMA_LAVOURA = 15
 const FOLGA_EM_VOLTA = 56
 
-function MarcadorDaLavoura({ apelido, nivel }: { apelido: string; nivel: NivelDoTema }) {
+const PRIORIDADE: Record<NivelDoTema, number> = { critico: 0, atencao: 1, ok: 2 }
+
+function MarcadorDaLavoura({
+  apelido,
+  nivel,
+  comEtiqueta,
+}: {
+  apelido: string
+  nivel: NivelDoTema
+  comEtiqueta: boolean
+}) {
   const { cores, marcador } = useTheme()
 
   return (
     <S.Marcador>
-      <S.Etiqueta>{apelido}</S.Etiqueta>
+      <S.Etiqueta $escondida={!comEtiqueta}>{apelido}</S.Etiqueta>
       <svg aria-hidden="true" width={marcador.largura} height={marcador.altura} viewBox="0 0 56 72">
         {/* Igual ao marcador de marcar a lavoura, na cor do nível de aviso. */}
         <path d={GOTA_VAZADA} fillRule="evenodd" fill={cores.nivel[nivel].marcador} />
@@ -56,6 +67,37 @@ function Enquadrar({
   return null
 }
 
+// Calcula quais nomes cabem no mapa agora, e de novo sempre que o mapa muda de zoom ou de lugar.
+function EtiquetasSemSobreposicao({
+  lavouras,
+  aoCalcular,
+}: {
+  lavouras: LavouraNoPainel[]
+  aoCalcular: (visiveis: Set<number>) => void
+}) {
+  const { marcador } = useTheme()
+  const mapa = useMap()
+
+  const calcular = () => {
+    const pontos = lavouras.map((lavoura) => {
+      const naTela = mapa.latLngToContainerPoint([lavoura.latitude, lavoura.longitude])
+      return {
+        id: lavoura.id,
+        x: naTela.x,
+        y: naTela.y,
+        prioridade: PRIORIDADE[NIVEL[lavoura.aviso.severidade]],
+        apelido: lavoura.apelido,
+      }
+    })
+    aoCalcular(etiquetasVisiveis(pontos, marcador))
+  }
+
+  useMapEvents({ zoomend: calcular, moveend: calcular, resize: calcular })
+  useEffect(calcular, [lavouras]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return null
+}
+
 export function Legenda() {
   return (
     <S.Legenda>
@@ -81,6 +123,8 @@ export function MapaDoPainel({
   folgaEmCima?: number
 }) {
   const navegar = useNavigate()
+  // Antes de o mapa calcular, todos os nomes aparecem.
+  const [comEtiqueta, setComEtiqueta] = useState<Set<number> | null>(null)
 
   if (!mapaLigado()) {
     return (
@@ -112,10 +156,15 @@ export function MapaDoPainel({
             titulo={lavoura.apelido}
             aoTocar={() => navegar(`/lavouras/${lavoura.id}`)}
           >
-            <MarcadorDaLavoura apelido={lavoura.apelido} nivel={NIVEL[lavoura.aviso.severidade]} />
+            <MarcadorDaLavoura
+              apelido={lavoura.apelido}
+              nivel={NIVEL[lavoura.aviso.severidade]}
+              comEtiqueta={comEtiqueta === null || comEtiqueta.has(lavoura.id)}
+            />
           </MarcadorComConteudo>
         ))}
         <Enquadrar lavouras={lavouras} folgaAEsquerda={folgaAEsquerda} folgaEmCima={folgaEmCima} />
+        <EtiquetasSemSobreposicao lavouras={lavouras} aoCalcular={setComEtiqueta} />
       </MapContainer>
     </S.Area>
   )
