@@ -1,9 +1,11 @@
 package br.com.sentinela.backend.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class FormatoDoBotTest {
@@ -45,5 +47,31 @@ class FormatoDoBotTest {
         assertEquals("🔴 *Crítico*", FormatoDoBot.nivel("critico"));
         assertEquals("🟡 *Atenção*", FormatoDoBot.nivel("atencao"));
         assertEquals("🟢 *Tudo certo*", FormatoDoBot.nivel("info"));
+    }
+
+    @Test
+    void textoCurtoVaiEmUmaMensagemSo() {
+        assertEquals(List.of("a\n\nb"), FormatoDoBot.dividirEmMensagens("a\n\nb", 100));
+    }
+
+    @Test
+    void textoLongoEhCortadoEntreBlocosEEmOrdem() {
+        List<String> partes = FormatoDoBot.dividirEmMensagens("aaaa\n\nbbbb\n\ncccc\n\ndddd", 10);
+
+        assertEquals(List.of("aaaa\n\nbbbb", "cccc\n\ndddd"), partes);
+    }
+
+    @Test
+    void blocoMaiorQueOLimiteEhCortadoNoFimDeUmaLinha() {
+        List<String> partes = FormatoDoBot.dividirEmMensagens("linha um\nlinha dois\nlinha tres", 12);
+
+        assertEquals(List.of("linha um", "linha dois", "linha tres"), partes);
+        assertTrue(partes.stream().allMatch(p -> p.length() <= 12));
+    }
+
+    @Test
+    void textoVazioNaoGeraMensagem() {
+        assertTrue(FormatoDoBot.dividirEmMensagens("  ", 100).isEmpty());
+        assertTrue(FormatoDoBot.dividirEmMensagens(null, 100).isEmpty());
     }
 }

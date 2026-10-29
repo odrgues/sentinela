@@ -1,6 +1,6 @@
 package br.com.sentinela.backend.service;
 
-import br.com.sentinela.backend.dto.ClimaResponseDTO;
+import br.com.sentinela.backend.dto.DiaPrevistoDTO;
 import br.com.sentinela.backend.model.Alerta;
 import br.com.sentinela.backend.model.Cultivo;
 import br.com.sentinela.backend.model.Mensagem;
@@ -41,9 +41,9 @@ public class WhatsAppService {
     private final UsuarioRepository usuarioRepository;
     private final CultivoRepository cultivoRepository;
     private final AlertaRepository alertaRepository;
-    private final ClimaService climaService;
     private final OrientacaoService orientacaoService;
     private final AvisosService avisosService;
+    private final PrevisaoService previsaoService;
 
     @Value("${evolution.api.url:http://localhost:8082}")
     private String evolutionApiUrl;
@@ -52,6 +52,9 @@ public class WhatsAppService {
     private String evolutionApiKey;
 
     public record RespostaWebhook(boolean naoCadastrado, String mensagem) {}
+
+    // O WhatsApp aceita uns 4 mil caracteres por mensagem; deixo folga.
+    private static final int LIMITE_DA_MENSAGEM = 3500;
 
     @Transactional
     public String processarMensagemRecebida(String chatId, String conteudo) {
@@ -315,24 +318,27 @@ public class WhatsAppService {
                 headers.setContentType(MediaType.APPLICATION_JSON);
                 headers.set("apikey", evolutionApiKey);
 
-                Map<String, Object> body = Map.of(
-                        "number", numeroOuLidFinal,
-                        "textMessage", Map.of("text", mensagem)
-                );
-
-                HttpEntity<?> requestEntity = new HttpEntity<>(body, headers);
-
                 String baseUrl = evolutionApiUrl != null ? evolutionApiUrl.replaceAll("/$", "") : "http://localhost:8082";
                 String urlEndpoint = baseUrl + "/message/sendText/sentinela-bot";
 
-                ResponseEntity<JsonNode> response = restTemplate.postForEntity(
-                        urlEndpoint,
-                        requestEntity,
-                        JsonNode.class
-                );
+                // Texto longo (a previsão de várias lavouras) vai em mais de uma mensagem, em ordem.
+                for (String parte : FormatoDoBot.dividirEmMensagens(mensagem, LIMITE_DA_MENSAGEM)) {
+                    Map<String, Object> body = Map.of(
+                            "number", numeroOuLidFinal,
+                            "textMessage", Map.of("text", parte)
+                    );
 
-                if (response.getStatusCode().is2xxSuccessful()) {
-                    log.info("[WHATSAPP] Resposta enviada com sucesso para {}. Status: {}", numeroOuLidFinal, response.getStatusCode());
+                    HttpEntity<?> requestEntity = new HttpEntity<>(body, headers);
+
+                    ResponseEntity<JsonNode> response = restTemplate.postForEntity(
+                            urlEndpoint,
+                            requestEntity,
+                            JsonNode.class
+                    );
+
+                    if (response.getStatusCode().is2xxSuccessful()) {
+                        log.info("[WHATSAPP] Resposta enviada com sucesso para {}. Status: {}", numeroOuLidFinal, response.getStatusCode());
+                    }
                 }
             } catch (HttpStatusCodeException e) {
                 log.error("[WHATSAPP] Evolution API recusou o envio para {}: {} - {}",
@@ -382,6 +388,11 @@ public class WhatsAppService {
         String doMenu = MenuDoBot.intencaoDaOpcao(conteudo);
         if (doMenu != null) {
             return doMenu;
+        }
+
+        // "menu" sozinho abre o menu antes de qualquer palavra-chave.
+        if (MenuDoBot.ehPedidoDeMenu(conteudo)) {
+            return "saudacao";
         }
 
         String texto = conteudo.toLowerCase();
@@ -501,7 +512,7 @@ public class WhatsAppService {
                         continue;
                     }
                     blocos.add(FormatoDoBot.nivel(alerta.getSeveridade()) + " · " + cultivo.getApelido() + "\n"
-                            + alerta.getMensagem());
+                            + alerta.getMensagem() + oQueFazerDoAviso(cultivo, alerta));
                 }
             }
 
@@ -516,46 +527,77 @@ public class WhatsAppService {
         }
     }
 
+    // "\n\n🛠️ *O que fazer*\n..." do aviso, ou vazio se não há texto para esse tipo de aviso.
+    private String oQueFazerDoAviso(Cultivo cultivo, Alerta alerta) {
+        String orientacao = orientacaoService.oQueFazer(cultivo.getCultura(), alerta.getTipo());
+        return (orientacao == null || orientacao.isBlank()) ? "" : "\n🛠️ *O que fazer*\n" + orientacao;
+    }
+
+    // A previsão de 7 dias de cada lavoura em andamento, a mais urgente primeiro, com os avisos e
+    // o que fazer embaixo dos dias. É a mesma previsão guardada que o site mostra.
     private String responderConsultaPrevisao(Usuario usuario) {
         try {
-            List<Cultivo> cultivos = cultivoRepository.findByUsuarioId(usuario.getId());
+            List<Cultivo> cultivos = cultivoRepository.findByUsuarioId(usuario.getId()).stream()
+                    .filter(cultivo -> "em_andamento".equals(cultivo.getStatus()))
+                    .toList();
 
-            if (cultivos == null || cultivos.isEmpty()) {
+            if (cultivos.isEmpty()) {
                 return "☀️ Cadastre uma lavoura no site para eu mostrar a previsão do lugar dela.";
             }
 
-            Cultivo cultivo = cultivos.get(0);
-
-            if (cultivo.getMunicipio() == null) {
-                return "☀️ A sua lavoura *" + cultivo.getApelido() + "* não tem município, e sem ele não consigo buscar a previsão.";
-            }
-
-            ClimaResponseDTO clima = climaService.buscarPrevisaoPorMunicipio(
-                    cultivo.getMunicipio().getId()
-            );
-
-            StringBuilder resposta = new StringBuilder("🌤️ *Previsão para ")
-                    .append(cultivo.getMunicipio().getNome())
-                    .append("*\n_")
-                    .append(cultivo.getApelido())
-                    .append("_\n\n");
-
-            if (clima.previsaoDiaria() != null) {
-                for (ClimaResponseDTO.PrevisaoDiariaDTO dia : clima.previsaoDiaria()) {
-                    resposta.append("*").append(FormatoDoBot.diaDaSemana(LocalDate.parse(dia.data()))).append("*  ")
-                            .append(FormatoDoBot.temperaturas(dia.tempMin(), dia.tempMax()))
-                            .append("  ")
-                            .append(dia.chuvaMm() > 0 ? "🌧️ " + FormatoDoBot.milimetros(dia.chuvaMm()) : "☀️ sem chuva")
-                            .append("\n");
+            record Lavoura(Cultivo cultivo, List<Alerta> avisos) {
+                int gravidade() {
+                    return avisos.stream().mapToInt(a -> AvisosService.peso(a.getSeveridade())).max().orElse(0);
                 }
-                resposta.append("\n");
             }
 
-            resposta.append("💧 Chuva na semana: *")
-                    .append(FormatoDoBot.milimetros(clima.chuvaAcumuladaSemanaMm()))
-                    .append("*");
+            List<Lavoura> lavouras = cultivos.stream()
+                    .map(cultivo -> new Lavoura(cultivo, avisosService.daSemana(cultivo)))
+                    .sorted((a, b) -> b.gravidade() - a.gravidade())
+                    .toList();
 
-            return resposta.toString();
+            List<String> blocos = new ArrayList<>();
+            blocos.add("🌤️ *Previsão das suas lavouras*\n_Próximos 7 dias_");
+
+            for (Lavoura lavoura : lavouras) {
+                Cultivo cultivo = lavoura.cultivo();
+                StringBuilder bloco = new StringBuilder("*").append(cultivo.getApelido()).append("*");
+                if (cultivo.getCultura() != null) {
+                    bloco.append(" · ").append(cultivo.getCultura().getNome());
+                }
+                if (cultivo.getMunicipio() != null) {
+                    bloco.append("\n📍 ").append(cultivo.getMunicipio().getNome());
+                }
+
+                List<DiaPrevistoDTO> dias = previsaoService.semana(cultivo.getId());
+                if (dias.isEmpty()) {
+                    bloco.append("\nSem previsão disponível agora.");
+                } else {
+                    double chuvaDaSemana = 0;
+                    for (DiaPrevistoDTO dia : dias) {
+                        chuvaDaSemana += dia.chuvaMm();
+                        bloco.append("\n*").append(FormatoDoBot.diaDaSemana(dia.data())).append("*  ")
+                                .append(FormatoDoBot.temperaturas(dia.tempMinC(), dia.tempMaxC()))
+                                .append("  ")
+                                .append(dia.chuvaMm() > 0 ? "🌧️ " + FormatoDoBot.milimetros(dia.chuvaMm()) : "☀️ sem chuva");
+                    }
+                    bloco.append("\n💧 Chuva na semana: *").append(FormatoDoBot.milimetros(chuvaDaSemana)).append("*");
+                }
+
+                List<Alerta> comRisco = lavoura.avisos().stream()
+                        .filter(alerta -> !"info".equalsIgnoreCase(alerta.getSeveridade()))
+                        .toList();
+                if (comRisco.isEmpty()) {
+                    bloco.append("\n\n🟢 *Tudo certo esta semana*");
+                }
+                for (Alerta alerta : comRisco) {
+                    bloco.append("\n\n").append(FormatoDoBot.nivel(alerta.getSeveridade())).append("\n")
+                            .append(alerta.getMensagem()).append(oQueFazerDoAviso(cultivo, alerta));
+                }
+                blocos.add(bloco.toString());
+            }
+
+            return String.join("\n\n", blocos);
         } catch (Exception e) {
             log.error("[WHATSAPP] Erro ao buscar previsão para o usuário {}: {}", usuario.getId(), e.getMessage());
             return "🌤️ Não consegui carregar a previsão agora. Tente de novo em instantes.";

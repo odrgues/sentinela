@@ -5,6 +5,8 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
 import java.time.format.TextStyle;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 // Como o bot escreve as coisas no WhatsApp: *negrito*, emojis e números do jeito brasileiro.
@@ -66,6 +68,33 @@ public final class FormatoDoBot {
         if ("critico".equalsIgnoreCase(severidade)) return "🔴 *Crítico*";
         if ("atencao".equalsIgnoreCase(severidade)) return "🟡 *Atenção*";
         return "🟢 *Tudo certo*";
+    }
+
+    // O WhatsApp aceita até uns 4 mil caracteres por mensagem. Um texto maior vai em várias, cortado
+    // sempre entre blocos (linha em branco), para nenhuma lavoura ficar partida ao meio.
+    public static List<String> dividirEmMensagens(String texto, int limite) {
+        List<String> partes = new ArrayList<>();
+        if (texto == null || texto.isBlank()) return partes;
+        StringBuilder atual = new StringBuilder();
+        for (String bloco : texto.split("\n\n")) {
+            String proximo = atual.isEmpty() ? bloco : atual + "\n\n" + bloco;
+            if (proximo.length() <= limite) {
+                atual = new StringBuilder(proximo);
+                continue;
+            }
+            if (!atual.isEmpty()) partes.add(atual.toString());
+            // Um bloco sozinho maior que o limite é cortado no fim de uma linha.
+            String resto = bloco;
+            while (resto.length() > limite) {
+                int corte = resto.lastIndexOf('\n', limite);
+                if (corte <= 0) corte = limite;
+                partes.add(resto.substring(0, corte).trim());
+                resto = resto.substring(corte).trim();
+            }
+            atual = new StringBuilder(resto);
+        }
+        if (!atual.isEmpty()) partes.add(atual.toString());
+        return partes;
     }
 
     private static String numero(double valor, String padrao) {
