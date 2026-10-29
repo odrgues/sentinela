@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Sentinela: plantinha saindo da terra">
+  <rect width="1024" height="1024" fill="#1C3A12"/>
+  <!-- A plantinha do logo (desenho de 120 por 120), grande e no meio: o WhatsApp corta a foto em círculo. -->
+  <g transform="translate(92 106) scale(7)">
+    <path d="M14 106 C 30 94, 46 90, 60 90 C 76 90, 92 95, 106 106 Z" fill="#E1EEDC"/>
+    <path d="M60 92 C 57 80, 66 70, 61 58 C 57 48, 63 38, 60 28" fill="none" stroke="#E1EEDC" stroke-width="5" stroke-linecap="round"/>
+    <path d="M60 43 C 52 33, 36 31, 24 36 C 34 47, 50 49, 60 43 Z" fill="#E1EEDC"/>
+    <path d="M57 42 C 49 38, 39 36, 30 37" fill="none" stroke="#1C3A12" stroke-width="1" stroke-linecap="round"/>
+    <path d="M60 43 C 70 35, 86 35, 98 41 C 87 51, 70 51, 60 43 Z" fill="#E1EEDC"/>
+    <path d="M63 43 C 72 40, 82 40, 91 42" fill="none" stroke="#1C3A12" stroke-width="1" stroke-linecap="round"/>
+    <path d="M60 28 C 56 22, 53 17, 54 13 C 59 16, 61 22, 60 28 Z" fill="#F2D27A"/>
+    <path d="M60 28 C 63 22, 67 18, 71 17 C 69 22, 65 26, 60 28 Z" fill="#F2D27A"/>
+  </g>
+</svg>

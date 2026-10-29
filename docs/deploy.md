@@ -19,13 +19,13 @@ Senhas e chaves **não** ficam no repositório: estão nas variáveis de ambient
 
 1. Em [console.aiven.io](https://console.aiven.io), crie um serviço **MySQL** (plano Developer, pago com os créditos do trial, sem cartão). Região na América do Norte, para ficar perto da API.
 2. Em **Connection information**, anote o host, a porta, o usuário (`avnadmin`) e a senha.
-3. Crie o banco e rode os 4 scripts, na ordem, da raiz do repositório:
+3. Crie o banco e rode os 5 scripts, na ordem, da raiz do repositório:
 
 ```bash
 H=<host>.aivencloud.com; P=<porta>; U=avnadmin
 M="mysql -h $H -P $P -u $U -p --ssl-mode=REQUIRED --default-character-set=utf8mb4"
 $M -e "CREATE DATABASE sentinela CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
-for f in database/schema/01_ddl.sql database/seeds/02_dados_iniciais.sql database/seeds/03_orientacoes.sql database/seeds/04_demonstracao.sql; do
+for f in database/schema/01_ddl.sql database/schema/02_whatsapp_lid.sql database/seeds/02_dados_iniciais.sql database/seeds/03_orientacoes.sql database/seeds/04_demonstracao.sql; do
   $M --init-command="SET time_zone='-03:00'" sentinela < $f
 done
 ```
@@ -117,11 +117,11 @@ O bot só funciona com o notebook da Larissa ligado, com o Docker da Evolution e
 
 ## No dia da apresentação
 
-A rotina das 6h roda em produção e troca a previsão fixa da conta do João pela previsão de verdade do dia. Para o painel mostrar os avisos da demonstração (um crítico, dois de atenção e um "tudo certo"), rode de novo o `04_demonstracao.sql` no banco de produção **depois das 6h** daquele dia:
+A rotina das 6h roda em produção e troca a previsão fixa da conta do João pela previsão de verdade do dia. Para o painel mostrar os avisos da demonstração, rode de novo o seed **depois das 6h** daquele dia: o `04_demonstracao.sql` (conta do João, 4 lavouras) e o `05_conta_demonstracao.sql` (conta `sentinela.uniube@gmail.com`, 12 lavouras, que precisa ter sido criada pelo site antes):
 
 ```bash
 mysql -h <host>.aivencloud.com -P <porta> -u avnadmin -p --ssl-mode=REQUIRED --default-character-set=utf8mb4 \
-  --init-command="SET time_zone='-03:00'" sentinela < database/seeds/04_demonstracao.sql
+  --init-command="SET time_zone='-03:00'" sentinela < database/seeds/05_conta_demonstracao.sql
 ```
 
 Se preferirem mostrar o clima real, não precisa rodar nada: os avisos da conta do João passam a ser os da previsão do dia.
