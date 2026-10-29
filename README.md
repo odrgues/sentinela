@@ -190,7 +190,6 @@ Site na Vercel, API no Render e banco na Aiven: passo a passo e variáveis em [`
 
 | Conta | Senha | Para quê |
 |---|---|---|
-| `joao@exemplo.com` | `123456` | Produtor da demonstração, com 4 lavouras perto de Uberaba |
 | `admin@sentinela.com` | `admin123` | Único que cadastra e altera culturas pela API (Postman) |
 | `sentinela.uniube@gmail.com` | com a equipe | Conta de demonstração do site publicado, com 12 lavouras e avisos de todos os níveis (`database/seeds/05_conta_demonstracao.sql`) |
 
