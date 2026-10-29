@@ -150,7 +150,7 @@ public class WhatsAppService {
         if (usuario == null) {
             log.warn("Mensagem recebida de dispositivo/número não vinculado: chatId={}, lid={}", chatId, lidAlvo);
             String aviso = "Olá! 👋 Sou o assistente virtual do Sentinela, mas ainda não reconheço este número ou dispositivo.\n\n"
-                    + "Por favor, digite o **e-mail** cadastrado na sua conta para ativarmos o seu acesso por aqui:";
+                    + "Por favor, digite o *e-mail* cadastrado na sua conta para ativarmos o seu acesso por aqui:";
 
             if (chatId.contains("@lid")) {
                 return new RespostaWebhook(true, aviso);
@@ -357,10 +357,14 @@ public class WhatsAppService {
 
         String nome = (usuario.getNome() != null && !usuario.getNome().isBlank()) ? usuario.getNome() : "Produtor(a)";
 
-        String mensagem = "Olá, " + nome + "! 👋\n\n"
-                + "Seja bem-vindo(a) ao *Sentinela*!\n"
-                + "Seu número foi cadastrado com sucesso na nossa plataforma.\n\n"
-                + "Por favor, digite o seu **e-mail** de cadastro para vincularmos o seu acesso por aqui.";
+        // Quem acabou de cadastrar o número já está reconhecido: aqui não se pede o e-mail. O pedido
+        // de e-mail é só para quem escreve de um número que não tem conta.
+        String mensagem = "👋 *Olá, " + nome + "!*\n\n"
+                + "Seja bem-vindo(a) ao *Sentinela*, o seu assistente do tempo na lavoura.\n"
+                + "Seu número foi cadastrado, e por aqui eu aviso quando o clima ameaçar a sua plantação.\n\n"
+                + "*O que você quer ver?* Responda com o número:\n\n"
+                + MenuDoBot.opcoes() + "\n\n"
+                + "_Digite *menu* a qualquer momento para ver as opções de novo._";
 
         enviarEManterHistorico(usuario, mensagem, "saudacao", usuario.getWhatsappNumero());
     }
