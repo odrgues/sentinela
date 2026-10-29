@@ -325,7 +325,7 @@ public class WhatsAppService {
                 String baseUrl = evolutionApiUrl != null ? evolutionApiUrl.replaceAll("/$", "") : "http://localhost:8082";
                 String urlEndpoint = baseUrl + "/message/sendText/sentinela-bot";
 
-                // Divide mensagens longas se necessário
+                // Divide textos longos (como lista de lavouras ou previsão) em partes menores e sequenciais
                 for (String parte : FormatoDoBot.dividirEmMensagens(mensagem, LIMITE_DA_MENSAGEM)) {
                     Map<String, Object> body = Map.of(
                             "number", numeroOuLidFinal,
@@ -341,7 +341,7 @@ public class WhatsAppService {
                     );
 
                     if (response.getStatusCode().is2xxSuccessful()) {
-                        log.info("[WHATSAPP] Resposta enviada com sucesso para {}. Status: {}", numeroOuLidFinal, response.getStatusCode());
+                        log.info("[WHATSAPP] Parte da resposta enviada com sucesso para {}. Status: {}", numeroOuLidFinal, response.getStatusCode());
                     }
                 }
             } catch (HttpStatusCodeException e) {
@@ -352,7 +352,6 @@ public class WhatsAppService {
             }
         });
     }
-
     public void enviarBoasVindasOnboarding(Usuario usuario) {
         if (usuario == null || usuario.getWhatsappNumero() == null || usuario.getWhatsappNumero().isBlank()) {
             log.warn("[WHATSAPP] Tentativa de enviar boas-vindas para usuário sem número cadastrado.");
