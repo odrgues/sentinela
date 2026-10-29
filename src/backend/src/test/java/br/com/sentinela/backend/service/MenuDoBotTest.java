@@ -69,4 +69,27 @@ class MenuDoBotTest {
         assertTrue(rodape.contains("*2* - Avisos da semana"));
         assertTrue(rodape.contains("*3* - Previsão do tempo"));
     }
+
+    @Test
+    void sairEOutrasDespedidasEncerramAConversa() {
+        assertTrue(MenuDoBot.ehPedidoDeSaida("sair"));
+        assertTrue(MenuDoBot.ehPedidoDeSaida(" Sair! "));
+        assertTrue(MenuDoBot.ehPedidoDeSaida("Tchau"));
+        assertTrue(MenuDoBot.ehPedidoDeSaida("obrigada 🙏"));
+        assertTrue(MenuDoBot.ehPedidoDeSaida("Até logo"));
+    }
+
+    @Test
+    void fraseComSairNoMeioNaoEncerra() {
+        assertFalse(MenuDoBot.ehPedidoDeSaida("como faço para sair da conta"));
+        assertFalse(MenuDoBot.ehPedidoDeSaida("menu"));
+        assertFalse(MenuDoBot.ehPedidoDeSaida(null));
+    }
+
+    @Test
+    void aDespedidaDizComoRetomarEOMenuLembraDeSair() {
+        assertTrue(MenuDoBot.despedida("Jessica").contains("Até logo, Jessica!"));
+        assertTrue(MenuDoBot.despedida("Jessica").contains("digitar *oi*"));
+        assertTrue(MenuDoBot.rodape().contains("*sair*"));
+    }
 }

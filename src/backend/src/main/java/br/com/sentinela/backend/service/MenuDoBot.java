@@ -16,16 +16,35 @@ public final class MenuDoBot {
     // "menu", "Menu!", "0", "voltar", "início", "ajuda", sozinhos na mensagem: abrem o menu.
     private static final Set<String> PEDIDOS_DE_MENU = Set.of("menu", "0", "inicio", "voltar", "ajuda", "opcoes");
 
+    // "sair", "tchau", "obrigada", "até logo", sozinhos na mensagem: encerram a conversa.
+    private static final Set<String> PEDIDOS_DE_SAIDA = Set.of(
+            "sair", "tchau", "encerrar", "fim", "obrigado", "obrigada", "valeu", "atelogo", "atemais");
+
     private MenuDoBot() {}
 
-    // Sem acento, sem pontuação, sem emoji: "Início!" e "0️⃣" viram "inicio" e "0".
-    public static boolean ehPedidoDeMenu(String texto) {
-        if (texto == null) return false;
-        String limpo = Normalizer.normalize(texto, Normalizer.Form.NFD)
+    // Sem acento, sem pontuação e sem emoji, como no menu.
+    private static String simplificar(String texto) {
+        return Normalizer.normalize(texto, Normalizer.Form.NFD)
                 .replaceAll("\\p{M}", "")
                 .replaceAll("[^\\p{L}\\p{N}]", "")
                 .toLowerCase();
-        return PEDIDOS_DE_MENU.contains(limpo);
+    }
+
+    public static boolean ehPedidoDeSaida(String texto) {
+        return texto != null && PEDIDOS_DE_SAIDA.contains(simplificar(texto));
+    }
+
+    // A despedida: diz como retomar a conversa e lembra que os avisos críticos continuam.
+    public static String despedida(String nome) {
+        return "👋 *Até logo, " + nome + "!*\n\n"
+                + "Foi um prazer ajudar com as suas lavouras.\n"
+                + "Para retomar a conversa, é só digitar *oi*.\n\n"
+                + "_Os avisos críticos continuam chegando por aqui. Para desligar, use Minha conta, no site._";
+    }
+
+    // Sem acento, sem pontuação, sem emoji: "Início!" e "0️⃣" viram "inicio" e "0".
+    public static boolean ehPedidoDeMenu(String texto) {
+        return texto != null && PEDIDOS_DE_MENU.contains(simplificar(texto));
     }
 
     // A intenção que a opção escolhida pede, ou null se a mensagem não for uma opção do menu.
@@ -48,6 +67,6 @@ public final class MenuDoBot {
 
     // O fim de toda resposta de consulta: o menu de novo, para a pessoa escolher a próxima sem digitar "menu".
     public static String rodape() {
-        return "\n\n*Quer ver mais?* Responda com o número:\n\n" + opcoes();
+        return "\n\n*Quer ver mais?* Responda com o número:\n\n" + opcoes() + "\n\n_Digite *sair* para encerrar._";
     }
 }
