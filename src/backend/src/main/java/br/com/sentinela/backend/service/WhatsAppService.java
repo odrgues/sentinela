@@ -66,9 +66,6 @@ public class WhatsAppService {
         return processarEAtenderMensagem(chatId, null, conteudo, intencaoEntrada);
     }
 
-    /**
-     * Processa uma mensagem recebida pelo webhook, registra no banco e gera a resposta.
-     */
     @Transactional
     public String processarEAtenderMensagem(
             String chatId,
@@ -94,13 +91,8 @@ public class WhatsAppService {
             return aviso;
         }
 
-        // 1. Registra a mensagem recebida no histórico
         registrarMensagemRecebida(usuario, chatId, conteudo, intencao);
-
-        // 2. Gera a resposta do bot (ex: saudação, cultivos, previsão, alertas)
         String resposta = gerarRespostaDoAgente(usuario, intencao);
-
-        // 3. Salva a resposta no histórico e envia de forma assíncrona
         enviarEManterHistorico(usuario, resposta, intencao, chatId);
 
         return resposta;
@@ -246,7 +238,9 @@ public class WhatsAppService {
 
                 HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
-                String urlEndpoint = evolutionApiUrl + "/message/sendText/sentinela-bot2";
+                // URL corrigida de forma segura contra barras duplas e apontando para a instância correta
+                String baseUrl = evolutionApiUrl != null ? evolutionApiUrl.replaceAll("/$", "") : "http://localhost:8082";
+                String urlEndpoint = baseUrl + "/message/sendText/sentinela-bot";
 
                 ResponseEntity<JsonNode> response = restTemplate.postForEntity(
                         urlEndpoint,
@@ -263,9 +257,6 @@ public class WhatsAppService {
         });
     }
 
-    /**
-     * Envia as boas-vindas no cadastro e realiza a consulta/vinculação automática do whatsapp_lid.
-     */
     public void enviarBoasVindasOnboarding(Usuario usuario) {
         if (usuario == null || usuario.getWhatsappNumero() == null || usuario.getWhatsappNumero().isBlank()) {
             log.warn("[WHATSAPP] Tentativa de enviar boas-vindas para usuário sem número cadastrado.");
@@ -285,10 +276,8 @@ public class WhatsAppService {
 
         enviarEManterHistorico(usuario, mensagem, "saudacao", usuario.getWhatsappNumero());
 
-        // Dispara a resolução e salvamento automático do whatsapp_lid no MySQL
         CompletableFuture.runAsync(() -> {
             try {
-                // Aguarda 2 segundos para dar tempo do WhatsApp processar e sincronizar a sessão
                 Thread.sleep(2000);
                 capturarEVincularLidNoCadastro(usuario);
             } catch (Exception e) {
@@ -297,10 +286,6 @@ public class WhatsAppService {
         });
     }
 
-    /**
-     * Consulta a Evolution API para capturar o LID correspondente ao número cadastrado
-     * e grava na coluna whatsapp_lid do MySQL.
-     */
     private void capturarEVincularLidNoCadastro(Usuario usuario) {
         if (usuario == null || usuario.getWhatsappNumero() == null) {
             return;
@@ -325,7 +310,8 @@ public class WhatsAppService {
             Map<String, Object> bodyMap = Map.of("numbers", List.of(numeroLimpo));
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(bodyMap, headers);
 
-            String urlEndpoint = evolutionApiUrl + "/chat/whatsappNumbers/sentinela-bot2";
+            String baseUrl = evolutionApiUrl != null ? evolutionApiUrl.replaceAll("/$", "") : "http://localhost:8082";
+            String urlEndpoint = baseUrl + "/chat/whatsappNumbers/sentinela-bot";
 
             ResponseEntity<JsonNode> response = restTemplate.postForEntity(urlEndpoint, request, JsonNode.class);
 
@@ -350,16 +336,11 @@ public class WhatsAppService {
         }
     }
 
-    /**
-     * Busca o usuário por whatsapp_lid. Se não encontrar, realiza o vínculo automático do LID
-     * com o cadastro do usuário que aguarda o primeiro contato.
-     */
     private Usuario buscarUsuarioPorWhatsapp(String chatId, String lid) {
         String lidLimpo = (lid != null && !lid.isBlank())
                 ? lid.trim()
                 : (chatId != null && chatId.contains("@lid") ? chatId.trim() : "");
 
-        // 1. Busca direta por whatsapp_lid para usuários já vinculados anteriormente
         if (!lidLimpo.isBlank() && lidLimpo.contains("@lid")) {
             Optional<Usuario> usuarioPorLid = usuarioRepository.findByWhatsappLid(lidLimpo);
             if (usuarioPorLid.isPresent()) {
@@ -368,7 +349,6 @@ public class WhatsAppService {
             }
         }
 
-        // 2. Se o chatId contém número de telefone tradicional, busca pelo telefone
         if (chatId != null && !chatId.contains("@lid")) {
             Usuario usuarioPorNumero = buscarUsuarioPorNumero(chatId, lidLimpo);
             if (usuarioPorNumero != null) {
@@ -376,8 +356,6 @@ public class WhatsAppService {
             }
         }
 
-        // 3. AUTO-VÍNCULO IMEDIATO: Quando chega apenas o @lid e não está no banco,
-        // vincula este @lid ao usuário cadastrado que ainda está com whatsapp_lid NULL.
         if (!lidLimpo.isBlank() && lidLimpo.contains("@lid")) {
             List<Usuario> usuariosSemLid = usuarioRepository.findAll().stream()
                     .filter(u -> u.getWhatsappLid() == null || u.getWhatsappLid().isBlank())
@@ -385,9 +363,7 @@ public class WhatsAppService {
                     .toList();
 
             if (!usuariosSemLid.isEmpty()) {
-                // Pega o usuário sem LID mais recente
                 Usuario usuarioAlvo = usuariosSemLid.get(usuariosSemLid.size() - 1);
-
                 vincularLidSeNecessario(usuarioAlvo, lidLimpo);
                 log.info("[WHATSAPP] SUCESSO: LID {} vinculado automaticamente ao usuário ID {} ({})!",
                         lidLimpo, usuarioAlvo.getId(), usuarioAlvo.getNome());
@@ -425,9 +401,6 @@ public class WhatsAppService {
         return null;
     }
 
-    /**
-     * Grava o LID diretamente no MySQL para acelerar todas as consultas futuras.
-     */
     private void vincularLidSeNecessario(Usuario usuario, String lidOriginal) {
         if (usuario != null && lidOriginal != null && lidOriginal.contains("@lid")) {
             String lidLimpo = lidOriginal.trim();
@@ -437,55 +410,6 @@ public class WhatsAppService {
                 log.info("[WHATSAPP] SUCESSO: whatsapp_lid '{}' gravado no MySQL para o usuário ID {}!", lidLimpo, usuario.getId());
             }
         }
-    }
-
-    private String obterTelefonePorLid(String lid) {
-        if (evolutionApiKey == null || evolutionApiKey.isBlank()) {
-            log.warn("[WHATSAPP] evolution.api.key não está configurada.");
-            return null;
-        }
-
-        try {
-            SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-            factory.setConnectTimeout(3000);
-            factory.setReadTimeout(3000);
-
-            RestTemplate restTemplate = new RestTemplate(factory);
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("apikey", evolutionApiKey);
-
-            Map<String, Object> bodyMap = Map.of(
-                    "where", Map.of("id", lid)
-            );
-
-            HttpEntity<Map<String, Object>> request = new HttpEntity<>(bodyMap, headers);
-
-            String urlEndpoint = evolutionApiUrl + "/chat/findContacts/sentinela-bot2";
-
-            ResponseEntity<JsonNode> response = restTemplate.postForEntity(
-                    urlEndpoint,
-                    request,
-                    JsonNode.class
-            );
-
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                JsonNode body = response.getBody();
-                JsonNode contactNode = body.isArray() && !body.isEmpty() ? body.get(0) : body;
-
-                String remoteJidAlt = contactNode.path("remoteJidAlt").asText("");
-                if (remoteJidAlt.isBlank()) remoteJidAlt = contactNode.path("number").asText("");
-                if (remoteJidAlt.isBlank()) remoteJidAlt = contactNode.path("id").asText("");
-
-                if (!remoteJidAlt.isBlank() && !remoteJidAlt.contains("@lid")) {
-                    return remoteJidAlt.replace("@s.whatsapp.net", "").replaceAll("[^0-9]", "");
-                }
-            }
-        } catch (Exception e) {
-            log.warn("[WHATSAPP] Falha ao consultar @lid na Evolution API: {}", e.getMessage());
-        }
-        return null;
     }
 
     private String identificarIntencao(
@@ -618,7 +542,6 @@ public class WhatsAppService {
             }
 
             StringBuilder resposta = new StringBuilder("🚨 ALERTAS AGROCLIMÁTICOS:\n\n");
-
             DateTimeFormatter formato = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
             for (Alerta alerta : alertas) {
