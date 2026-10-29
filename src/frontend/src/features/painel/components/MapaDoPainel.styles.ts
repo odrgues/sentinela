@@ -29,6 +29,20 @@ export const SemMapa = styled.p`
   }
 `
 
+// $escondida: o nome cobriria outra lavoura, então só aparece ao passar o mouse no marcador.
+export const Etiqueta = styled.span<{ $escondida: boolean }>`
+  padding: ${({ theme }) => theme.espaco[3]} ${({ theme }) => theme.espaco[5]};
+  background: ${({ theme }) => theme.cores.fundo.cartao};
+  border-radius: ${({ theme }) => theme.raio.etiqueta};
+  box-shadow: ${({ theme }) => theme.sombra.etiqueta};
+  font-family: ${({ theme }) => theme.fonte.familia};
+  font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
+  font-weight: ${({ theme }) => theme.fonte.peso.forte};
+  color: ${({ theme }) => theme.cores.texto.principal};
+  white-space: nowrap;
+  display: ${({ $escondida }) => ($escondida ? 'none' : 'block')};
+`
+
 // A div do Leaflet não tem tamanho e fica no ponto: o marcador sobe inteiro e fica com a ponta nele.
 export const Marcador = styled.span`
   position: absolute;
@@ -39,18 +53,10 @@ export const Marcador = styled.span`
   flex-direction: column;
   align-items: center;
   cursor: pointer;
-`
 
-export const Etiqueta = styled.span`
-  padding: ${({ theme }) => theme.espaco[3]} ${({ theme }) => theme.espaco[5]};
-  background: ${({ theme }) => theme.cores.fundo.cartao};
-  border-radius: ${({ theme }) => theme.raio.etiqueta};
-  box-shadow: ${({ theme }) => theme.sombra.etiqueta};
-  font-family: ${({ theme }) => theme.fonte.familia};
-  font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
-  font-weight: ${({ theme }) => theme.fonte.peso.forte};
-  color: ${({ theme }) => theme.cores.texto.principal};
-  white-space: nowrap;
+  &:hover ${Etiqueta} {
+    display: block;
+  }
 `
 
 // No canto de cima, embaixo da pílula da conta: no canto de baixo ficam os botões de zoom.

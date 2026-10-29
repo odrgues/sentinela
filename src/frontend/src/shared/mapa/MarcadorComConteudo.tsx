@@ -27,6 +27,7 @@ export function MarcadorComConteudo({ latitude, longitude, titulo, aoTocar, chil
         position={[latitude, longitude]}
         icon={icone}
         title={titulo}
+        riseOnHover
         eventHandlers={{ click: aoTocar }}
       />
       {createPortal(children, elemento)}
