@@ -20,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
@@ -47,6 +48,8 @@ public class WhatsAppService {
     @Value("${evolution.api.key:}")
     private String evolutionApiKey;
 
+    public record RespostaWebhook(boolean naoCadastrado, String mensagem) {}
+
     @Transactional
     public String processarMensagemRecebida(String chatId, String conteudo) {
         return processarEAtenderMensagem(chatId, null, conteudo, null);
@@ -73,29 +76,94 @@ public class WhatsAppService {
             String conteudo,
             String intencaoEntrada
     ) {
+        return executarFluxoMensagem(chatId, lid, conteudo, intencaoEntrada).mensagem();
+    }
+
+    @Transactional
+    public RespostaWebhook processarWebhook(String chatId, String lid, String conteudo) {
+        return executarFluxoMensagem(chatId, lid, conteudo, null);
+    }
+
+    private RespostaWebhook executarFluxoMensagem(
+            String chatId,
+            String lid,
+            String conteudo,
+            String intencaoEntrada
+    ) {
         if (chatId == null || chatId.isBlank()
                 || conteudo == null || conteudo.isBlank()) {
-            return "Não consegui identificar a mensagem. Envie seu texto novamente.";
+            return new RespostaWebhook(false, "Não consegui identificar a mensagem. Envie seu texto novamente.");
         }
 
-        Usuario usuario = buscarUsuarioPorWhatsapp(chatId, lid);
-        String intencao = identificarIntencao(conteudo, intencaoEntrada);
+        String lidAlvo = (lid != null && !lid.isBlank()) ? lid : (chatId.contains("@lid") ? chatId : null);
+        Usuario usuario = null;
 
-        if (usuario == null) {
-            log.warn("Mensagem recebida de número não cadastrado: chatId={}, lid={}", chatId, lid);
-            String aviso = "Olá! Sou o assistente do Sentinela, mas não encontrei um cadastro vinculado ao seu número. Cadastre seu WhatsApp na sua conta.";
-
-            if (!chatId.contains("@lid")) {
-                dispararParaWhatsappReal(null, chatId, aviso);
+        if (lidAlvo != null) {
+            Optional<Usuario> usuarioPorLid = usuarioRepository.findByWhatsappLid(lidAlvo);
+            if (usuarioPorLid.isPresent()) {
+                usuario = usuarioPorLid.get();
             }
-            return aviso;
         }
 
+        if (usuario == null && !chatId.contains("@lid")) {
+            String apenasNumerosChat = chatId.replaceAll("[^0-9]", "");
+            if (!apenasNumerosChat.isBlank()) {
+                usuario = usuarioRepository.findAll().stream()
+                        .filter(u -> u.getWhatsappNumero() != null && !u.getWhatsappNumero().isBlank())
+                        .filter(u -> u.getWhatsappNumero().replaceAll("[^0-9]", "").equals(apenasNumerosChat))
+                        .findFirst()
+                        .orElse(null);
+            }
+        }
+
+        // 3. Vínculo por e-mail enviado pelo usuário
+        String textoTrim = conteudo.trim();
+        if (usuario == null && textoTrim.contains("@") && textoTrim.contains(".")) {
+            Optional<Usuario> usuarioPorEmail = usuarioRepository.findByEmail(textoTrim.toLowerCase());
+            if (usuarioPorEmail.isPresent()) {
+                usuario = usuarioPorEmail.get();
+
+                if (lidAlvo != null) {
+                    usuario.setWhatsappLid(lidAlvo);
+                }
+                if (!chatId.contains("@lid")) {
+                    usuario.setWhatsappNumero(chatId.replaceAll("[^0-9]", ""));
+                }
+
+                usuarioRepository.save(usuario);
+                log.info("[WHATSAPP] Vínculo seguro realizado com sucesso para o usuário ID {} com o identificador {}", usuario.getId(), chatId);
+
+                String mensagemSucesso = "Conta vinculada com sucesso, " + usuario.getNome() + "! 🎉 Agora você já pode usar o bot. Digite *menu* para ver as opções.";
+
+                // Registra e dispara ativamente para o número real cadastrado (evita erro 400 do @lid)
+                enviarEManterHistorico(usuario, mensagemSucesso, "saudacao", destinoResposta(chatId, usuario));
+                return new RespostaWebhook(false, mensagemSucesso);
+            }
+        }
+
+        // 4. Se ainda não encontrou o usuário, pede o e-mail educadamente
+        if (usuario == null) {
+            log.warn("Mensagem recebida de dispositivo/número não vinculado: chatId={}, lid={}", chatId, lidAlvo);
+            String aviso = "Olá! 👋 Sou o assistente virtual do Sentinela, mas ainda não reconheço este número ou dispositivo.\n\n"
+                    + "Por favor, digite o **e-mail** cadastrado na sua conta para ativarmos o seu acesso por aqui:";
+
+            if (chatId.contains("@lid")) {
+                return new RespostaWebhook(true, aviso);
+            }
+
+            dispararParaWhatsappReal(null, chatId, aviso);
+            return new RespostaWebhook(false, aviso);
+        }
+
+        // Fluxo normal para usuário já autenticado e vinculado
+        String intencao = identificarIntencao(conteudo, intencaoEntrada);
         registrarMensagemRecebida(usuario, chatId, conteudo, intencao);
         String resposta = gerarRespostaDoAgente(usuario, intencao);
-        enviarEManterHistorico(usuario, resposta, intencao, chatId);
 
-        return resposta;
+        // Dispara a resposta utilizando o número real de telefone do usuário para garantir entrega sem Erro 400
+        enviarEManterHistorico(usuario, resposta, intencao, destinoResposta(chatId, usuario));
+
+        return new RespostaWebhook(false, resposta);
     }
 
     public void notificarAlertaSeHabilitado(Alerta alerta) {
@@ -183,10 +251,12 @@ public class WhatsAppService {
         }
 
         String chatIdFinal;
-        if (chatIdOrigem != null && !chatIdOrigem.contains("@lid") && !chatIdOrigem.isBlank()) {
+        if (chatIdOrigem != null && !chatIdOrigem.isBlank()) {
             chatIdFinal = chatIdOrigem;
         } else if (usuario.getWhatsappNumero() != null && !usuario.getWhatsappNumero().isBlank()) {
             chatIdFinal = usuario.getWhatsappNumero();
+        } else if (usuario.getWhatsappLid() != null && !usuario.getWhatsappLid().isBlank()) {
+            chatIdFinal = usuario.getWhatsappLid();
         } else {
             chatIdFinal = "desconhecido";
         }
@@ -203,27 +273,42 @@ public class WhatsAppService {
 
         log.info("[WHATSAPP] Mensagem gravada no banco para o usuário {}.", usuario.getId());
 
-        dispararParaWhatsappReal(usuario, usuario.getWhatsappNumero(), textoMensagem);
+        dispararParaWhatsappReal(usuario, chatIdFinal, textoMensagem);
     }
 
-    private void dispararParaWhatsappReal(Usuario usuario, String telefone, String mensagem) {
-        if (telefone == null || telefone.isBlank()) {
-            log.warn("[WHATSAPP] Tentativa de envio para número de telefone nulo ou em branco.");
+    private String destinoResposta(String chatId, Usuario usuario) {
+        // Se o usuário já tiver número cadastrado, prioriza o número real para evitar o Erro 400 do @lid na Evolution
+        if (usuario != null && usuario.getWhatsappNumero() != null && !usuario.getWhatsappNumero().isBlank()) {
+            return usuario.getWhatsappNumero();
+        }
+        if (chatId != null && !chatId.contains("@lid")) {
+            return chatId;
+        }
+        return chatId;
+    }
+
+    private void dispararParaWhatsappReal(Usuario usuario, String destino, String mensagem) {
+        if (destino == null || destino.isBlank()) {
+            log.warn("[WHATSAPP] Tentativa de envio para destino nulo ou em branco.");
             return;
         }
 
-        String numeroLimpo = telefone.replaceAll("[^0-9]", "");
-
-        if (numeroLimpo.isBlank()) {
-            log.error("[WHATSAPP] O identificador '{}' não possui dígitos numéricos válidos.", telefone);
-            return;
+        String numeroOuLidFinal;
+        if (destino.contains("@lid")) {
+            numeroOuLidFinal = destino.trim();
+        } else {
+            numeroOuLidFinal = destino.replaceAll("[^0-9]", "");
+            if (numeroOuLidFinal.isBlank()) {
+                log.error("[WHATSAPP] O identificador '{}' não possui dígitos numéricos válidos.", destino);
+                return;
+            }
         }
 
         CompletableFuture.runAsync(() -> {
             try {
                 SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-                factory.setConnectTimeout(5000);
-                factory.setReadTimeout(5000);
+                factory.setConnectTimeout(15000);
+                factory.setReadTimeout(30000);
 
                 RestTemplate restTemplate = new RestTemplate(factory);
 
@@ -232,27 +317,29 @@ public class WhatsAppService {
                 headers.set("apikey", evolutionApiKey);
 
                 Map<String, Object> body = Map.of(
-                        "number", numeroLimpo,
+                        "number", numeroOuLidFinal,
                         "textMessage", Map.of("text", mensagem)
                 );
 
-                HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+                HttpEntity<?> requestEntity = new HttpEntity<>(body, headers);
 
-                // URL corrigida de forma segura contra barras duplas e apontando para a instância correta
                 String baseUrl = evolutionApiUrl != null ? evolutionApiUrl.replaceAll("/$", "") : "http://localhost:8082";
                 String urlEndpoint = baseUrl + "/message/sendText/sentinela-bot";
 
                 ResponseEntity<JsonNode> response = restTemplate.postForEntity(
                         urlEndpoint,
-                        request,
+                        requestEntity,
                         JsonNode.class
                 );
 
                 if (response.getStatusCode().is2xxSuccessful()) {
-                    log.info("[WHATSAPP] Resposta enviada com sucesso para {}. Status: {}", numeroLimpo, response.getStatusCode());
+                    log.info("[WHATSAPP] Resposta enviada com sucesso para {}. Status: {}", numeroOuLidFinal, response.getStatusCode());
                 }
+            } catch (HttpStatusCodeException e) {
+                log.error("[WHATSAPP] Evolution API recusou o envio para {}: {} - {}",
+                        numeroOuLidFinal, e.getStatusCode(), e.getResponseBodyAsString());
             } catch (Exception e) {
-                log.error("[WHATSAPP] Erro ao disparar mensagem para a Evolution API: {}", e.getMessage());
+                log.warn("[WHATSAPP] Aviso de atraso/timeout na comunicação com a Evolution API (o envio pode ter ocorrido em segundo plano): {}", e.getMessage());
             }
         });
     }
@@ -268,148 +355,9 @@ public class WhatsAppService {
         String mensagem = "Olá, " + nome + "! 👋\n\n"
                 + "Seja bem-vindo(a) ao *Sentinela*!\n"
                 + "Seu número foi cadastrado com sucesso na nossa plataforma.\n\n"
-                + "Por aqui você pode consultar facilmente:\n"
-                + "🌱 *Cultivos e Lavouras*\n"
-                + "🌦️ *Previsão do Tempo*\n"
-                + "⚠️ *Alertas Climáticos e de Riscos*\n\n"
-                + "Digite *menu* ou *oi* a qualquer momento para ver as opções!";
+                + "Por favor, digite o seu **e-mail** de cadastro para vincularmos o seu acesso por aqui.";
 
         enviarEManterHistorico(usuario, mensagem, "saudacao", usuario.getWhatsappNumero());
-
-        CompletableFuture.runAsync(() -> {
-            try {
-                Thread.sleep(2000);
-                capturarEVincularLidNoCadastro(usuario);
-            } catch (Exception e) {
-                log.error("[WHATSAPP] Erro ao sincronizar LID automático no onboarding: {}", e.getMessage());
-            }
-        });
-    }
-
-    private void capturarEVincularLidNoCadastro(Usuario usuario) {
-        if (usuario == null || usuario.getWhatsappNumero() == null) {
-            return;
-        }
-
-        String numeroLimpo = usuario.getWhatsappNumero().replaceAll("[^0-9]", "");
-        if (numeroLimpo.isBlank()) {
-            return;
-        }
-
-        try {
-            SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-            factory.setConnectTimeout(4000);
-            factory.setReadTimeout(4000);
-
-            RestTemplate restTemplate = new RestTemplate(factory);
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("apikey", evolutionApiKey);
-
-            Map<String, Object> bodyMap = Map.of("numbers", List.of(numeroLimpo));
-            HttpEntity<Map<String, Object>> request = new HttpEntity<>(bodyMap, headers);
-
-            String baseUrl = evolutionApiUrl != null ? evolutionApiUrl.replaceAll("/$", "") : "http://localhost:8082";
-            String urlEndpoint = baseUrl + "/chat/whatsappNumbers/sentinela-bot";
-
-            ResponseEntity<JsonNode> response = restTemplate.postForEntity(urlEndpoint, request, JsonNode.class);
-
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                JsonNode body = response.getBody();
-                JsonNode item = body.isArray() && !body.isEmpty() ? body.get(0) : body;
-
-                String lidCapturado = item.path("lid").asText("");
-                if (lidCapturado.isBlank()) {
-                    lidCapturado = item.path("jid").asText("");
-                }
-
-                if (!lidCapturado.isBlank() && lidCapturado.contains("@lid")) {
-                    usuario.setWhatsappLid(lidCapturado.trim());
-                    usuarioRepository.save(usuario);
-                    log.info("[WHATSAPP] AUTOMÁTICO: whatsapp_lid {} vinculado ao usuário ID {} ({}) no cadastro!",
-                            lidCapturado, usuario.getId(), usuario.getNome());
-                }
-            }
-        } catch (Exception e) {
-            log.warn("[WHATSAPP] Falha ao capturar LID automático no onboarding para {}: {}", numeroLimpo, e.getMessage());
-        }
-    }
-
-    private Usuario buscarUsuarioPorWhatsapp(String chatId, String lid) {
-        String lidLimpo = (lid != null && !lid.isBlank())
-                ? lid.trim()
-                : (chatId != null && chatId.contains("@lid") ? chatId.trim() : "");
-
-        if (!lidLimpo.isBlank() && lidLimpo.contains("@lid")) {
-            Optional<Usuario> usuarioPorLid = usuarioRepository.findByWhatsappLid(lidLimpo);
-            if (usuarioPorLid.isPresent()) {
-                log.info("[WHATSAPP] Usuário {} localizado diretamente via whatsapp_lid: {}", usuarioPorLid.get().getId(), lidLimpo);
-                return usuarioPorLid.get();
-            }
-        }
-
-        if (chatId != null && !chatId.contains("@lid")) {
-            Usuario usuarioPorNumero = buscarUsuarioPorNumero(chatId, lidLimpo);
-            if (usuarioPorNumero != null) {
-                return usuarioPorNumero;
-            }
-        }
-
-        if (!lidLimpo.isBlank() && lidLimpo.contains("@lid")) {
-            List<Usuario> usuariosSemLid = usuarioRepository.findAll().stream()
-                    .filter(u -> u.getWhatsappLid() == null || u.getWhatsappLid().isBlank())
-                    .filter(u -> u.getWhatsappNumero() != null && !u.getWhatsappNumero().isBlank())
-                    .toList();
-
-            if (!usuariosSemLid.isEmpty()) {
-                Usuario usuarioAlvo = usuariosSemLid.get(usuariosSemLid.size() - 1);
-                vincularLidSeNecessario(usuarioAlvo, lidLimpo);
-                log.info("[WHATSAPP] SUCESSO: LID {} vinculado automaticamente ao usuário ID {} ({})!",
-                        lidLimpo, usuarioAlvo.getId(), usuarioAlvo.getNome());
-
-                return usuarioAlvo;
-            }
-        }
-
-        return null;
-    }
-
-    private Usuario buscarUsuarioPorNumero(String numero, String lid) {
-        List<Usuario> todosUsuarios = usuarioRepository.findAll();
-        String apenasNumerosChat = numero.replaceAll("[^0-9]", "");
-
-        for (Usuario u : todosUsuarios) {
-            if (u.getWhatsappNumero() == null || u.getWhatsappNumero().isBlank()) {
-                continue;
-            }
-
-            String apenasNumerosBanco = u.getWhatsappNumero().replaceAll("[^0-9]", "");
-
-            if (!apenasNumerosChat.isBlank() && !apenasNumerosBanco.isBlank()) {
-                boolean mesmoNumero = apenasNumerosBanco.equals(apenasNumerosChat);
-                boolean mesmoComTratamentoNove = (apenasNumerosBanco.length() == 13 && apenasNumerosChat.length() == 12 && apenasNumerosBanco.substring(0, 4).concat(apenasNumerosBanco.substring(5)).equals(apenasNumerosChat))
-                        || (apenasNumerosBanco.length() == 12 && apenasNumerosChat.length() == 13 && apenasNumerosBanco.equals(apenasNumerosChat.substring(0, 4).concat(apenasNumerosChat.substring(5))));
-
-                if (mesmoNumero || mesmoComTratamentoNove) {
-                    vincularLidSeNecessario(u, lid);
-                    return u;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private void vincularLidSeNecessario(Usuario usuario, String lidOriginal) {
-        if (usuario != null && lidOriginal != null && lidOriginal.contains("@lid")) {
-            String lidLimpo = lidOriginal.trim();
-            int linhasAfetadas = usuarioRepository.atualizarWhatsappLidDireto(usuario.getId(), lidLimpo);
-            if (linhasAfetadas > 0) {
-                usuario.setWhatsappLid(lidLimpo);
-                log.info("[WHATSAPP] SUCESSO: whatsapp_lid '{}' gravado no MySQL para o usuário ID {}!", lidLimpo, usuario.getId());
-            }
-        }
     }
 
     private String identificarIntencao(
@@ -606,5 +554,9 @@ public class WhatsAppService {
                 && usuario.getWhatsappNumero() != null
                 && !usuario.getWhatsappNumero().isBlank()
                 && Boolean.TRUE.equals(usuario.getAvisosWhatsapp());
+    }
+
+    public void enviarRespostaDireta(String destino, String mensagem) {
+        dispararParaWhatsappReal(null, destino, mensagem);
     }
 }

@@ -54,7 +54,9 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers(
                                 "/api/whatsapp/webhook",
-                                "/api/whatsapp/webhook/**"
+                                "/api/whatsapp/webhook/**",
+                                "/webhook/whatsapp",
+                                "/webhook/whatsapp/**"
                         ).permitAll()
                         .requestMatchers(
                                 "/v3/api-docs/**",
