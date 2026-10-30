@@ -101,7 +101,6 @@ public class WhatsAppService {
         String lidAlvo = (lid != null && !lid.isBlank()) ? lid : (chatId.contains("@lid") ? chatId : null);
         Usuario usuario = null;
 
-        // 1. Tenta encontrar pelo LID já salvo
         if (lidAlvo != null) {
             Optional<Usuario> usuarioPorLid = usuarioRepository.findByWhatsappLid(lidAlvo);
             if (usuarioPorLid.isPresent()) {
@@ -109,7 +108,6 @@ public class WhatsAppService {
             }
         }
 
-        // 2. Se não achou pelo LID, tenta encontrar pelo número limpo (se o chat não for @lid)
         if (usuario == null && !chatId.contains("@lid")) {
             String apenasNumerosChat = chatId.replaceAll("[^0-9]", "");
             if (!apenasNumerosChat.isBlank()) {
@@ -121,26 +119,22 @@ public class WhatsAppService {
             }
         }
 
-        // 3. Vínculo por e-mail enviado pelo usuário (Onboarding)
+        // 3. Vínculo por e-mail enviado pelo usuário
         String textoTrim = conteudo.trim();
         if (usuario == null && textoTrim.contains("@") && textoTrim.contains(".")) {
             Optional<Usuario> usuarioPorEmail = usuarioRepository.findByEmail(textoTrim.toLowerCase());
             if (usuarioPorEmail.isPresent()) {
                 usuario = usuarioPorEmail.get();
 
-                // SALVA O LID OU O NÚMERO DEFINITIVAMENTE NO CADASTRO DO USUÁRIO
-                if (chatId.contains("@lid")) {
-                    usuario.setWhatsappLid(chatId);
-                } else {
-                    usuario.setWhatsappNumero(chatId.replaceAll("[^0-9]", ""));
-                }
-
                 if (lidAlvo != null) {
                     usuario.setWhatsappLid(lidAlvo);
                 }
+                if (!chatId.contains("@lid")) {
+                    usuario.setWhatsappNumero(chatId.replaceAll("[^0-9]", ""));
+                }
 
                 usuarioRepository.save(usuario);
-                log.info("[WHATSAPP] Vínculo seguro realizado com sucesso para o usuário ID {} com o identificador/LID {}", usuario.getId(), chatId);
+                log.info("[WHATSAPP] Vínculo seguro realizado com sucesso para o usuário ID {} com o identificador {}", usuario.getId(), chatId);
 
                 String mensagemSucesso = "Conta vinculada com sucesso, " + usuario.getNome() + "! 🎉 Agora você já pode usar o bot. Digite *menu* para ver as opções.";
 
@@ -149,13 +143,16 @@ public class WhatsAppService {
             }
         }
 
-        // 4. Se ainda não encontrou o usuário, pede o e-mail educadamente (e força o envio real)
+        // 4. Se ainda não encontrou o usuário, pede o e-mail educadamente
         if (usuario == null) {
             log.warn("Mensagem recebida de dispositivo/número não vinculado: chatId={}, lid={}", chatId, lidAlvo);
             String aviso = "Olá! 👋 Sou o assistente virtual do Sentinela, mas ainda não reconheço este número ou dispositivo.\n\n"
                     + "Por favor, digite o **e-mail** cadastrado na sua conta para ativarmos o seu acesso por aqui:";
 
-            // Força o disparo real para o WhatsApp do usuário (resolve o problema do bot ficar mudo no @lid)
+            if (chatId.contains("@lid")) {
+                return new RespostaWebhook(true, aviso);
+            }
+
             dispararParaWhatsappReal(null, chatId, aviso);
             return new RespostaWebhook(false, aviso);
         }
@@ -196,7 +193,7 @@ public class WhatsAppService {
 
         texto += "\n\nResponda *2* para ver todos os avisos.\n_" + FormatoDoBot.COMO_PARAR + "_";
 
-        enviarEManterHistorico(usuario, texto, "consulta_alertas", destinoResposta(null, usuario));
+        enviarEManterHistorico(usuario, texto, "consulta_alertas", usuario.getWhatsappNumero());
     }
 
     public void enviarResumoDaSemana(Usuario usuario, String resumo) {
@@ -209,7 +206,7 @@ public class WhatsAppService {
                 + "Responda *1* para ver suas lavouras ou *2* para ver os avisos.\n_"
                 + FormatoDoBot.COMO_PARAR + "_";
 
-        enviarEManterHistorico(usuario, texto, "consulta_cultivos", destinoResposta(null, usuario));
+        enviarEManterHistorico(usuario, texto, "consulta_cultivos", usuario.getWhatsappNumero());
     }
 
     public void registrarMensagemRecebida(
@@ -256,10 +253,10 @@ public class WhatsAppService {
         String chatIdFinal;
         if (chatIdOrigem != null && !chatIdOrigem.isBlank()) {
             chatIdFinal = chatIdOrigem;
-        } else if (usuario.getWhatsappLid() != null && !usuario.getWhatsappLid().isBlank()) {
-            chatIdFinal = usuario.getWhatsappLid();
         } else if (usuario.getWhatsappNumero() != null && !usuario.getWhatsappNumero().isBlank()) {
             chatIdFinal = usuario.getWhatsappNumero();
+        } else if (usuario.getWhatsappLid() != null && !usuario.getWhatsappLid().isBlank()) {
+            chatIdFinal = usuario.getWhatsappLid();
         } else {
             chatIdFinal = "desconhecido";
         }
@@ -280,13 +277,10 @@ public class WhatsAppService {
     }
 
     private String destinoResposta(String chatId, Usuario usuario) {
-        if (usuario != null && usuario.getWhatsappLid() != null && !usuario.getWhatsappLid().isBlank()) {
-            return usuario.getWhatsappLid();
-        }
         if (usuario != null && usuario.getWhatsappNumero() != null && !usuario.getWhatsappNumero().isBlank()) {
             return usuario.getWhatsappNumero();
         }
-        if (chatId != null && !chatId.isBlank()) {
+        if (chatId != null && !chatId.contains("@lid")) {
             return chatId;
         }
         return chatId;
@@ -298,7 +292,16 @@ public class WhatsAppService {
             return;
         }
 
-        String numeroOuLidFinal = destino.trim();
+        String numeroOuLidFinal;
+        if (destino.contains("@lid")) {
+            numeroOuLidFinal = destino.trim();
+        } else {
+            numeroOuLidFinal = destino.replaceAll("[^0-9]", "");
+            if (numeroOuLidFinal.isBlank()) {
+                log.error("[WHATSAPP] O identificador '{}' não possui dígitos numéricos válidos.", destino);
+                return;
+            }
+        }
 
         CompletableFuture.runAsync(() -> {
             try {
@@ -341,12 +344,8 @@ public class WhatsAppService {
     }
 
     public void enviarBoasVindasOnboarding(Usuario usuario) {
-        if (usuario == null) {
-            return;
-        }
-        String destino = destinoResposta(null, usuario);
-        if (destino.equals("desconhecido")) {
-            log.warn("[WHATSAPP] Tentativa de enviar boas-vindas para usuário sem número ou LID cadastrado.");
+        if (usuario == null || usuario.getWhatsappNumero() == null || usuario.getWhatsappNumero().isBlank()) {
+            log.warn("[WHATSAPP] Tentativa de enviar boas-vindas para usuário sem número cadastrado.");
             return;
         }
 
@@ -354,10 +353,10 @@ public class WhatsAppService {
 
         String mensagem = "Olá, " + nome + "! 👋\n\n"
                 + "Seja bem-vindo(a) ao *Sentinela*!\n"
-                + "Seu contato foi cadastrado com sucesso na nossa plataforma.\n\n"
+                + "Seu número foi cadastrado com sucesso na nossa plataforma.\n\n"
                 + "Por favor, digite o seu **e-mail** de cadastro para vincularmos o seu acesso por aqui.";
 
-        enviarEManterHistorico(usuario, mensagem, "saudacao", destino);
+        enviarEManterHistorico(usuario, mensagem, "saudacao", usuario.getWhatsappNumero());
     }
 
     private String identificarIntencao(
@@ -565,10 +564,8 @@ public class WhatsAppService {
 
     private boolean podeReceberAvisos(Usuario usuario) {
         return usuario != null
-                && (
-                (usuario.getWhatsappLid() != null && !usuario.getWhatsappLid().isBlank()) ||
-                        (usuario.getWhatsappNumero() != null && !usuario.getWhatsappNumero().isBlank())
-        )
+                && usuario.getWhatsappNumero() != null
+                && !usuario.getWhatsappNumero().isBlank()
                 && Boolean.TRUE.equals(usuario.getAvisosWhatsapp());
     }
 
