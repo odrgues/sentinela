@@ -49,7 +49,7 @@ public class AgendadorAlertasService {
         try {
             previsaoService.atualizar(cultivo);
             List<Alerta> novosCriticos = alertaEngineService.reclassificar(cultivo);
-            novosCriticos.forEach(whatsAppService::notificarAlertaSeHabilitado);
+            whatsAppService.notificarAlertasSeHabilitado(novosCriticos);
         } catch (Exception e) {
             log.error("Falha ao processar o cultivo {} ({}): {}", cultivo.getId(), cultivo.getApelido(), e.getMessage());
         }

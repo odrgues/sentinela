@@ -28,6 +28,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -183,32 +184,53 @@ public class WhatsAppService {
     }
 
     public void notificarAlertaSeHabilitado(Alerta alerta) {
-        if (alerta == null || alerta.getCultivo() == null) {
+        if (alerta != null) {
+            notificarAlertasSeHabilitado(List.of(alerta));
+        }
+    }
+
+    // Uma mensagem por lavoura e tipo de aviso: quatro dias de geada viram um aviso só, e o "O que fazer"
+    // aparece uma vez, em vez de quatro mensagens com o mesmo texto.
+    public void notificarAlertasSeHabilitado(List<Alerta> alertas) {
+        if (alertas == null) {
             return;
         }
 
-        Usuario usuario = alerta.getCultivo().getUsuario();
-
-        if (!podeReceberAvisos(usuario)
-                || !"critico".equalsIgnoreCase(alerta.getSeveridade())) {
-            return;
+        Map<String, List<Alerta>> grupos = new LinkedHashMap<>();
+        for (Alerta alerta : alertas) {
+            if (alerta == null || alerta.getCultivo() == null
+                    || !"critico".equalsIgnoreCase(alerta.getSeveridade())) {
+                continue;
+            }
+            grupos.computeIfAbsent(alerta.getCultivo().getId() + "|" + alerta.getTipo(), chave -> new ArrayList<>())
+                    .add(alerta);
         }
 
-        String texto = "🔴 *Aviso crítico · " + alerta.getCultivo().getApelido() + "*\n\n"
-                + alerta.getMensagem();
+        for (List<Alerta> grupo : grupos.values()) {
+            Alerta primeiro = grupo.get(0);
+            Usuario usuario = primeiro.getCultivo().getUsuario();
 
-        String orientacao = orientacaoService.oQueFazer(
-                alerta.getCultivo().getCultura(),
-                alerta.getTipo()
-        );
+            if (!podeReceberAvisos(usuario)) {
+                continue;
+            }
 
-        if (orientacao != null && !orientacao.isBlank()) {
-            texto += "\n\n🛠️ *O que fazer*\n" + orientacao;
+            List<String> mensagens = grupo.stream().map(Alerta::getMensagem).toList();
+            String texto = "🔴 *Aviso crítico · " + primeiro.getCultivo().getApelido() + "*\n\n"
+                    + String.join("\n\n", mensagens);
+
+            String orientacao = orientacaoService.oQueFazer(
+                    primeiro.getCultivo().getCultura(),
+                    primeiro.getTipo()
+            );
+
+            if (orientacao != null && !orientacao.isBlank()) {
+                texto += "\n\n🛠️ *O que fazer*\n" + orientacao;
+            }
+
+            texto += "\n\nResponda *2* para ver todos os avisos.\n_" + FormatoDoBot.COMO_PARAR + "_";
+
+            enviarEManterHistorico(usuario, texto, "consulta_alertas", usuario.getWhatsappNumero());
         }
-
-        texto += "\n\nResponda *2* para ver todos os avisos.\n_" + FormatoDoBot.COMO_PARAR + "_";
-
-        enviarEManterHistorico(usuario, texto, "consulta_alertas", usuario.getWhatsappNumero());
     }
 
     public void enviarResumoDaSemana(Usuario usuario, String resumo) {
@@ -575,15 +597,33 @@ public class WhatsAppService {
         }
     }
 
-    // Os avisos de calor, frio e chuva da semana de uma lavoura (os "tudo certo" ficam de fora).
+    // Os avisos de calor, frio e chuva da semana de uma lavoura (os "tudo certo" ficam de fora), um bloco
+    // por tipo de aviso: os dias daquele tipo juntos e o "O que fazer" uma vez só no fim do bloco.
     private List<String> avisosDaLavoura(Cultivo cultivo) {
-        List<String> blocos = new ArrayList<>();
+        Map<String, List<Alerta>> porTipo = new LinkedHashMap<>();
         for (Alerta alerta : avisosService.daSemana(cultivo)) {
             if ("info".equalsIgnoreCase(alerta.getSeveridade())) {
                 continue;
             }
-            blocos.add(FormatoDoBot.nivel(alerta.getSeveridade()) + " · " + cultivo.getApelido() + "\n"
-                    + alerta.getMensagem());
+            porTipo.computeIfAbsent(alerta.getTipo(), tipo -> new ArrayList<>()).add(alerta);
+        }
+
+        List<String> blocos = new ArrayList<>();
+        for (Map.Entry<String, List<Alerta>> grupo : porTipo.entrySet()) {
+            List<String> dias = new ArrayList<>();
+            for (Alerta alerta : grupo.getValue()) {
+                dias.add(FormatoDoBot.nivel(alerta.getSeveridade()) + " · " + cultivo.getApelido() + "\n"
+                        + alerta.getMensagem());
+            }
+            StringBuilder bloco = new StringBuilder(String.join("\n\n", dias));
+
+            String orientacao = cultivo.getCultura() == null
+                    ? null
+                    : orientacaoService.oQueFazer(cultivo.getCultura(), grupo.getKey());
+            if (orientacao != null && !orientacao.isBlank()) {
+                bloco.append("\n\n🛠️ *O que fazer*\n").append(orientacao);
+            }
+            blocos.add(bloco.toString());
         }
         return blocos;
     }

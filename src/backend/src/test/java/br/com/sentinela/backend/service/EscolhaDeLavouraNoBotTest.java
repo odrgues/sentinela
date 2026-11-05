@@ -1,11 +1,14 @@
 package br.com.sentinela.backend.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import br.com.sentinela.backend.dto.ClimaResponseDTO;
@@ -26,6 +29,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -144,6 +148,61 @@ class EscolhaDeLavouraNoBotTest {
         assertTrue(resposta.contains("*1 · Milho do Vale*"), resposta);
         assertTrue(resposta.contains("*2 · Feijão da Serra*"), resposta);
         assertFalse(resposta.contains("Previsão para"), resposta);
+    }
+
+    @Test
+    void diasDoMesmoTipoDividemUmUnicoOQueFazer() {
+        when(avisosService.daSemana(feijao)).thenReturn(List.of(
+                alertaDoTipo(feijao, "geada", "critico", "Geada na quarta."),
+                alertaDoTipo(feijao, "geada", "critico", "Geada na quinta."),
+                alertaDoTipo(feijao, "geada", "atencao", "Geada na sexta."),
+                alertaDoTipo(feijao, "chuva_excessiva", "atencao", "Chuva forte no sábado.")));
+        when(orientacaoService.oQueFazer(any(), eq("geada"))).thenReturn("Olhe primeiro as áreas baixas.");
+        when(orientacaoService.oQueFazer(any(), eq("chuva_excessiva"))).thenReturn("Abra os drenos.");
+
+        String resposta = responder("2", ultimaDoBot("🌾 ... " + MenuDoBot.ESCOLHA_DA_LAVOURA));
+
+        assertTrue(resposta.contains("Geada na quarta."), resposta);
+        assertTrue(resposta.contains("Geada na quinta."), resposta);
+        assertTrue(resposta.contains("Geada na sexta."), resposta);
+        assertEquals(1, ocorrencias(resposta, "Olhe primeiro as áreas baixas."), resposta);
+        assertEquals(1, ocorrencias(resposta, "Abra os drenos."), resposta);
+        assertEquals(2, ocorrencias(resposta, "O que fazer"), resposta);
+    }
+
+    @Test
+    void avisosCriticosDaMesmaLavouraETipoViramUmaMensagemSo() {
+        usuario.setAvisosWhatsapp(true);
+        feijao.setUsuario(usuario);
+        when(orientacaoService.oQueFazer(any(), eq("geada"))).thenReturn("Olhe primeiro as áreas baixas.");
+        when(orientacaoService.oQueFazer(any(), eq("calor"))).thenReturn("Irrigue.");
+
+        servico.notificarAlertasSeHabilitado(List.of(
+                alertaDoTipo(feijao, "geada", "critico", "Geada na quarta."),
+                alertaDoTipo(feijao, "geada", "critico", "Geada na quinta."),
+                alertaDoTipo(feijao, "geada", "critico", "Geada na sexta."),
+                alertaDoTipo(feijao, "calor", "critico", "Calor forte no domingo."),
+                alertaDoTipo(feijao, "frio", "atencao", "Frio na segunda.")));
+
+        ArgumentCaptor<Mensagem> enviadas = ArgumentCaptor.forClass(Mensagem.class);
+        verify(mensagemRepository, times(2)).save(enviadas.capture());
+        String geada = enviadas.getAllValues().get(0).getConteudo();
+        String calor = enviadas.getAllValues().get(1).getConteudo();
+
+        assertTrue(geada.contains("Geada na quarta.") && geada.contains("Geada na sexta."), geada);
+        assertEquals(1, ocorrencias(geada, "Olhe primeiro as áreas baixas."), geada);
+        assertTrue(calor.contains("Calor forte no domingo.") && calor.contains("Irrigue."), calor);
+    }
+
+    private static int ocorrencias(String texto, String trecho) {
+        return texto.split(java.util.regex.Pattern.quote(trecho), -1).length - 1;
+    }
+
+    private static Alerta alertaDoTipo(Cultivo cultivo, String tipo, String severidade, String mensagem) {
+        Alerta a = alerta(severidade, mensagem);
+        a.setTipo(tipo);
+        a.setCultivo(cultivo);
+        return a;
     }
 
     private String responder(String texto, Mensagem ultimaDoBot) {

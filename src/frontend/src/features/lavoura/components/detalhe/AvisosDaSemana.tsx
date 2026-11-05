@@ -11,7 +11,17 @@ import { ID_DOS_AVISOS } from './ResumoDaSemana'
 // mesmo dia no gráfico; null quando ela sai.
 type AoOlhar = (data: string | null) => void
 
-function Aviso({ alerta, aoOlhar }: { alerta: AlertaDaSemana; aoOlhar?: AoOlhar }) {
+// comOQueFazer: só o primeiro aviso de cada tipo mostra o "O que fazer", para quatro dias de geada
+// não repetirem o mesmo texto quatro vezes.
+function Aviso({
+  alerta,
+  aoOlhar,
+  comOQueFazer,
+}: {
+  alerta: AlertaDaSemana
+  aoOlhar?: AoOlhar
+  comOQueFazer: boolean
+}) {
   const tema = useTheme()
   const id = useId()
   const [aberto, setAberto] = useState(false)
@@ -38,7 +48,7 @@ function Aviso({ alerta, aoOlhar }: { alerta: AlertaDaSemana; aoOlhar?: AoOlhar 
           <S.CorpoDoAviso $nivel={nivel}>{alerta.mensagem}</S.CorpoDoAviso>
         </div>
       </S.TopoDoAviso>
-      {alerta.oQueFazer && (
+      {comOQueFazer && alerta.oQueFazer && (
         <S.OQueFazer $nivel={nivel}>
           <strong>O que fazer</strong>
           {alerta.oQueFazer}
@@ -73,6 +83,7 @@ export function AvisosDaSemana({
   aoOlhar?: AoOlhar
 }) {
   const tema = useTheme()
+  const jaMostrados = new Set<string>()
 
   return (
     <S.Secao id={ID_DOS_AVISOS}>
@@ -90,9 +101,20 @@ export function AvisosDaSemana({
           </S.TopoDoAviso>
         </S.Aviso>
       ) : (
-        alertas.map((alerta) => (
-          <Aviso key={`${alerta.tipo}-${alerta.data}`} alerta={alerta} aoOlhar={aoOlhar} />
-        ))
+        alertas.map((alerta) => {
+          // O mesmo texto de "O que fazer" aparece uma vez só, no primeiro aviso daquele tipo.
+          const chave = `${alerta.tipo}|${alerta.oQueFazer ?? ''}`
+          const comOQueFazer = !jaMostrados.has(chave)
+          jaMostrados.add(chave)
+          return (
+            <Aviso
+              key={`${alerta.tipo}-${alerta.data}`}
+              alerta={alerta}
+              aoOlhar={aoOlhar}
+              comOQueFazer={comOQueFazer}
+            />
+          )
+        })
       )}
     </S.Secao>
   )

@@ -129,6 +129,43 @@ describe('Detalhe da lavoura', () => {
     expect(within(avisos).getAllByText('O que fazer')).toHaveLength(1)
   })
 
+  it('vários dias do mesmo tipo de aviso mostram o que fazer uma vez só', async () => {
+    const geada = {
+      tipo: 'geada',
+      severidade: 'critico' as const,
+      porque: 'Abaixo de 2 °C o feijão queima.',
+      oQueFazer: 'Olhe primeiro as áreas baixas, onde o ar frio se acumula.',
+    }
+    responderDetalhe({
+      alertas: [
+        { ...geada, data: '2026-10-25', mensagem: 'Geada no sábado.' },
+        { ...geada, data: '2026-10-26', mensagem: 'Geada no domingo.' },
+        { ...geada, data: '2026-10-27', mensagem: 'Geada na segunda.' },
+        {
+          tipo: 'chuva_excessiva',
+          severidade: 'atencao',
+          data: '2026-10-27',
+          mensagem: 'Chuva forte na segunda.',
+          porque: 'Passa do que a lavoura aguenta.',
+          oQueFazer: 'Abra os drenos.',
+        },
+      ],
+    })
+    await abrirTalhao()
+
+    const avisos = screen.getByRole('heading', { level: 2, name: 'Avisos desta semana' })
+      .parentElement as HTMLElement
+    // Os três dias de geada continuam aparecendo, cada um com a sua mensagem...
+    expect(within(avisos).getByText('Geada no sábado.')).toBeInTheDocument()
+    expect(within(avisos).getByText('Geada no domingo.')).toBeInTheDocument()
+    expect(within(avisos).getByText('Geada na segunda.')).toBeInTheDocument()
+    // ...mas o texto da geada vem uma vez só, e a chuva tem o seu.
+    expect(
+      within(avisos).getAllByText('Olhe primeiro as áreas baixas, onde o ar frio se acumula.'),
+    ).toHaveLength(1)
+    expect(within(avisos).getAllByText('O que fazer')).toHaveLength(2)
+  })
+
   it('mostra a fase do ciclo, com o que ela pede e a fonte', async () => {
     responderDetalhe({
       fase: {
