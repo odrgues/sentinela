@@ -313,7 +313,8 @@ public class WhatsAppService {
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);
-                headers.set("apikey", evolutionApiKey);
+                // Tira espaço, quebra de linha e caractere invisível que costumam vir junto ao colar a chave no Render.
+                headers.set("apikey", evolutionApiKey.replaceAll("[^\\x21-\\x7E]", ""));
 
                 Map<String, Object> body = Map.of(
                         "number", numeroOuLidFinal,
