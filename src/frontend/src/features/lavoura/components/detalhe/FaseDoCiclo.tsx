@@ -9,8 +9,11 @@ export function FaseDoCiclo({ fase }: { fase: Fase }) {
 
   return (
     <S.Fase>
-      <Sprout size={tema.icone.tempoNaLista} aria-hidden />
+      <span>
+        <Sprout size={tema.icone.botao} aria-hidden />
+      </span>
       <div>
+        <S.RotuloDaFase>Fase de agora</S.RotuloDaFase>
         <strong>
           {fase.nome} · dias {fase.diaInicio} a {fase.diaFim}
         </strong>

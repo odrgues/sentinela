@@ -13,6 +13,7 @@ import {
   sombra,
   tracoDoIcone,
 } from './medidas'
+import { texturas } from './texturas'
 
 export const tema = {
   cores,
@@ -28,6 +29,7 @@ export const tema = {
   tracoDoIcone,
   marcador,
   desfoque,
+  texturas,
 }
 
 export type Tema = typeof tema

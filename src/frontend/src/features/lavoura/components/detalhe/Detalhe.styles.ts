@@ -1,4 +1,5 @@
 import styled, { css, keyframes } from 'styled-components'
+import { noCelular } from '../../../../styles/midia'
 import type { NivelDoTema } from '../../../../shared/ui/nivel'
 import type { Condicao } from '../../../../shared/ui/tempo'
 import type { NivelDoDia } from '../../tipos'
@@ -9,12 +10,121 @@ const cartao = css`
   border-radius: ${({ theme }) => theme.raio.cartao};
 `
 
-export const Ciclo = styled.div`
-  ${cartao}
+// O cartão branco da página da lavoura: sem borda, destacado do fundo pela sombra em duas camadas.
+const superficie = css`
+  background: ${({ theme }) => theme.cores.fundo.cartao};
+  border-radius: ${({ theme }) => theme.raio.quadro};
+  box-shadow: ${({ theme }) => theme.sombra.cartaoDaLavoura};
+`
+
+// O rótulo miúdo em maiúsculas, em cima de um título ou de um número.
+const rotulo = css`
+  font-size: ${({ theme }) => theme.fonte.tamanho.mini};
+  font-weight: ${({ theme }) => theme.fonte.peso.forte};
+  letter-spacing: ${({ theme }) => theme.fonte.espacamentoDoRotuloMiudo};
+  text-transform: uppercase;
+`
+
+// O círculo com o ícone dentro, no começo dos cartões.
+const chip = css`
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: ${({ theme }) => theme.altura.chipDoIcone};
+  height: ${({ theme }) => theme.altura.chipDoIcone};
+  border-radius: ${({ theme }) => theme.raio.circulo};
+`
+
+// O cartão da previsão: as abas e a hora da atualização em cima, o gráfico e a legenda embaixo.
+export const CartaoDoGrafico = styled.section`
+  ${superficie}
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.espaco[4]};
-  padding: ${({ theme }) => theme.espaco[8]};
+  gap: ${({ theme }) => theme.espaco[8]};
+  padding: ${({ theme }) => theme.espaco[11]} ${({ theme }) => theme.espaco[12]}
+    ${({ theme }) => theme.espaco[12]};
+
+  ${noCelular} {
+    padding: ${({ theme }) => theme.espaco[8]} ${({ theme }) => theme.espaco[7]}
+      ${({ theme }) => theme.espaco[9]};
+  }
+`
+
+// O ciclo da lavoura: verde-escuro como a faixa do alto, com as curvas de nível por trás. A data
+// da colheita é o número grande; embaixo, a linha do tempo das fases e a fase de agora.
+export const Ciclo = styled.div`
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.espaco[8]};
+  padding: ${({ theme }) => theme.espaco[12]};
+  border-radius: ${({ theme }) => theme.raio.quadro};
+  background:
+    ${({ theme }) => theme.texturas.curvasDoCiclo} right top /
+      ${({ theme }) => theme.texturas.tamanhoDasCurvas} no-repeat,
+    linear-gradient(
+      155deg,
+      ${({ theme }) => theme.cores.ciclo.fundo},
+      ${({ theme }) => theme.cores.ciclo.fundoFim}
+    );
+  box-shadow:
+    ${({ theme }) => theme.sombra.cartaoEscuro}, ${({ theme }) => theme.sombra.brilhoDoCartaoEscuro};
+  color: ${({ theme }) => theme.cores.ciclo.texto};
+
+  ${noCelular} {
+    padding: ${({ theme }) => theme.espaco[9]};
+  }
+`
+
+export const RotuloDoCiclo = styled.span`
+  ${rotulo}
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.espaco[3]};
+  color: ${({ theme }) => theme.cores.ciclo.textoSuave};
+`
+
+export const Colheita = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.espaco[4]} ${({ theme }) => theme.espaco[6]};
+`
+
+export const TextoDaColheita = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.espaco[2]};
+
+  > span:first-child {
+    font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
+    color: ${({ theme }) => theme.cores.ciclo.textoSuave};
+  }
+`
+
+export const DataDaColheita = styled.span`
+  font-size: ${({ theme }) => theme.fonte.tamanho.dataDaColheita};
+  font-weight: ${({ theme }) => theme.fonte.peso.extra};
+  line-height: ${({ theme }) => theme.fonte.alturaLinha.justa};
+  font-variant-numeric: tabular-nums;
+  color: ${({ theme }) => theme.cores.marca.sol};
+
+  ${noCelular} {
+    font-size: ${({ theme }) => theme.fonte.tamanho.marca};
+  }
+`
+
+// "faltam 59 dias", numa pílula ao lado da data.
+export const Faltam = styled.span`
+  padding: ${({ theme }) => theme.espaco[2]} ${({ theme }) => theme.espaco[6]};
+  border: ${({ theme }) => theme.espessura.linha} solid ${({ theme }) => theme.cores.ciclo.borda};
+  border-radius: ${({ theme }) => theme.raio.pilula};
+  background: ${({ theme }) => theme.cores.ciclo.painel};
+  font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
+  font-weight: ${({ theme }) => theme.fonte.peso.forte};
+  white-space: nowrap;
 `
 
 export const LinhaDoCiclo = styled.div`
@@ -22,128 +132,239 @@ export const LinhaDoCiclo = styled.div`
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
-  gap: ${({ theme }) => theme.espaco[4]};
+  gap: ${({ theme }) => theme.espaco[2]} ${({ theme }) => theme.espaco[6]};
 
   strong {
     font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
+    font-weight: ${({ theme }) => theme.fonte.peso.forte};
   }
 
   span {
     font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
-    color: ${({ theme }) => theme.cores.texto.secundario};
+    color: ${({ theme }) => theme.cores.ciclo.textoSuave};
   }
+`
+
+// O ciclo da perene: a safra (ou a cultura) e quando a colheita vem, no lugar da data grande.
+export const TituloDaPerene = styled.strong`
+  font-size: ${({ theme }) => theme.fonte.tamanho.titulo};
+  font-weight: ${({ theme }) => theme.fonte.peso.extra};
+  line-height: ${({ theme }) => theme.fonte.alturaLinha.justa};
+  color: ${({ theme }) => theme.cores.marca.sol};
 `
 
 export const Explicacao = styled.p`
   margin: 0;
   font-size: ${({ theme }) => theme.fonte.tamanho.apoio};
   line-height: ${({ theme }) => theme.fonte.alturaLinha.media};
-  color: ${({ theme }) => theme.cores.texto.secundario};
+  color: ${({ theme }) => theme.cores.ciclo.textoSuave};
 `
 
 export const Barra = styled.div`
   height: ${({ theme }) => theme.altura.barraDoCiclo};
   overflow: hidden;
-  border-radius: ${({ theme }) => theme.raio.barra};
-  background: ${({ theme }) => theme.cores.fundo.trilho};
+  border-radius: ${({ theme }) => theme.raio.pilula};
+  background: ${({ theme }) => theme.cores.ciclo.trilho};
 `
 
-export const Preenchida = styled.div`
+// $agora: a fase de hoje, em amarelo, para se destacar das que já passaram (verde-claro).
+export const Preenchida = styled.div<{ $agora?: boolean }>`
   height: 100%;
-  border-radius: ${({ theme }) => theme.raio.barra};
-  background: ${({ theme }) => theme.cores.destaque.base};
+  border-radius: ${({ theme }) => theme.raio.pilula};
+  background: ${({ theme, $agora }) => ($agora ? theme.cores.marca.sol : theme.cores.ciclo.feito)};
 `
 
 // A barra do ciclo em trechos, um por fase, do tamanho de cada fase.
 export const Trechos = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.espaco[1]};
+  gap: ${({ theme }) => theme.espaco[2]};
   height: ${({ theme }) => theme.altura.barraDoCiclo};
 `
 
-// $agora: a fase de hoje, com o fundo verde-claro para se destacar das que ainda vêm.
-export const Trecho = styled.div<{ $agora: boolean }>`
+export const Trecho = styled.div`
+  position: relative;
   flex-basis: 0;
-  min-width: ${({ theme }) => theme.espaco[2]};
-  overflow: hidden;
-  border-radius: ${({ theme }) => theme.raio.barra};
-  background: ${({ theme, $agora }) =>
-    $agora ? theme.cores.destaque.suave : theme.cores.fundo.trilho};
-  box-shadow: ${({ theme, $agora }) =>
-    $agora ? `inset 0 0 0 ${theme.espessura.linha} ${theme.cores.destaque.base}` : 'none'};
+  min-width: ${({ theme }) => theme.espaco[4]};
 `
 
-export const Enso = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.espaco[5]};
-  padding: ${({ theme }) => theme.espaco[8]};
-  background: ${({ theme }) => theme.cores.enso.fundo};
-  border-radius: ${({ theme }) => theme.raio.cartao};
-  color: ${({ theme }) => theme.cores.enso.titulo};
+export const TrilhoDoTrecho = styled.div`
+  height: 100%;
+  overflow: hidden;
+  border-radius: ${({ theme }) => theme.raio.pilula};
+  background: ${({ theme }) => theme.cores.ciclo.trilho};
+`
 
-  svg {
-    flex-shrink: 0;
+// O anel que se abre em volta do "você está aqui", o mesmo radar do ponto da foto do alto.
+const pulso = keyframes`
+  from {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+`
+
+// Onde a lavoura está hoje na linha do tempo: um ponto amarelo, com o anel pulsando.
+export const MarcadorDeHoje = styled.span`
+  position: absolute;
+  top: 50%;
+  width: ${({ theme }) => theme.largura.marcadorDoCiclo};
+  height: ${({ theme }) => theme.largura.marcadorDoCiclo};
+  transform: translate(-50%, -50%);
+  border: ${({ theme }) => theme.espessura.faixa} solid ${({ theme }) => theme.cores.ciclo.fundo};
+  border-radius: ${({ theme }) => theme.raio.circulo};
+  background: ${({ theme }) => theme.cores.marca.sol};
+  pointer-events: none;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: ${({ theme }) => theme.raio.circulo};
+    background: ${({ theme }) => theme.cores.heroi.anel};
+    animation: ${pulso} 2.4s ease-out infinite;
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  }
+`
+
+// A fase de agora, dentro do cartão verde: um painel um tom mais claro.
+export const Fase = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.espaco[7]};
+  padding: ${({ theme }) => theme.espaco[8]};
+  border: ${({ theme }) => theme.espessura.linha} solid ${({ theme }) => theme.cores.ciclo.borda};
+  border-radius: ${({ theme }) => theme.raio.cartao};
+  background: ${({ theme }) => theme.cores.ciclo.painel};
+
+  > span:first-child {
+    ${chip}
+    background: ${({ theme }) => theme.cores.marca.sol};
+    color: ${({ theme }) => theme.cores.destaque.base};
   }
 
   strong {
     display: block;
-    margin-bottom: ${({ theme }) => theme.espaco[2]};
-    font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
+    margin: ${({ theme }) => theme.espaco[1]} 0 ${({ theme }) => theme.espaco[3]};
+    font-size: ${({ theme }) => theme.fonte.tamanho.corpo};
     font-weight: ${({ theme }) => theme.fonte.peso.extra};
   }
 
   p {
     margin: 0;
     font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
-    line-height: ${({ theme }) => theme.fonte.alturaLinha.media};
+    line-height: ${({ theme }) => theme.fonte.alturaLinha.solta};
+    color: ${({ theme }) => theme.cores.ciclo.textoSuave};
+  }
+`
+
+export const RotuloDaFase = styled.span`
+  ${rotulo}
+  color: ${({ theme }) => theme.cores.marca.sol};
+`
+
+// O El Niño: azul-claro com as ondinhas do mar no canto de cima, esmaecendo para o resto.
+export const Enso = styled.div`
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.espaco[7]};
+  padding: ${({ theme }) => theme.espaco[12]};
+  border-radius: ${({ theme }) => theme.raio.quadro};
+  background: linear-gradient(
+    160deg,
+    ${({ theme }) => theme.cores.enso.fundo},
+    ${({ theme }) => theme.cores.enso.fundoFim}
+  );
+  box-shadow: ${({ theme }) => theme.sombra.cartaoDaLavoura};
+  color: ${({ theme }) => theme.cores.enso.titulo};
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto auto;
+    width: 100%;
+    height: 55%;
+    background: ${({ theme }) => theme.texturas.ondasDoEnso} 0 0 /
+      ${({ theme }) => theme.texturas.tamanhoDasOndas};
+    mask-image: linear-gradient(
+      200deg,
+      ${({ theme }) => theme.cores.texto.principal},
+      transparent 65%
+    );
+    pointer-events: none;
+  }
+
+  > * {
+    position: relative;
+  }
+
+  ${noCelular} {
+    padding: ${({ theme }) => theme.espaco[9]};
+  }
+
+  p {
+    margin: 0;
+    font-size: ${({ theme }) => theme.fonte.tamanho.corpo};
+    line-height: ${({ theme }) => theme.fonte.alturaLinha.solta};
     color: ${({ theme }) => theme.cores.enso.texto};
   }
 `
 
-// O efeito da fase do El Niño e o que fazer, embaixo da frase do cartão.
-export const EfeitoDoEnso = styled.p`
-  && {
-    margin-top: ${({ theme }) => theme.espaco[4]};
+export const TopoDoEnso = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.espaco[6]};
+
+  > span:first-child {
+    ${chip}
+    width: ${({ theme }) => theme.altura.chipGrande};
+    height: ${({ theme }) => theme.altura.chipGrande};
+    background: ${({ theme }) => theme.cores.enso.titulo};
+    color: ${({ theme }) => theme.cores.texto.sobreDestaque};
+  }
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: ${({ theme }) => theme.espaco[1]};
   }
 
   strong {
-    display: block;
-    margin-bottom: ${({ theme }) => theme.espaco[1]};
-    font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
-    font-weight: ${({ theme }) => theme.fonte.peso.forte};
+    font-size: ${({ theme }) => theme.fonte.tamanho.nomeDaLavoura};
+    font-weight: ${({ theme }) => theme.fonte.peso.extra};
+    line-height: ${({ theme }) => theme.fonte.alturaLinha.media};
   }
 `
 
-// A fase do ciclo em que a lavoura está, com o que ela pede.
-export const Fase = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.espaco[5]};
-  padding: ${({ theme }) => theme.espaco[8]};
-  background: ${({ theme }) => theme.cores.destaque.suave};
-  border-radius: ${({ theme }) => theme.raio.cartao};
-  color: ${({ theme }) => theme.cores.destaque.sobreSuave};
+export const RotuloDoEnso = styled.span`
+  ${rotulo}
+  opacity: 0.75;
+`
 
-  svg {
-    flex-shrink: 0;
+// O efeito da fase do El Niño e o que fazer: uma linha fina em cima, o rótulo miúdo e o texto.
+export const EfeitoDoEnso = styled.p`
+  && {
+    padding-top: ${({ theme }) => theme.espaco[7]};
+    border-top: ${({ theme }) => theme.espessura.linha} solid
+      ${({ theme }) => theme.cores.enso.divisoria};
   }
 
   strong {
     display: block;
     margin-bottom: ${({ theme }) => theme.espaco[2]};
-    font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
-    font-weight: ${({ theme }) => theme.fonte.peso.extra};
-  }
-
-  p {
-    margin: 0;
-    font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
-    line-height: ${({ theme }) => theme.fonte.alturaLinha.media};
+    ${rotulo}
+    color: ${({ theme }) => theme.cores.enso.titulo};
   }
 `
 
 // "Saiba mais" do El Niño: a explicação técnica, fechada até a pessoa abrir.
 export const SaibaMais = styled.details`
-  margin-top: ${({ theme }) => theme.espaco[4]};
   font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
 
   summary {
@@ -152,69 +373,99 @@ export const SaibaMais = styled.details`
   }
 
   && p {
-    margin-top: ${({ theme }) => theme.espaco[2]};
+    margin-top: ${({ theme }) => theme.espaco[3]};
+    font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
   }
 `
 
 export const Fonte = styled.small`
   display: block;
-  margin-top: ${({ theme }) => theme.espaco[4]};
   font-size: ${({ theme }) => theme.fonte.tamanho.mini};
-  opacity: 0.85;
+  line-height: ${({ theme }) => theme.fonte.alturaLinha.media};
+  opacity: 0.8;
 `
 
 export const Secao = styled.section`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.espaco[6]};
+  gap: ${({ theme }) => theme.espaco[7]};
   /* O "Ver o que fazer" do resumo rola até aqui sem colar a seção no alto da tela. */
   scroll-margin-top: ${({ theme }) => theme.espaco[14]};
 
   h2 {
     margin: 0;
-    font-size: ${({ theme }) => theme.fonte.tamanho.nomeDaLavoura};
+    font-size: ${({ theme }) => theme.fonte.tamanho.tituloDeSecao};
     font-weight: ${({ theme }) => theme.fonte.peso.extra};
+    line-height: ${({ theme }) => theme.fonte.alturaLinha.justa};
   }
 `
 
-// O resumo da semana, embaixo da foto: o ícone do nível, o aviso mais sério e o link para o que
-// fazer, na cor do nível.
+// O resumo da semana: um cartão que flutua por cima da base da foto do alto. O ícone do nível
+// numa bolinha cheia, o aviso mais sério e o botão para o que fazer. --sobreposicao é quanto ele
+// sobe sobre a foto, e --respiro, o vão normal entre as partes da página.
 export const Resumo = styled.section<{ $nivel: NivelDoTema }>`
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.espaco[6]};
-  padding: ${({ theme }) => theme.espaco[7]} ${({ theme }) => theme.espaco[8]};
-  border-radius: ${({ theme }) => theme.raio.botao};
+  gap: ${({ theme }) => theme.espaco[8]};
+  margin: calc(-1 * (var(--respiro) + var(--sobreposicao))) ${({ theme }) => theme.espaco[12]} 0;
+  padding: ${({ theme }) => theme.espaco[8]} ${({ theme }) => theme.espaco[9]}
+    ${({ theme }) => theme.espaco[8]} ${({ theme }) => theme.espaco[8]};
+  border-radius: ${({ theme }) => theme.raio.quadro};
   background: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].fundo};
+  box-shadow: ${({ theme }) => theme.sombra.cartaoErguido};
   color: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].texto};
+
+  ${noCelular} {
+    flex-wrap: wrap;
+    margin-inline: ${({ theme }) => theme.espaco[7]};
+    padding: ${({ theme }) => theme.espaco[7]};
+  }
 `
 
 export const IconeDoResumo = styled.span<{ $nivel: NivelDoTema }>`
   flex-shrink: 0;
   display: grid;
   place-items: center;
-  width: ${({ theme }) => theme.altura.toque};
-  height: ${({ theme }) => theme.altura.toque};
+  width: ${({ theme }) => theme.altura.chipGrande};
+  height: ${({ theme }) => theme.altura.chipGrande};
   border-radius: ${({ theme }) => theme.raio.circulo};
-  background: ${({ theme }) => theme.cores.fundo.cartao};
-  color: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].marcador};
+  background: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].marcador};
+  /* O halo em volta, na cor do nível, mais clara. */
+  box-shadow: 0 0 0 ${({ theme }) => theme.espaco[3]}
+    ${({ theme, $nivel }) => theme.cores.nivel[$nivel].selo};
+  color: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].sobreMarcador};
+
+  ${noCelular} {
+    width: ${({ theme }) => theme.altura.toque};
+    height: ${({ theme }) => theme.altura.toque};
+  }
 `
 
 export const TextoDoResumo = styled.p`
   flex: 1;
+  min-width: 0;
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.espaco[1]};
+  gap: ${({ theme }) => theme.espaco[2]};
 
   strong {
-    font-size: ${({ theme }) => theme.fonte.tamanho.corpo};
+    font-size: ${({ theme }) => theme.fonte.tamanho.secao};
     font-weight: ${({ theme }) => theme.fonte.peso.extra};
+    line-height: ${({ theme }) => theme.fonte.alturaLinha.justa};
   }
 
   span {
-    font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
+    font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
     line-height: ${({ theme }) => theme.fonte.alturaLinha.media};
+  }
+
+  ${noCelular} {
+    flex-basis: calc(
+      100% - ${({ theme }) => theme.altura.toque} - ${({ theme }) => theme.espaco[8]}
+    );
   }
 `
 
@@ -222,45 +473,140 @@ export const LinkDoResumo = styled.a`
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  min-height: ${({ theme }) => theme.altura.botaoSecundario};
-  padding: 0 ${({ theme }) => theme.espaco[7]};
+  gap: ${({ theme }) => theme.espaco[4]};
+  min-height: ${({ theme }) => theme.altura.toque};
+  padding: 0 ${({ theme }) => theme.espaco[9]};
   border-radius: ${({ theme }) => theme.raio.pilula};
-  background: ${({ theme }) => theme.cores.fundo.cartao};
-  color: inherit;
-  font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
+  background: ${({ theme }) => theme.cores.destaque.base};
+  color: ${({ theme }) => theme.cores.texto.sobreDestaque};
+  font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
   font-weight: ${({ theme }) => theme.fonte.peso.forte};
   text-decoration: none;
   white-space: nowrap;
+  transition: background 150ms ease;
 
   &:hover {
-    text-decoration: underline;
+    background: ${({ theme }) => theme.cores.destaque.hover};
+    color: ${({ theme }) => theme.cores.texto.sobreDestaque};
+  }
+
+  ${noCelular} {
+    margin-left: calc(${({ theme }) => theme.altura.toque} + ${({ theme }) => theme.espaco[8]});
   }
 `
 
-export const Aviso = styled.div<{ $nivel: NivelDoTema }>`
+// Os avisos da semana, um cartão por tipo de aviso: o nível e o título em cima, uma linha por dia
+// e, embaixo, o que fazer (uma vez só, mesmo que o aviso se repita por vários dias). A faixa da
+// beira esquerda tem a cor do nível mais sério do grupo.
+export const GrupoDeAvisos = styled.article<{ $nivel: NivelDoTema }>`
+  ${superficie}
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.espaco[3]};
-  padding: ${({ theme }) => theme.espaco[7]} ${({ theme }) => theme.espaco[8]};
-  border-radius: ${({ theme }) => theme.raio.botao};
-  background: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].fundo};
+  gap: ${({ theme }) => theme.espaco[6]};
+  padding: ${({ theme }) => theme.espaco[10]} ${({ theme }) => theme.espaco[12]};
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: ${({ theme }) => theme.espessura.faixa};
+    background: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].marcador};
+  }
+
+  ${noCelular} {
+    padding: ${({ theme }) => theme.espaco[8]} ${({ theme }) => theme.espaco[8]}
+      ${({ theme }) => theme.espaco[8]} ${({ theme }) => theme.espaco[9]};
+  }
+`
+
+export const TopoDoGrupo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.espaco[6]};
+`
+
+export const ChipDoNivel = styled.span<{ $nivel: NivelDoTema }>`
+  ${chip}
+  background: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].selo};
   color: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].texto};
 `
 
-// O dia do aviso em destaque. No celular, uma pílula em cima do aviso; no computador, um bloco
-// à esquerda (DetalheDaLavoura.styles.ts).
-export const DiaDoAviso = styled.div<{ $nivel: NivelDoTema }>`
-  align-self: flex-start;
+export const TituloDoGrupo = styled.div<{ $nivel: NivelDoTema }>`
+  flex: 1;
+  min-width: 0;
   display: flex;
-  align-items: baseline;
-  gap: ${({ theme }) => theme.espaco[3]};
-  padding: ${({ theme }) => theme.espaco[2]} ${({ theme }) => theme.espaco[6]};
+  flex-direction: column;
+  gap: ${({ theme }) => theme.espaco[1]};
+
+  > span {
+    ${rotulo}
+    color: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].texto};
+  }
+
+  > h3 {
+    margin: 0;
+    font-size: ${({ theme }) => theme.fonte.tamanho.nomeDaLavoura};
+    font-weight: ${({ theme }) => theme.fonte.peso.extra};
+    line-height: ${({ theme }) => theme.fonte.alturaLinha.media};
+  }
+`
+
+// "2 dias", na ponta do título.
+export const QuantosDias = styled.span`
+  padding: ${({ theme }) => theme.espaco[1]} ${({ theme }) => theme.espaco[5]};
   border-radius: ${({ theme }) => theme.raio.pilula};
-  background: ${({ theme }) => theme.cores.fundo.cartao};
+  background: ${({ theme }) => theme.cores.fundo.rebaixado};
+  color: ${({ theme }) => theme.cores.texto.secundario};
+  font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
+  font-weight: ${({ theme }) => theme.fonte.peso.forte};
+  white-space: nowrap;
+`
+
+export const LinhasDoGrupo = styled.ul`
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+`
+
+// Um dia do aviso. Passar o mouse nele acende o mesmo dia no gráfico, e a linha se destaca.
+export const LinhaDoAviso = styled.li`
+  display: flex;
+  align-items: flex-start;
+  gap: ${({ theme }) => theme.espaco[7]};
+  margin-inline: -${({ theme }) => theme.espaco[7]};
+  padding: ${({ theme }) => theme.espaco[6]} ${({ theme }) => theme.espaco[7]};
+  border-radius: ${({ theme }) => theme.raio.cartao};
+  transition: background 150ms ease;
+
+  &:hover,
+  &:focus-within {
+    background: ${({ theme }) => theme.cores.fundo.rebaixado};
+  }
+
+  & + & {
+    border-top: ${({ theme }) => theme.espessura.linha} solid
+      ${({ theme }) => theme.cores.borda.divisoria};
+  }
+`
+
+// O dia do aviso num quadradinho, na cor do nível dele: "sexta" e "30/10".
+export const DiaDoAviso = styled.div<{ $nivel: NivelDoTema }>`
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: ${({ theme }) => theme.largura.diaDoAviso};
+  padding: ${({ theme }) => theme.espaco[3]} ${({ theme }) => theme.espaco[4]};
+  border-radius: ${({ theme }) => theme.raio.etiqueta};
+  background: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].fundo};
   color: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].texto};
 
   span {
-    font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
+    font-size: ${({ theme }) => theme.fonte.tamanho.mini};
     font-weight: ${({ theme }) => theme.fonte.peso.forte};
     text-transform: capitalize;
   }
@@ -269,68 +615,91 @@ export const DiaDoAviso = styled.div<{ $nivel: NivelDoTema }>`
     font-size: ${({ theme }) => theme.fonte.tamanho.nomeDaLavoura};
     font-weight: ${({ theme }) => theme.fonte.peso.extra};
     line-height: ${({ theme }) => theme.fonte.alturaLinha.justa};
+    font-variant-numeric: tabular-nums;
   }
 `
 
-export const TopoDoAviso = styled.div`
+export const TextoDoAviso = styled.div`
+  flex: 1;
+  min-width: 0;
   display: flex;
-  gap: ${({ theme }) => theme.espaco[4]};
-
-  svg {
-    flex-shrink: 0;
-  }
-
-  strong {
-    display: block;
-    font-size: ${({ theme }) => theme.fonte.tamanho.corpo};
-    font-weight: ${({ theme }) => theme.fonte.peso.extra};
-  }
+  flex-direction: column;
+  align-items: flex-start;
+  gap: ${({ theme }) => theme.espaco[2]};
 `
 
-export const CorpoDoAviso = styled.span<{ $nivel: NivelDoTema }>`
+export const CorpoDoAviso = styled.span`
   font-size: ${({ theme }) => theme.fonte.tamanho.corpo};
-  line-height: ${({ theme }) => theme.fonte.alturaLinha.media};
-  color: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].corpo};
+  line-height: ${({ theme }) => theme.fonte.alturaLinha.solta};
+  color: ${({ theme }) => theme.cores.texto.principal};
 `
 
-// "O que fazer": sempre aberto, embaixo da mensagem, alinhado com o texto.
+// "O que fazer": um painel afundado no cartão, com a lâmpada na cor do nível.
 export const OQueFazer = styled.div<{ $nivel: NivelDoTema }>`
-  margin-left: ${({ theme }) => theme.espaco[12]};
-  padding: ${({ theme }) => theme.espaco[4]} ${({ theme }) => theme.espaco[5]};
-  background: ${({ theme }) => theme.cores.fundo.cartao};
-  border-radius: ${({ theme }) => theme.raio.campo};
-  font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
-  line-height: ${({ theme }) => theme.fonte.alturaLinha.media};
-  color: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].corpo};
+  display: flex;
+  gap: ${({ theme }) => theme.espaco[6]};
+  padding: ${({ theme }) => theme.espaco[8]};
+  border-radius: ${({ theme }) => theme.raio.cartao};
+  background: ${({ theme }) => theme.cores.fundo.rebaixado};
+  font-size: ${({ theme }) => theme.fonte.tamanho.corpo};
+  line-height: ${({ theme }) => theme.fonte.alturaLinha.solta};
+  color: ${({ theme }) => theme.cores.texto.principal};
+
+  > span:first-child {
+    ${chip}
+    width: ${({ theme }) => theme.altura.avatar};
+    height: ${({ theme }) => theme.altura.avatar};
+    background: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].selo};
+    color: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].texto};
+
+    /* No celular, a lâmpada sai para o texto ocupar a largura toda. */
+    ${noCelular} {
+      display: none;
+    }
+  }
 
   strong {
     display: block;
-    margin-bottom: ${({ theme }) => theme.espaco[1]};
-    font-weight: ${({ theme }) => theme.fonte.peso.forte};
+    margin-bottom: ${({ theme }) => theme.espaco[2]};
+    ${rotulo}
+    color: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].texto};
   }
 `
 
-// Alinhado com o texto, depois do ícone.
 export const PorQue = styled.button`
-  align-self: flex-start;
-  margin-left: ${({ theme }) => theme.espaco[12]};
-  min-height: ${({ theme }) => theme.altura.botaoSecundario};
-  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.espaco[2]};
+  padding: ${({ theme }) => theme.espaco[2]} 0;
   border: none;
   background: none;
-  color: inherit;
+  color: ${({ theme }) => theme.cores.texto.secundario};
   font-family: inherit;
   font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
   font-weight: ${({ theme }) => theme.fonte.peso.forte};
-  text-decoration: underline;
   cursor: pointer;
+
+  &:hover {
+    color: ${({ theme }) => theme.cores.texto.principal};
+  }
+
+  svg {
+    transition: transform 150ms ease;
+  }
+
+  &[aria-expanded='true'] svg {
+    transform: rotate(180deg);
+  }
 `
 
-export const Explicado = styled.p<{ $nivel: NivelDoTema }>`
-  margin: 0 0 0 ${({ theme }) => theme.espaco[12]};
+export const Explicado = styled.p`
+  margin: 0;
+  padding: ${({ theme }) => theme.espaco[5]} ${({ theme }) => theme.espaco[6]};
+  border-radius: ${({ theme }) => theme.raio.campo};
+  background: ${({ theme }) => theme.cores.fundo.rebaixado};
   font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
   line-height: ${({ theme }) => theme.fonte.alturaLinha.solta};
-  color: ${({ theme, $nivel }) => theme.cores.nivel[$nivel].corpo};
+  color: ${({ theme }) => theme.cores.texto.secundario};
 `
 
 export const Abas = styled.div<{ $variante: 'abas' | 'filtros' }>`
@@ -397,7 +766,11 @@ export const Aba = styled.button<{ $variante: 'abas' | 'filtros' }>`
     `}
 `
 
+// "Previsão atualizada hoje às 7h", com a setinha de atualizar.
 export const Atualizada = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.espaco[3]};
   font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
   color: ${({ theme }) => theme.cores.texto.secundario};
 `
@@ -569,6 +942,10 @@ export const Legenda = styled.ul`
   display: flex;
   flex-wrap: wrap;
   gap: ${({ theme }) => theme.espaco[3]} ${({ theme }) => theme.espaco[10]};
+  margin-top: ${({ theme }) => theme.espaco[4]};
+  padding-top: ${({ theme }) => theme.espaco[8]};
+  border-top: ${({ theme }) => theme.espessura.linha} solid
+    ${({ theme }) => theme.cores.borda.divisoria};
   font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
   color: ${({ theme }) => theme.cores.texto.secundario};
 

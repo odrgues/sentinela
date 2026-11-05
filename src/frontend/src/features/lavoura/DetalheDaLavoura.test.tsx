@@ -166,6 +166,34 @@ describe('Detalhe da lavoura', () => {
     expect(within(avisos).getAllByText('O que fazer')).toHaveLength(2)
   })
 
+  it('cada tipo de aviso é um cartão, com o título e quantos dias ele cobre', async () => {
+    const geada = {
+      tipo: 'geada',
+      severidade: 'critico' as const,
+      porque: 'Abaixo de 2 °C o feijão queima.',
+      oQueFazer: 'Olhe primeiro as áreas baixas.',
+    }
+    responderDetalhe({
+      alertas: [
+        { ...geada, data: '2026-10-25', mensagem: 'Geada no sábado.' },
+        { ...geada, data: '2026-10-26', mensagem: 'Geada no domingo.' },
+      ],
+    })
+    await abrirTalhao()
+
+    const avisos = screen.getByRole('heading', { level: 2, name: 'Avisos desta semana' })
+      .parentElement as HTMLElement
+    expect(within(avisos).getAllByRole('heading', { level: 3 })).toHaveLength(1)
+    expect(within(avisos).getByRole('heading', { level: 3, name: 'Risco de geada' })).toBeVisible()
+    expect(within(avisos).getByText('2 dias')).toBeInTheDocument()
+  })
+
+  it('o ciclo mostra a data da colheita em destaque e quantos dias faltam', async () => {
+    await abrirTalhao()
+
+    expect(screen.getByText('Faltam 75 dias')).toBeInTheDocument()
+  })
+
   it('mostra a fase do ciclo, com o que ela pede e a fonte', async () => {
     responderDetalhe({
       fase: {
@@ -286,7 +314,7 @@ describe('Detalhe da lavoura', () => {
       'true',
     )
 
-    const lista = await screen.findByRole('list')
+    const lista = await screen.findByRole('list', { name: 'Histórico de avisos' })
     expect(within(lista).getAllByRole('listitem')).toHaveLength(20)
 
     await userEvent.click(screen.getByRole('button', { name: 'Ver mais avisos' }))
@@ -294,7 +322,7 @@ describe('Detalhe da lavoura', () => {
     expect(screen.queryByRole('button', { name: 'Ver mais avisos' })).not.toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'Crítico' }))
-    const soCriticos = await screen.findByRole('list')
+    const soCriticos = await screen.findByRole('list', { name: 'Histórico de avisos' })
     expect(within(soCriticos).getAllByRole('listitem')).toHaveLength(5)
     expect(soCriticos).not.toHaveTextContent('Tudo certo')
   })

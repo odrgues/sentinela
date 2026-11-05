@@ -13,6 +13,7 @@ export const espaco = {
   12: '24px',
   13: '28px',
   14: '40px',
+  15: '32px',
 }
 
 export const fonte = {
@@ -55,6 +56,9 @@ export const fonte = {
     tituloDoDetalhe: '18px',
     // Números em destaque: a temperatura do painel, a data do aviso.
     numero: '20px',
+    // O título das seções da página da lavoura e a data da colheita no cartão do ciclo.
+    tituloDeSecao: '20px',
+    dataDaColheita: '44px',
     // O nome da lavoura nos quadrinhos do painel.
     nomeDaLavoura: '15px',
     // O título dos quadros de confirmação ("Excluir sua conta?", "Já colheu?").
@@ -72,6 +76,8 @@ export const fonte = {
   espacamentoDaMarca: '-0.02em',
   // O rótulo em maiúsculas (a cultura, no alto dos quadrinhos do painel).
   espacamentoDoRotulo: '0.06em',
+  // O rótulo miúdo dos cartões da lavoura ("COLHEITA PREVISTA", "O QUE FAZER").
+  espacamentoDoRotuloMiudo: '0.08em',
 }
 
 export const raio = {
@@ -98,6 +104,13 @@ export const sombra = {
   // O vidro da coluna do painel, flutuando por cima do mapa: a sombra cai para a direita.
   vidro: '3px 0 22px rgba(28, 42, 31, 0.18)',
   abaEscolhida: '0 1px 4px rgba(28, 42, 31, 0.15)',
+  // Os cartões da página da lavoura: duas camadas, uma curta e nítida e outra longa e suave.
+  cartaoDaLavoura: '0 1px 2px rgba(28, 42, 31, 0.06), 0 8px 24px rgba(28, 42, 31, 0.08)',
+  // O que flutua por cima da foto (o resumo da semana) e o que se levanta ao passar o mouse.
+  cartaoErguido: '0 2px 4px rgba(28, 42, 31, 0.08), 0 16px 36px rgba(28, 42, 31, 0.16)',
+  cartaoEscuro: '0 2px 4px rgba(16, 38, 10, 0.2), 0 16px 36px rgba(16, 38, 10, 0.28)',
+  // O brilho de cima do cartão verde, como a luz batendo na beira.
+  brilhoDoCartaoEscuro: 'inset 0 1px 0 rgba(255, 255, 255, 0.14)',
   bolinhaDaChave: '0 1px 3px rgba(0, 0, 0, 0.25)',
 }
 
@@ -128,7 +141,10 @@ export const altura = {
   carregandoLinha: '18px',
   carregandoTitulo: '24px',
   carregandoCartao: '92px',
-  barraDoCiclo: '12px',
+  barraDoCiclo: '14px',
+  // O círculo colorido com o ícone, no começo dos avisos e dos cartões.
+  chipDoIcone: '36px',
+  chipGrande: '48px',
   // A faixa com a foto de satélite no alto da página da lavoura.
   heroi: '148px',
   heroiNoCelular: '132px',
@@ -176,8 +192,10 @@ export const largura = {
   detalhe: '1280px',
   // A página da lavoura no computador: larga, mas com respiro dos lados nas telas grandes.
   paginaDaLavoura: '1440px',
-  // O ciclo ao lado do gráfico da semana.
-  colunaDoCiclo: '320px',
+  // A coluna do ciclo e do El Niño, ao lado do gráfico da semana.
+  colunaDoCiclo: '360px',
+  // O marcador "você está aqui" na linha do tempo do ciclo.
+  marcadorDoCiclo: '18px',
   // O bloco com o dia do aviso, no computador.
   diaDoAviso: '72px',
   // A barrinha da temperatura (da mínima à máxima) e a da chuva, em cada dia do gráfico.
@@ -201,6 +219,8 @@ export const espessura = {
   bordaDeErro: '2px',
   opcao: '2px',
   opcaoEscolhida: '7px',
+  // A faixa colorida na beira dos cartões de aviso.
+  faixa: '4px',
   // A linha em volta do que está com foco (navegando pelo teclado ou clicando num campo).
   foco: '2px',
 }

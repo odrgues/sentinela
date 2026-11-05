@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
+  agruparAvisos,
+  diasQueFaltam,
   escalaDaSemana,
   explicacaoDoEnso,
   porcentagemDoCiclo,
   resumoDaLavoura,
+  tituloDoAviso,
   tituloDoEnso,
 } from './detalhe'
-import type { DetalheDaLavoura, DiaDePrevisao, LimitesDaCultura } from './tipos'
+import type { AlertaDaSemana, DetalheDaLavoura, DiaDePrevisao, LimitesDaCultura } from './tipos'
 
 const enso = {
   fase: 'El Nino',
@@ -124,5 +127,67 @@ describe('escalaDaSemana', () => {
 
     expect(frio).toBeNull()
     expect(y(10)).toBeGreaterThan(100)
+  })
+})
+
+describe('diasQueFaltam', () => {
+  it('conta os dias até o fim do ciclo e para em zero', () => {
+    expect(diasQueFaltam(45, 120)).toBe(75)
+    expect(diasQueFaltam(120, 120)).toBe(0)
+    expect(diasQueFaltam(130, 120)).toBe(0)
+  })
+})
+
+describe('agruparAvisos', () => {
+  const aviso = (extra: Partial<AlertaDaSemana>): AlertaDaSemana => ({
+    tipo: 'geada',
+    severidade: 'critico',
+    data: '2026-10-25',
+    mensagem: '',
+    porque: '',
+    oQueFazer: 'Cubra as mudas.',
+    ...extra,
+  })
+
+  it('junta os dias do mesmo tipo, do mais próximo ao mais distante', () => {
+    const grupos = agruparAvisos([
+      aviso({ data: '2026-10-27' }),
+      aviso({ data: '2026-10-25' }),
+      aviso({ data: '2026-10-26' }),
+    ])
+
+    expect(grupos).toHaveLength(1)
+    expect(grupos[0].alertas.map((alerta) => alerta.data)).toEqual([
+      '2026-10-25',
+      '2026-10-26',
+      '2026-10-27',
+    ])
+    expect(grupos[0].oQueFazer).toBe('Cubra as mudas.')
+  })
+
+  it('o grupo leva o nível mais sério dos seus dias, e o mais sério vem primeiro', () => {
+    const grupos = agruparAvisos([
+      aviso({ tipo: 'chuva_excessiva', severidade: 'atencao', oQueFazer: 'Abra os drenos.' }),
+      aviso({ tipo: 'calor', severidade: 'atencao', data: '2026-10-25', oQueFazer: 'Irrigue.' }),
+      aviso({ tipo: 'calor', severidade: 'critico', data: '2026-10-26', oQueFazer: 'Irrigue.' }),
+    ])
+
+    expect(grupos.map((grupo) => [grupo.tipo, grupo.nivel])).toEqual([
+      ['calor', 'critico'],
+      ['chuva_excessiva', 'atencao'],
+    ])
+  })
+
+  it('o mesmo tipo com orientações diferentes fica em grupos separados', () => {
+    const grupos = agruparAvisos([aviso({ oQueFazer: 'A.' }), aviso({ oQueFazer: 'B.' })])
+
+    expect(grupos).toHaveLength(2)
+  })
+})
+
+describe('tituloDoAviso', () => {
+  it('dá nome ao tipo e, num tipo novo, usa o nome do nível', () => {
+    expect(tituloDoAviso('geada', 'critico')).toBe('Risco de geada')
+    expect(tituloDoAviso('granizo', 'atencao')).toBe('Atenção')
   })
 })

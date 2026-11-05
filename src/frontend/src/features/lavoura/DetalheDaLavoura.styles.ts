@@ -1,17 +1,48 @@
-import styled, { keyframes } from 'styled-components'
+import styled, { createGlobalStyle, css, keyframes } from 'styled-components'
 import folhas from '../../assets/folhas.jpg'
 import { noCelular } from '../../styles/midia'
-import * as D from './components/detalhe/Detalhe.styles'
 
+// O fundo da página da lavoura é um verde-acinzentado bem claro, e não o branco do resto do site:
+// os cartões brancos saltam dele com a sombra. Vale só enquanto a página está aberta.
+export const FundoDaLavoura = createGlobalStyle`
+  html body {
+    background: ${({ theme }) => theme.cores.fundo.paginaDaLavoura};
+  }
+`
+
+// --respiro é o vão entre as partes da página; --sobreposicao, quanto o resumo da semana sobe
+// por cima da base da foto.
 export const PaginaDoComputador = styled.main`
+  --respiro: ${({ theme }) => theme.espaco[12]};
+  --sobreposicao: ${({ theme }) => theme.espaco[12]};
   width: 100%;
   max-width: ${({ theme }) => theme.largura.paginaDaLavoura};
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.espaco[11]};
+  gap: var(--respiro);
   padding: ${({ theme }) => theme.espaco[8]} ${({ theme }) => theme.espaco[14]}
     ${({ theme }) => theme.espaco[14]};
+`
+
+// A previsão e os avisos à esquerda; o ciclo e o El Niño numa coluna estreita à direita.
+export const Grade = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) ${({ theme }) => theme.largura.colunaDoCiclo};
+  align-items: start;
+  gap: ${({ theme }) => theme.espaco[12]};
+`
+
+export const Principal = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.espaco[12]};
+`
+
+export const Lateral = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.espaco[12]};
 `
 
 // A lavoura que não existe (ou é de outra pessoa): o aviso centralizado, como a tela de erro.
@@ -46,12 +77,6 @@ export const Acoes = styled.div`
   gap: ${({ theme }) => theme.espaco[5]};
 `
 
-export const Previsao = styled.section`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.espaco[6]};
-`
-
 export const LinhaDasAbas = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -84,7 +109,7 @@ export const TopoDoCelular = styled.div`
 
 // A faixa do alto: a foto de satélite do lugar da lavoura ($foto), escurecida à esquerda para o
 // texto branco aparecer. Sem a foto (nos testes, ou se ela não carregar), aparecem as folhas.
-export const Heroi = styled.header<{ $foto?: string }>`
+export const Heroi = styled.header<{ $foto?: string; $comResumo: boolean }>`
   position: relative;
   overflow: hidden;
   min-height: ${({ theme }) => theme.altura.heroi};
@@ -94,6 +119,14 @@ export const Heroi = styled.header<{ $foto?: string }>`
   justify-content: space-between;
   gap: ${({ theme }) => theme.espaco[6]};
   padding: ${({ theme }) => theme.espaco[8]} ${({ theme }) => theme.espaco[10]};
+  ${({ theme, $comResumo }) =>
+    $comResumo &&
+    css`
+      /* O resumo da semana cobre a base da foto: a faixa cresce o que ele cobre, para a foto
+         continuar do mesmo tamanho, e o texto sobe para não ficar embaixo dele. */
+      min-height: calc(${theme.altura.heroi} + var(--sobreposicao));
+      padding-bottom: calc(${theme.espaco[8]} + var(--sobreposicao));
+    `}
   border-radius: ${({ theme }) => theme.raio.cartaoGrande};
   background:
     linear-gradient(
@@ -112,6 +145,12 @@ export const Heroi = styled.header<{ $foto?: string }>`
   ${noCelular} {
     min-height: ${({ theme }) => theme.altura.heroiNoCelular};
     padding: ${({ theme }) => theme.espaco[7]};
+    ${({ theme, $comResumo }) =>
+      $comResumo &&
+      css`
+        min-height: calc(${theme.altura.heroiNoCelular} + var(--sobreposicao));
+        padding-bottom: calc(${theme.espaco[7]} + var(--sobreposicao));
+      `}
   }
 `
 
@@ -213,97 +252,15 @@ export const EtiquetaDaCultura = styled.span`
   font-weight: ${({ theme }) => theme.fonte.peso.extra};
 `
 
-// O gráfico da semana (o resto da largura) e o ciclo (uma coluna estreita) lado a lado.
-export const PrevisaoECiclo = styled.div`
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) ${({ theme }) => theme.largura.colunaDoCiclo};
-  align-items: start;
-  gap: ${({ theme }) => theme.espaco[8]};
-`
-
-// O ciclo ao lado do gráfico, alinhado com o gráfico (abaixo das abas).
-export const LadoDoCiclo = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.espaco[5]};
-  padding-top: calc(${({ theme }) => theme.altura.aba} + ${({ theme }) => theme.espaco[9]});
-
-  /* A colheita prevista em destaque, ao lado da previsão. */
-  ${D.LinhaDoCiclo} {
-    flex-direction: column-reverse;
-    align-items: flex-start;
-    gap: ${({ theme }) => theme.espaco[2]};
-
-    span {
-      font-size: ${({ theme }) => theme.fonte.tamanho.nomeDaLavoura};
-      font-weight: ${({ theme }) => theme.fonte.peso.extra};
-      color: ${({ theme }) => theme.cores.destaque.base};
-    }
-
-    strong {
-      font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
-      color: ${({ theme }) => theme.cores.texto.secundario};
-    }
-  }
-`
-
-// Os avisos da semana na largura toda: o dia em destaque à esquerda, o aviso no meio e o que
-// fazer à direita.
-export const AvisosLargos = styled.div`
-  ${D.Aviso} {
-    display: grid;
-    grid-template-columns: auto minmax(0, 2fr) minmax(0, 3fr);
-    align-items: start;
-    gap: ${({ theme }) => theme.espaco[2]} ${({ theme }) => theme.espaco[8]};
-
-    > ${D.DiaDoAviso} {
-      grid-column: 1;
-      grid-row: 1 / span 3;
-      flex-direction: column;
-      align-items: center;
-      gap: ${({ theme }) => theme.espaco[1]};
-      min-width: ${({ theme }) => theme.largura.diaDoAviso};
-      padding: ${({ theme }) => theme.espaco[4]} ${({ theme }) => theme.espaco[5]};
-      border-radius: ${({ theme }) => theme.raio.cartao};
-
-      strong {
-        font-size: ${({ theme }) => theme.fonte.tamanho.numero};
-      }
-    }
-
-    > ${D.TopoDoAviso}, > ${D.PorQue}, > ${D.Explicado} {
-      grid-column: 2;
-    }
-
-    > ${D.TopoDoAviso}:only-child {
-      grid-column: 1 / -1;
-    }
-
-    > ${D.PorQue} {
-      justify-self: start;
-    }
-
-    > ${D.OQueFazer} {
-      grid-column: 3;
-      grid-row: 1 / span 3;
-      margin-left: 0;
-    }
-  }
-`
-
-// O celular, mais compacto: a faixa, as abas, o gráfico e os cartões menores, com os mesmos
-// tamanhos das outras telas do celular.
+// O celular, mais compacto: a faixa, o resumo, a previsão e os cartões, um embaixo do outro.
 export const PaginaDoCelular = styled.main`
+  --respiro: ${({ theme }) => theme.espaco[8]};
+  --sobreposicao: ${({ theme }) => theme.espaco[9]};
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.espaco[6]};
+  gap: var(--respiro);
   padding: ${({ theme }) => theme.espaco[4]} ${({ theme }) => theme.espaco[8]}
     ${({ theme }) => theme.espaco[10]};
-
-  ${Heroi} {
-    min-height: 0;
-    padding: ${({ theme }) => theme.espaco[7]} ${({ theme }) => theme.espaco[7]};
-  }
 
   ${TextosDoHeroi} {
     gap: ${({ theme }) => theme.espaco[2]};
@@ -319,134 +276,5 @@ export const PaginaDoCelular = styled.main`
 
   ${EtiquetaDaCultura} {
     font-size: ${({ theme }) => theme.fonte.tamanho.mini};
-  }
-
-  ${D.Aba} {
-    height: ${({ theme }) => theme.altura.aba};
-    font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
-  }
-
-  ${D.Atualizada} {
-    font-size: ${({ theme }) => theme.fonte.tamanho.mini};
-  }
-
-  ${D.Grafico} {
-    grid-auto-columns: minmax(${({ theme }) => theme.largura.diaNoGraficoPequeno}, 1fr);
-  }
-
-  ${D.DiaNoGrafico} {
-    padding: ${({ theme }) => theme.espaco[3]} ${({ theme }) => theme.espaco[2]};
-
-    > strong,
-    ${D.Chuva}, ${D.Minima}, ${D.DataNoGrafico} {
-      font-size: ${({ theme }) => theme.fonte.tamanho.mini};
-    }
-
-    /* No celular a coluna é estreita: a chuva pode quebrar em duas linhas. */
-    ${D.Chuva} {
-      flex-wrap: wrap;
-      justify-content: center;
-      white-space: normal;
-    }
-  }
-
-  ${D.Termometro} {
-    height: ${({ theme }) => theme.altura.trilhaDoGraficoPequena};
-    margin: 0 -${({ theme }) => theme.espaco[2]};
-  }
-
-  ${D.Escala} {
-    inset: ${({ theme }) => theme.espaco[11]} 0;
-  }
-
-  ${D.ChuvaNoGrafico} {
-    height: ${({ theme }) => theme.altura.chuvaNoGraficoPequena};
-  }
-
-  ${D.Legenda} {
-    font-size: ${({ theme }) => theme.fonte.tamanho.mini};
-  }
-
-  ${D.Resumo} {
-    align-items: flex-start;
-    flex-wrap: wrap;
-    padding: ${({ theme }) => theme.espaco[6]} ${({ theme }) => theme.espaco[7]};
-  }
-
-  /* O texto ocupa a linha toda ao lado do ícone; o "Ver o que fazer" desce, alinhado com ele. */
-  ${D.TextoDoResumo} {
-    flex-basis: calc(
-      100% - ${({ theme }) => theme.altura.toque} - ${({ theme }) => theme.espaco[6]}
-    );
-  }
-
-  ${D.LinkDoResumo} {
-    margin-left: calc(${({ theme }) => theme.altura.toque} + ${({ theme }) => theme.espaco[6]});
-  }
-
-  ${D.Ciclo}, ${D.Fase}, ${D.Enso} {
-    padding: ${({ theme }) => theme.espaco[6]};
-  }
-
-  ${D.LinhaDoCiclo} strong {
-    font-size: ${({ theme }) => theme.fonte.tamanho.legenda};
-  }
-
-  ${D.LinhaDoCiclo} span,
-  ${D.Explicacao} {
-    font-size: ${({ theme }) => theme.fonte.tamanho.mini};
-  }
-
-  ${D.Barra} {
-    height: ${({ theme }) => theme.altura.barraDoCicloPequena};
-  }
-
-  ${D.Fase} p,
-  ${D.Enso} p,
-  ${D.EfeitoDoEnso} strong,
-  ${D.SaibaMais} {
-    font-size: ${({ theme }) => theme.fonte.tamanho.mini};
-  }
-
-  ${D.Secao} h2 {
-    font-size: ${({ theme }) => theme.fonte.tamanho.nomeDaLavoura};
-  }
-
-  ${D.Aviso} {
-    gap: ${({ theme }) => theme.espaco[4]};
-    padding: ${({ theme }) => theme.espaco[8]};
-  }
-
-  /* O ícone na linha do nível, e a mensagem embaixo na largura toda: o texto e o "O que fazer"
-     começam na mesma margem, com o mesmo respiro dos dois lados. */
-  ${D.TopoDoAviso} {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    gap: ${({ theme }) => theme.espaco[2]} ${({ theme }) => theme.espaco[3]};
-
-    > div {
-      display: contents;
-    }
-
-    ${D.CorpoDoAviso} {
-      grid-column: 1 / -1;
-    }
-  }
-
-  ${D.OQueFazer} {
-    padding: ${({ theme }) => theme.espaco[5]} ${({ theme }) => theme.espaco[6]};
-  }
-
-  ${D.DiaDoAviso} strong {
-    font-size: ${({ theme }) => theme.fonte.tamanho.pequeno};
-  }
-
-  ${D.OQueFazer}, ${D.Explicado} {
-    font-size: ${({ theme }) => theme.fonte.tamanho.mini};
-  }
-
-  ${D.OQueFazer}, ${D.PorQue}, ${D.Explicado} {
-    margin-left: 0;
   }
 `

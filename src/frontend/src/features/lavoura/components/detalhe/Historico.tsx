@@ -63,7 +63,7 @@ export function Historico({ id, emTabela }: { id: string; emTabela: boolean }) {
     )
   } else {
     lista = (
-      <S.ListaDoHistorico>
+      <S.ListaDoHistorico aria-label="Histórico de avisos">
         {avisos.map((aviso, i) => (
           <S.ItemDoHistorico key={`${aviso.data}-${aviso.tipo}-${i}`}>
             <Selo aviso={aviso} />

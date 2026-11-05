@@ -1,5 +1,12 @@
 import { diaEMes } from '../../shared/formato/data'
-import type { DetalheDaLavoura, DiaDePrevisao, Enso, LimitesDaCultura } from './tipos'
+import { NIVEL, NOME_DO_NIVEL, type NivelDoTema } from '../../shared/ui/nivel'
+import type {
+  AlertaDaSemana,
+  DetalheDaLavoura,
+  DiaDePrevisao,
+  Enso,
+  LimitesDaCultura,
+} from './tipos'
 
 const FASES: Record<string, string> = {
   'El Nino': 'El Niño',
@@ -47,6 +54,69 @@ export function resumoDaLavoura(lavoura: DetalheDaLavoura, comMunicipio = false)
 // Quanto do ciclo já passou, de 0 a 100, para a barra.
 export function porcentagemDoCiclo(diaAtual: number, cicloDias: number) {
   return Math.min(100, Math.max(0, Math.round((diaAtual / cicloDias) * 100)))
+}
+
+// Quantos dias faltam para o fim do ciclo (a colheita prevista); 0 quando já passou.
+export function diasQueFaltam(diaAtual: number, cicloDias: number) {
+  return Math.max(0, cicloDias - diaAtual)
+}
+
+const TITULO_DO_AVISO: Record<string, string> = {
+  calor: 'Calor',
+  frio: 'Frio',
+  geada: 'Risco de geada',
+  chuva: 'Chuva',
+  chuva_excessiva: 'Chuva em excesso',
+  deficit_hidrico: 'Pouca chuva',
+  favoravel: 'Condições favoráveis',
+}
+
+// O título do cartão de um tipo de aviso ("Risco de geada"). Um tipo que a tela ainda não conhece
+// leva o nome do nível ("Atenção").
+export function tituloDoAviso(tipo: string, nivel: NivelDoTema) {
+  return TITULO_DO_AVISO[tipo] ?? NOME_DO_NIVEL[nivel]
+}
+
+export type GrupoDeAvisos = {
+  chave: string
+  tipo: string
+  // O nível mais sério entre os dias do grupo.
+  nivel: NivelDoTema
+  oQueFazer: string | null
+  // Do dia mais próximo ao mais distante.
+  alertas: AlertaDaSemana[]
+}
+
+const GRAVIDADE: Record<NivelDoTema, number> = { critico: 0, atencao: 1, ok: 2 }
+
+// Os avisos da semana juntos por tipo: quatro dias de geada viram um cartão só, com o "o que
+// fazer" uma vez. O mesmo tipo com orientações diferentes fica em cartões separados. Os grupos
+// vêm do mais sério para o mais leve.
+export function agruparAvisos(alertas: AlertaDaSemana[]): GrupoDeAvisos[] {
+  const grupos = new Map<string, GrupoDeAvisos>()
+  for (const alerta of alertas) {
+    const chave = `${alerta.tipo}|${alerta.oQueFazer ?? ''}`
+    const nivel = NIVEL[alerta.severidade]
+    const grupo = grupos.get(chave)
+    if (!grupo) {
+      grupos.set(chave, {
+        chave,
+        tipo: alerta.tipo,
+        nivel,
+        oQueFazer: alerta.oQueFazer ?? null,
+        alertas: [alerta],
+      })
+      continue
+    }
+    grupo.alertas.push(alerta)
+    if (GRAVIDADE[nivel] < GRAVIDADE[grupo.nivel]) grupo.nivel = nivel
+  }
+  return [...grupos.values()]
+    .map((grupo) => ({
+      ...grupo,
+      alertas: [...grupo.alertas].sort((a, b) => a.data.localeCompare(b.data)),
+    }))
+    .sort((a, b) => GRAVIDADE[a.nivel] - GRAVIDADE[b.nivel])
 }
 
 // Os limites de calor e de frio só entram no gráfico se estiverem a até 4 °C da semana: um limite

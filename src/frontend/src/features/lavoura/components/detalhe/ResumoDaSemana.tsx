@@ -1,3 +1,4 @@
+import { ArrowDown } from 'lucide-react'
 import { useTheme } from 'styled-components'
 import {
   ICONE_DO_NIVEL,
@@ -18,7 +19,7 @@ const TITULO: Record<NivelDoTema, string> = {
   ok: 'Semana tranquila para a lavoura',
 }
 
-// A resposta do "minha lavoura está bem?" logo embaixo da foto: o aviso mais sério da semana, na
+// A resposta do "minha lavoura está bem?", flutuando na base da foto: o aviso mais sério da semana, na
 // cor do nível, com o caminho para o que fazer. Os detalhes ficam em "Avisos desta semana".
 export function ResumoDaSemana({ alertas }: { alertas: AlertaDaSemana[] }) {
   const tema = useTheme()
@@ -44,7 +45,12 @@ export function ResumoDaSemana({ alertas }: { alertas: AlertaDaSemana[] }) {
           {outros > 0 && ` E mais ${outros} ${outros === 1 ? 'aviso' : 'avisos'}.`}
         </span>
       </S.TextoDoResumo>
-      {principal && <S.LinkDoResumo href={`#${ID_DOS_AVISOS}`}>Ver o que fazer</S.LinkDoResumo>}
+      {principal && (
+        <S.LinkDoResumo href={`#${ID_DOS_AVISOS}`}>
+          Ver o que fazer
+          <ArrowDown size={tema.icone.selo} aria-hidden />
+        </S.LinkDoResumo>
+      )}
     </S.Resumo>
   )
 }

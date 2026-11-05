@@ -1,4 +1,4 @@
-import { Sprout } from 'lucide-react'
+import { RefreshCw, Sprout } from 'lucide-react'
 import { useState } from 'react'
 import { useLocation, useParams } from 'react-router'
 import { useTheme } from 'styled-components'
@@ -52,7 +52,10 @@ function Conteudo({
   const [diaEmFoco, setDiaEmFoco] = useState<string | null>(null)
   const emAndamento = lavoura.status === 'em_andamento'
   const atualizada = (
-    <D.Atualizada>Previsão atualizada {quandoFoi(lavoura.previsaoAtualizadaEm)}</D.Atualizada>
+    <D.Atualizada>
+      <RefreshCw size={tema.icone.selo} aria-hidden />
+      Previsão atualizada {quandoFoi(lavoura.previsaoAtualizadaEm)}
+    </D.Atualizada>
   )
 
   const encerrada = !emAndamento && (
@@ -73,7 +76,7 @@ function Conteudo({
   )
 
   const abas = (
-    <>
+    <D.CartaoDoGrafico>
       <S.LinhaDasAbas>
         <Escolha
           rotulo="O que mostrar"
@@ -99,7 +102,7 @@ function Conteudo({
       ) : (
         <Historico id={id} emTabela={noComputador} />
       )}
-    </>
+    </D.CartaoDoGrafico>
   )
 
   const acoes = emAndamento && (
@@ -120,8 +123,9 @@ function Conteudo({
         FOTO_DO_HEROI.metrosPorPixel,
       )
     : undefined
+  const comResumo = emAndamento && lavoura.previsaoDisponivel
   const heroi = (
-    <S.Heroi $foto={foto}>
+    <S.Heroi $foto={foto} $comResumo={comResumo}>
       {foto && (
         <>
           <S.PontoDaLavoura aria-hidden />
@@ -140,23 +144,27 @@ function Conteudo({
     </S.Heroi>
   )
 
+  // A fase de agora vai dentro do cartão do ciclo.
+  const ciclo = <Ciclo lavoura={lavoura}>{fase}</Ciclo>
+
   if (noComputador) {
     return (
       <>
         {heroi}
         {resumo}
-        {/* A previsão em gráfico e, ao lado, em que ponto do ciclo a lavoura está e o que a fase
-            pede. Depois, os avisos e, por último, o El Niño, que é o contexto da safra. */}
-        <S.PrevisaoECiclo>
-          <S.Previsao>{abas}</S.Previsao>
-          <S.LadoDoCiclo>
+        {/* A previsão e os avisos à esquerda. À direita, em que ponto do ciclo a lavoura está e o
+            que a fase pede e, embaixo, o El Niño, que é o contexto da safra. */}
+        <S.Grade>
+          <S.Principal>
+            {abas}
+            {avisos}
+          </S.Principal>
+          <S.Lateral>
             {encerrada}
-            <Ciclo lavoura={lavoura} />
-            {fase}
-          </S.LadoDoCiclo>
-        </S.PrevisaoECiclo>
-        {avisos && <S.AvisosLargos>{avisos}</S.AvisosLargos>}
-        {enso}
+            {ciclo}
+            {enso}
+          </S.Lateral>
+        </S.Grade>
       </>
     )
   }
@@ -167,8 +175,7 @@ function Conteudo({
       {resumo}
       {encerrada}
       {abas}
-      <Ciclo lavoura={lavoura} />
-      {fase}
+      {ciclo}
       {avisos}
       {enso}
       {acoes}
@@ -214,6 +221,7 @@ export function DetalheDaLavoura() {
   if (noComputador) {
     return (
       <S.PaginaDoComputador>
+        <S.FundoDaLavoura />
         {mensagem && <Mensagem texto={mensagem} />}
         {conteudo}
       </S.PaginaDoComputador>
@@ -222,6 +230,7 @@ export function DetalheDaLavoura() {
 
   return (
     <S.PaginaDoCelular>
+      <S.FundoDaLavoura />
       {mensagem && <Mensagem texto={mensagem} />}
       <S.TopoDoCelular>
         <Voltar para="/" rotulo="Voltar para o painel" />

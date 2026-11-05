@@ -12,28 +12,33 @@ export function CartaoDoEnso({ enso, perene }: { enso: Enso; perene: boolean }) 
 
   return (
     <S.Enso>
-      <Waves size={tema.icone.tempoNaLista} aria-hidden />
-      <div>
-        <strong>{tituloDoEnso(enso, perene)}</strong>
-        <p>{explicacaoDoEnso(enso)}</p>
-        {enso.efeito && (
-          <S.EfeitoDoEnso>
-            <strong>O que costuma acontecer</strong>
-            {enso.efeito}
-          </S.EfeitoDoEnso>
-        )}
-        {enso.oQueFazer && (
-          <S.EfeitoDoEnso>
-            <strong>O que fazer</strong>
-            {enso.oQueFazer}
-          </S.EfeitoDoEnso>
-        )}
-        <S.SaibaMais>
-          <summary>Saiba mais</summary>
-          <p>{enso.frase}</p>
-        </S.SaibaMais>
-        {enso.fonte && <S.Fonte>Fonte: {enso.fonte}</S.Fonte>}
-      </div>
+      <S.TopoDoEnso>
+        <span>
+          <Waves size={tema.icone.aviso} aria-hidden />
+        </span>
+        <div>
+          <S.RotuloDoEnso>Clima da safra</S.RotuloDoEnso>
+          <strong>{tituloDoEnso(enso, perene)}</strong>
+        </div>
+      </S.TopoDoEnso>
+      <p>{explicacaoDoEnso(enso)}</p>
+      {enso.efeito && (
+        <S.EfeitoDoEnso>
+          <strong>O que costuma acontecer</strong>
+          {enso.efeito}
+        </S.EfeitoDoEnso>
+      )}
+      {enso.oQueFazer && (
+        <S.EfeitoDoEnso>
+          <strong>O que fazer</strong>
+          {enso.oQueFazer}
+        </S.EfeitoDoEnso>
+      )}
+      <S.SaibaMais>
+        <summary>Saiba mais</summary>
+        <p>{enso.frase}</p>
+      </S.SaibaMais>
+      {enso.fonte && <S.Fonte>Fonte: {enso.fonte}</S.Fonte>}
     </S.Enso>
   )
 }

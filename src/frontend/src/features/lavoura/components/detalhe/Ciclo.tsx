@@ -1,10 +1,15 @@
+import { CalendarCheck, type LucideIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { useTheme } from 'styled-components'
 import { dataCompleta, diaEMes, hoje } from '../../../../shared/formato/data'
-import { porcentagemDoCiclo } from '../../detalhe'
+import { SoParaLeitor } from '../../../../shared/ui/SoParaLeitor'
+import { diasQueFaltam, porcentagemDoCiclo } from '../../detalhe'
 import type { DetalheDaLavoura, TrechoDoCiclo } from '../../tipos'
 import * as S from './Detalhe.styles'
 
-// O ciclo dividido nas fases da cultura: as que já passaram cheias, a de agora até hoje e as
-// próximas vazias. Embaixo, a próxima fase. Passar o mouse num trecho mostra o nome da fase.
+// O ciclo dividido nas fases da cultura: as que já passaram cheias, a de agora até hoje, com o
+// ponto de "você está aqui", e as próximas vazias. Embaixo, a próxima fase. Passar o mouse num
+// trecho mostra o nome da fase.
 function LinhaDoTempo({
   fases,
   diaAtual,
@@ -27,11 +32,13 @@ function LinhaDoTempo({
           return (
             <S.Trecho
               key={fase.nome}
-              $agora={agora}
               style={{ flexGrow: dias }}
               title={`${fase.nome} · dias ${fase.diaInicio} a ${fase.diaFim}`}
             >
-              <S.Preenchida style={{ width: `${cheio}%` }} />
+              <S.TrilhoDoTrecho>
+                <S.Preenchida $agora={agora} style={{ width: `${cheio}%` }} />
+              </S.TrilhoDoTrecho>
+              {agora && <S.MarcadorDeHoje aria-hidden style={{ left: `${cheio}%` }} />}
             </S.Trecho>
           )
         })}
@@ -45,33 +52,78 @@ function LinhaDoTempo({
   )
 }
 
-// "Dia 45 de 120" com a barra, ou "Safra 2026/27" na lavoura perene.
-export function Ciclo({ lavoura }: { lavoura: DetalheDaLavoura }) {
+// "Colheita prevista" e a data em número grande. Quem usa leitor de tela ouve a frase inteira, e
+// não as duas metades.
+function DataDaColheita({
+  frase,
+  data,
+  leitura,
+  faltam,
+}: {
+  frase: string
+  data: string
+  leitura: string
+  faltam?: string
+}) {
+  return (
+    <S.Colheita>
+      <S.TextoDaColheita>
+        <span aria-hidden>{frase}</span>
+        <S.DataDaColheita aria-hidden>{data}</S.DataDaColheita>
+        <SoParaLeitor>{leitura}</SoParaLeitor>
+      </S.TextoDaColheita>
+      {faltam && <S.Faltam>{faltam}</S.Faltam>}
+    </S.Colheita>
+  )
+}
+
+function Rotulo({ icone: Icone, children }: { icone: LucideIcon; children: ReactNode }) {
+  const tema = useTheme()
+  return (
+    <S.RotuloDoCiclo>
+      <Icone size={tema.icone.selo} aria-hidden />
+      {children}
+    </S.RotuloDoCiclo>
+  )
+}
+
+// A data da colheita em destaque, a linha do tempo do ciclo e "Dia 45 de 120", ou "Safra 2026/27"
+// na lavoura perene. A fase de agora (children) fica embaixo, dentro do mesmo cartão.
+export function Ciclo({ lavoura, children }: { lavoura: DetalheDaLavoura; children?: ReactNode }) {
   const { diaAtual, cicloDias, safra, colheitaPrevista } = lavoura
 
   if (diaAtual !== null && cicloDias !== null) {
     const feito = porcentagemDoCiclo(diaAtual, cicloDias)
+    const faltam = diasQueFaltam(diaAtual, cicloDias)
     // Na colheita contínua (morango, chuchu), a data é quando a colheita começa.
-    const colheita =
-      lavoura.tipoCiclo === 'continua'
-        ? `Colheita a partir de ${diaEMes(colheitaPrevista)}`
-        : `Colheita prevista: ${diaEMes(colheitaPrevista)}`
+    const continua = lavoura.tipoCiclo === 'continua'
+    const frase = continua ? 'Colheita a partir de' : 'Colheita prevista'
+    const data = diaEMes(colheitaPrevista)
     return (
       <S.Ciclo>
-        <S.LinhaDoCiclo>
-          <strong>
-            Dia {diaAtual} de {cicloDias}
-          </strong>
-          <span>{colheita}</span>
-        </S.LinhaDoCiclo>
+        <Rotulo icone={CalendarCheck}>Ciclo da lavoura</Rotulo>
+        <DataDaColheita
+          frase={frase}
+          data={data}
+          leitura={continua ? `${frase} ${data}` : `${frase}: ${data}`}
+          faltam={
+            faltam === 0 ? 'Já no ponto' : `Faltam ${faltam} ${faltam === 1 ? 'dia' : 'dias'}`
+          }
+        />
         {lavoura.fases?.length ? (
           <LinhaDoTempo fases={lavoura.fases} diaAtual={diaAtual} cicloDias={cicloDias} />
         ) : (
           <S.Barra role="img" aria-label={`${feito}% do ciclo concluído`}>
-            <S.Preenchida style={{ width: `${feito}%` }} />
+            <S.Preenchida $agora style={{ width: `${feito}%` }} />
           </S.Barra>
         )}
-        <S.Explicacao>Plantada em {diaEMes(lavoura.dataPlantio)}</S.Explicacao>
+        <S.LinhaDoCiclo>
+          <strong>
+            Dia {diaAtual} de {cicloDias}
+          </strong>
+          <span>Plantada em {diaEMes(lavoura.dataPlantio)}</span>
+        </S.LinhaDoCiclo>
+        {children}
       </S.Ciclo>
     )
   }
@@ -81,8 +133,9 @@ export function Ciclo({ lavoura }: { lavoura: DetalheDaLavoura }) {
 
   return (
     <S.Ciclo>
+      <Rotulo icone={CalendarCheck}>Ciclo da lavoura</Rotulo>
+      <S.TituloDaPerene>{safra ? `Safra ${safra}` : lavoura.cultura}</S.TituloDaPerene>
       <S.LinhaDoCiclo>
-        <strong>{safra ? `Safra ${safra}` : lavoura.cultura}</strong>
         <span>
           {jaProduz
             ? `Produzindo desde ${dataCompleta(colheitaPrevista)}`
@@ -90,6 +143,7 @@ export function Ciclo({ lavoura }: { lavoura: DetalheDaLavoura }) {
         </span>
       </S.LinhaDoCiclo>
       {lavoura.explicacaoCiclo && <S.Explicacao>{lavoura.explicacaoCiclo}</S.Explicacao>}
+      {children}
     </S.Ciclo>
   )
 }

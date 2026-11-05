@@ -16,6 +16,10 @@ export const cores = {
     // A borda fininha dos cartões transparentes, como o brilho na beira de um vidro.
     bordaNoVidro: 'rgba(255, 255, 255, 0.7)',
     campo: '#FFFFFF',
+    // O fundo da página da lavoura: um verde-acinzentado bem claro, para os cartões brancos
+    // saltarem dele com a sombra. rebaixado é o que fica "afundado" dentro de um cartão branco.
+    paginaDaLavoura: '#F1F4E9',
+    rebaixado: '#F5F7EF',
     mapa: '#E6E9D8',
     carregando: '#E2E0D6',
     carregandoSuave: '#ECEAE1',
@@ -46,6 +50,8 @@ export const cores = {
     // selo é a cor viva, transparente, atrás dos selos e do resumo do painel (texto por cima).
     critico: {
       marcador: '#E5322B',
+      // O ícone em cima do marcador cheio (o círculo do resumo da semana).
+      sobreMarcador: '#FFFFFF',
       selo: 'rgba(229, 50, 43, 0.2)',
       fundo: '#FBE3DF',
       texto: '#8E1F12',
@@ -53,6 +59,7 @@ export const cores = {
     },
     atencao: {
       marcador: '#F5B400',
+      sobreMarcador: '#3F2800',
       selo: 'rgba(245, 180, 0, 0.28)',
       fundo: '#FCEFD3',
       texto: '#6E4300',
@@ -60,6 +67,7 @@ export const cores = {
     },
     ok: {
       marcador: '#2E9B4E',
+      sobreMarcador: '#FFFFFF',
       selo: 'rgba(46, 155, 78, 0.2)',
       fundo: '#E1EEDC',
       texto: '#24492D',
@@ -102,8 +110,25 @@ export const cores = {
   },
   enso: {
     fundo: '#E3EDF3',
+    fundoFim: '#D3E3EC',
     titulo: '#173F56',
     texto: '#1F3B4C',
+    // As ondinhas de fundo e a linha entre as partes do cartão.
+    onda: 'rgba(23, 63, 86, 0.16)',
+    divisoria: 'rgba(23, 63, 86, 0.16)',
+  },
+  // O cartão do ciclo da lavoura: verde-escuro como a faixa do alto, com as curvas de nível
+  // por trás. O dia de hoje no ciclo é o amarelo do broto (marca.sol).
+  ciclo: {
+    fundo: '#21461A',
+    fundoFim: '#112A0B',
+    texto: '#F2F7EE',
+    textoSuave: 'rgba(242, 247, 238, 0.74)',
+    trilho: 'rgba(255, 255, 255, 0.16)',
+    feito: '#A9D493',
+    textura: 'rgba(255, 255, 255, 0.07)',
+    painel: 'rgba(255, 255, 255, 0.09)',
+    borda: 'rgba(255, 255, 255, 0.16)',
   },
   // O amarelo do broto da marca e do marcador do mapa.
   marca: {
