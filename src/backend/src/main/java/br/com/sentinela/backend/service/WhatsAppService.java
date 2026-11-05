@@ -160,7 +160,9 @@ public class WhatsAppService {
         // Fluxo normal para usuário já autenticado e vinculado
         String intencao = identificarIntencao(conteudo, intencaoEntrada);
         registrarMensagemRecebida(usuario, chatId, conteudo, intencao);
-        String resposta = gerarRespostaDoAgente(usuario, intencao);
+        String resposta = MenuDoBot.ehPedidoDeSaida(conteudo)
+                ? MenuDoBot.despedida(usuario.getNome())
+                : gerarRespostaDoAgente(usuario, intencao);
 
         enviarEManterHistorico(usuario, resposta, intencao, destinoResposta(chatId, usuario));
 
@@ -383,6 +385,11 @@ public class WhatsAppService {
         String doMenu = MenuDoBot.intencaoDaOpcao(conteudo);
         if (doMenu != null) {
             return doMenu;
+        }
+
+        // "sair" também é "saudacao" para o banco, que só guarda cinco intenções; a resposta é a despedida.
+        if (MenuDoBot.ehPedidoDeSaida(conteudo)) {
+            return "saudacao";
         }
 
         String texto = conteudo.toLowerCase();
