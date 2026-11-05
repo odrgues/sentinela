@@ -428,6 +428,7 @@ public class WhatsAppService {
             case "consulta_cultivos" -> responderConsultaCultivos(usuario) + MenuDoBot.rodape();
             case "consulta_alertas" -> responderConsultaAlertas(usuario) + MenuDoBot.rodape();
             case "consulta_previsao" -> responderConsultaPrevisao(usuario) + MenuDoBot.rodape();
+            case "encerrar_conversa" -> MenuDoBot.despedida(usuario.getNome()); // Tratamento da opção 4
             case "saudacao" -> mensagemBoasVindas(usuario);
             default -> mensagemAjuda(usuario);
         };
