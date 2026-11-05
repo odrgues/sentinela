@@ -92,4 +92,17 @@ class MenuDoBotTest {
         assertTrue(MenuDoBot.despedida("Jessica").contains("digitar *oi*"));
         assertTrue(MenuDoBot.rodape().contains("*sair*"));
     }
+
+    @Test
+    void numeroDaLavouraSoValeSozinhoNaMensagem() {
+        assertEquals(1, MenuDoBot.numeroDaLavoura("1"));
+        assertEquals(2, MenuDoBot.numeroDaLavoura(" 2. "));
+        assertEquals(12, MenuDoBot.numeroDaLavoura("12"));
+        assertEquals(3, MenuDoBot.numeroDaLavoura("opção 3"));
+        assertNull(MenuDoBot.numeroDaLavoura("0"));
+        assertNull(MenuDoBot.numeroDaLavoura("100"));
+        assertNull(MenuDoBot.numeroDaLavoura("tenho 2 lavouras"));
+        assertNull(MenuDoBot.numeroDaLavoura("menu"));
+        assertNull(MenuDoBot.numeroDaLavoura(null));
+    }
 }

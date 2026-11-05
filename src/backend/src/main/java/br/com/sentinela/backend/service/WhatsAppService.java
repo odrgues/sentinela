@@ -27,6 +27,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -36,6 +37,9 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 @Slf4j
 public class WhatsAppService {
+
+    // Quanto tempo a lista de lavouras espera por um número antes de ele voltar a ser uma opção do menu.
+    private static final long MINUTOS_PARA_ESCOLHER = 30;
 
     private final MensagemRepository mensagemRepository;
     private final UsuarioRepository usuarioRepository;
@@ -158,11 +162,20 @@ public class WhatsAppService {
         }
 
         // Fluxo normal para usuário já autenticado e vinculado
-        String intencao = identificarIntencao(conteudo, intencaoEntrada);
+        // Logo depois da lista de lavouras, um número é a lavoura escolhida, não uma opção do menu.
+        Integer lavouraEscolhida = estaEscolhendoLavoura(usuario) ? MenuDoBot.numeroDaLavoura(conteudo) : null;
+        String intencao = lavouraEscolhida != null
+                ? "consulta_previsao"
+                : identificarIntencao(conteudo, intencaoEntrada);
         registrarMensagemRecebida(usuario, chatId, conteudo, intencao);
-        String resposta = MenuDoBot.ehPedidoDeSaida(conteudo)
-                ? MenuDoBot.despedida(usuario.getNome())
-                : gerarRespostaDoAgente(usuario, intencao);
+        String resposta;
+        if (MenuDoBot.ehPedidoDeSaida(conteudo)) {
+            resposta = MenuDoBot.despedida(usuario.getNome());
+        } else if (lavouraEscolhida != null) {
+            resposta = responderLavoura(usuario, lavouraEscolhida);
+        } else {
+            resposta = gerarRespostaDoAgente(usuario, intencao);
+        }
 
         enviarEManterHistorico(usuario, resposta, intencao, destinoResposta(chatId, usuario));
 
@@ -392,6 +405,11 @@ public class WhatsAppService {
             return "saudacao";
         }
 
+        // "menu", "0" ou "voltar" sozinhos abrem o menu antes de qualquer palavra-chave.
+        if (MenuDoBot.ehPedidoDeMenu(conteudo)) {
+            return "saudacao";
+        }
+
         String texto = conteudo.toLowerCase();
 
         if (texto.contains("cultivo")
@@ -433,9 +451,10 @@ public class WhatsAppService {
             String intencao
     ) {
         return switch (intencao) {
-            case "consulta_cultivos" -> responderConsultaCultivos(usuario) + MenuDoBot.rodape();
+            case "consulta_cultivos" -> responderListaDeLavouras(usuario, "🌾 *Suas lavouras*");
             case "consulta_alertas" -> responderConsultaAlertas(usuario) + MenuDoBot.rodape();
-            case "consulta_previsao" -> responderConsultaPrevisao(usuario) + MenuDoBot.rodape();
+            case "consulta_previsao" -> responderListaDeLavouras(usuario,
+                    "🌤️ *Previsão do tempo*\nDe qual lavoura você quer ver?");
             case "saudacao" -> mensagemBoasVindas(usuario);
             default -> mensagemAjuda(usuario);
         };
@@ -454,17 +473,20 @@ public class WhatsAppService {
                 + MenuDoBot.opcoes();
     }
 
-    private String responderConsultaCultivos(Usuario usuario) {
+    // Cada lavoura numerada. A pessoa responde com o número e recebe os avisos e a previsão daquela lavoura.
+    private String responderListaDeLavouras(Usuario usuario, String titulo) {
         try {
-            List<Cultivo> cultivos = cultivoRepository.findByUsuarioId(usuario.getId());
+            List<Cultivo> cultivos = lavourasEmOrdem(usuario);
 
-            if (cultivos == null || cultivos.isEmpty()) {
-                return "🌾 Você ainda não tem lavouras cadastradas.\nCadastre a primeira no site do Sentinela.";
+            if (cultivos.isEmpty()) {
+                return "🌾 Você ainda não tem lavouras cadastradas.\nCadastre a primeira no site do Sentinela."
+                        + MenuDoBot.rodape();
             }
 
             List<String> blocos = new ArrayList<>();
+            int numero = 1;
             for (Cultivo cultivo : cultivos) {
-                StringBuilder bloco = new StringBuilder("*")
+                StringBuilder bloco = new StringBuilder("*").append(numero++).append(" · ")
                         .append(cultivo.getApelido() != null ? cultivo.getApelido() : "Lavoura")
                         .append("*\n🌱 ")
                         .append(cultivo.getCultura() != null ? cultivo.getCultura().getNome() : "Cultura não informada");
@@ -484,10 +506,121 @@ public class WhatsAppService {
                 blocos.add(bloco.toString());
             }
 
-            return "🌾 *Suas lavouras*\n\n" + String.join("\n\n", blocos);
+            return titulo + "\n\n" + String.join("\n\n", blocos)
+                    + "\n\n" + MenuDoBot.ESCOLHA_DA_LAVOURA + "\n_*0* para voltar ao menu._";
         } catch (Exception e) {
             log.error("[WHATSAPP] Erro ao buscar cultivos para o usuário {}: {}", usuario.getId(), e.getMessage());
             return "🌾 Não consegui carregar suas lavouras agora. Tente de novo em instantes.";
+        }
+    }
+
+    // Sempre na mesma ordem, para o número que a pessoa vê na lista ser o da lavoura que ela recebe.
+    private List<Cultivo> lavourasEmOrdem(Usuario usuario) {
+        List<Cultivo> cultivos = cultivoRepository.findByUsuarioId(usuario.getId());
+        if (cultivos == null) {
+            return List.of();
+        }
+        return cultivos.stream().sorted(Comparator.comparing(Cultivo::getId)).toList();
+    }
+
+    // A última coisa que o bot disse foi a lista de lavouras, há pouco tempo?
+    private boolean estaEscolhendoLavoura(Usuario usuario) {
+        return mensagemRepository.findFirstByUsuarioIdAndDirecaoOrderByIdDesc(usuario.getId(), "enviada")
+                .filter(m -> m.getConteudo() != null && m.getConteudo().contains(MenuDoBot.ESCOLHA_DA_LAVOURA))
+                .filter(m -> m.getRegistradoEm() != null
+                        && m.getRegistradoEm().isAfter(LocalDateTime.now().minusMinutes(MINUTOS_PARA_ESCOLHER)))
+                .isPresent();
+    }
+
+    // Os avisos e a previsão de uma lavoura só, na mesma mensagem.
+    private String responderLavoura(Usuario usuario, int numero) {
+        try {
+            List<Cultivo> cultivos = lavourasEmOrdem(usuario);
+
+            if (numero > cultivos.size()) {
+                return "🤔 Não achei a lavoura *" + numero + "*.\n\n"
+                        + (cultivos.isEmpty()
+                                ? "Você ainda não tem lavouras cadastradas."
+                                : "Responda com um número de *1* a *" + cultivos.size() + "*.")
+                        + "\n_*0* para voltar ao menu._";
+            }
+
+            Cultivo cultivo = cultivos.get(numero - 1);
+
+            StringBuilder resposta = new StringBuilder("🌾 *")
+                    .append(cultivo.getApelido() != null ? cultivo.getApelido() : "Lavoura")
+                    .append("*\n🌱 ")
+                    .append(cultivo.getCultura() != null ? cultivo.getCultura().getNome() : "Cultura não informada")
+                    .append("\n📍 ")
+                    .append(cultivo.getMunicipio() != null ? cultivo.getMunicipio().getNome() : "Município não informado")
+                    .append("\n\n");
+
+            if (!"em_andamento".equals(cultivo.getStatus())) {
+                resposta.append("🚨 *Avisos da semana*\nEsta lavoura está ").append(FormatoDoBot.status(cultivo.getStatus()))
+                        .append(", então não gero avisos para ela.");
+            } else {
+                List<String> avisos = avisosDaLavoura(cultivo);
+                resposta.append("🚨 *Avisos da semana*\n");
+                resposta.append(avisos.isEmpty()
+                        ? "✅ Nenhum aviso de calor, frio ou chuva nos próximos 7 dias."
+                        : String.join("\n\n", avisos));
+            }
+
+            resposta.append("\n\n").append(previsaoDaLavoura(cultivo));
+
+            return resposta + MenuDoBot.rodape();
+        } catch (Exception e) {
+            log.error("[WHATSAPP] Erro ao buscar a lavoura {} do usuário {}: {}", numero, usuario.getId(), e.getMessage());
+            return "🌾 Não consegui carregar essa lavoura agora. Tente de novo em instantes." + MenuDoBot.rodape();
+        }
+    }
+
+    // Os avisos de calor, frio e chuva da semana de uma lavoura (os "tudo certo" ficam de fora).
+    private List<String> avisosDaLavoura(Cultivo cultivo) {
+        List<String> blocos = new ArrayList<>();
+        for (Alerta alerta : avisosService.daSemana(cultivo)) {
+            if ("info".equalsIgnoreCase(alerta.getSeveridade())) {
+                continue;
+            }
+            blocos.add(FormatoDoBot.nivel(alerta.getSeveridade()) + " · " + cultivo.getApelido() + "\n"
+                    + alerta.getMensagem());
+        }
+        return blocos;
+    }
+
+    private String previsaoDaLavoura(Cultivo cultivo) {
+        try {
+            if (cultivo.getMunicipio() == null) {
+                return "☀️ A lavoura não tem município, e sem ele não consigo buscar a previsão.";
+            }
+
+            ClimaResponseDTO clima = climaService.buscarPrevisaoPorMunicipio(
+                    cultivo.getMunicipio().getId()
+            );
+
+            StringBuilder resposta = new StringBuilder("🌤️ *Previsão para ")
+                    .append(cultivo.getMunicipio().getNome())
+                    .append("*\n\n");
+
+            if (clima.previsaoDiaria() != null) {
+                for (ClimaResponseDTO.PrevisaoDiariaDTO dia : clima.previsaoDiaria()) {
+                    resposta.append("*").append(FormatoDoBot.diaDaSemana(LocalDate.parse(dia.data()))).append("*  ")
+                            .append(FormatoDoBot.temperaturas(dia.tempMin(), dia.tempMax()))
+                            .append("  ")
+                            .append(dia.chuvaMm() > 0 ? "🌧️ " + FormatoDoBot.milimetros(dia.chuvaMm()) : "☀️ sem chuva")
+                            .append("\n");
+                }
+                resposta.append("\n");
+            }
+
+            resposta.append("💧 Chuva na semana: *")
+                    .append(FormatoDoBot.milimetros(clima.chuvaAcumuladaSemanaMm()))
+                    .append("*");
+
+            return resposta.toString();
+        } catch (Exception e) {
+            log.error("[WHATSAPP] Erro ao buscar previsão da lavoura {}: {}", cultivo.getId(), e.getMessage());
+            return "🌤️ Não consegui carregar a previsão agora. Tente de novo em instantes.";
         }
     }
 
@@ -524,52 +657,6 @@ public class WhatsAppService {
         }
     }
 
-    private String responderConsultaPrevisao(Usuario usuario) {
-        try {
-            List<Cultivo> cultivos = cultivoRepository.findByUsuarioId(usuario.getId());
-
-            if (cultivos == null || cultivos.isEmpty()) {
-                return "☀️ Cadastre uma lavoura no site para eu mostrar a previsão do lugar dela.";
-            }
-
-            Cultivo cultivo = cultivos.get(0);
-
-            if (cultivo.getMunicipio() == null) {
-                return "☀️ A sua lavoura *" + cultivo.getApelido() + "* não tem município, e sem ele não consigo buscar a previsão.";
-            }
-
-            ClimaResponseDTO clima = climaService.buscarPrevisaoPorMunicipio(
-                    cultivo.getMunicipio().getId()
-            );
-
-            StringBuilder resposta = new StringBuilder("🌤️ *Previsão para ")
-                    .append(cultivo.getMunicipio().getNome())
-                    .append("*\n_")
-                    .append(cultivo.getApelido())
-                    .append("_\n\n");
-
-            if (clima.previsaoDiaria() != null) {
-                for (ClimaResponseDTO.PrevisaoDiariaDTO dia : clima.previsaoDiaria()) {
-                    resposta.append("*").append(FormatoDoBot.diaDaSemana(LocalDate.parse(dia.data()))).append("*  ")
-                            .append(FormatoDoBot.temperaturas(dia.tempMin(), dia.tempMax()))
-                            .append("  ")
-                            .append(dia.chuvaMm() > 0 ? "🌧️ " + FormatoDoBot.milimetros(dia.chuvaMm()) : "☀️ sem chuva")
-                            .append("\n");
-                }
-                resposta.append("\n");
-            }
-
-            resposta.append("💧 Chuva na semana: *")
-                    .append(FormatoDoBot.milimetros(clima.chuvaAcumuladaSemanaMm()))
-                    .append("*");
-
-            return resposta.toString();
-        } catch (Exception e) {
-            log.error("[WHATSAPP] Erro ao buscar previsão para o usuário {}: {}", usuario.getId(), e.getMessage());
-            return "🌤️ Não consegui carregar a previsão agora. Tente de novo em instantes.";
-        }
-    }
-
     private boolean podeReceberAvisos(Usuario usuario) {
         return usuario != null
                 && usuario.getWhatsappNumero() != null
@@ -580,4 +667,4 @@ public class WhatsAppService {
     public void enviarRespostaDireta(String destino, String mensagem) {
         dispararParaWhatsappReal(null, destino, mensagem);
     }
-}
+}

@@ -20,7 +20,23 @@ public final class MenuDoBot {
     private static final Set<String> PEDIDOS_DE_SAIDA = Set.of(
             "sair", "tchau", "encerrar", "fim", "obrigado", "obrigada", "valeu", "atelogo", "atemais");
 
+    // "2", "2.", "opção 2" sozinhos na mensagem: o número de uma lavoura da lista. O 0 fica de fora, é o "voltar".
+    private static final Pattern NUMERO_DA_LAVOURA = Pattern.compile("^\\s*(?:op[cç][aã]o\\s*)?([1-9]\\d?)\\D{0,3}\\s*$",
+            Pattern.CASE_INSENSITIVE);
+
+    // O fim da lista de lavouras. Serve também para saber, na próxima mensagem, que a última resposta foi a lista:
+    // aí um "2" quer dizer a lavoura 2, e não a opção 2 do menu.
+    public static final String ESCOLHA_DA_LAVOURA =
+            "Responda com o *número da lavoura* para ver os avisos e a previsão dela.";
+
     private MenuDoBot() {}
+
+    // O número da lavoura que a pessoa escolheu, ou null se a mensagem não for só um número.
+    public static Integer numeroDaLavoura(String texto) {
+        if (texto == null) return null;
+        Matcher numero = NUMERO_DA_LAVOURA.matcher(texto);
+        return numero.matches() ? Integer.valueOf(numero.group(1)) : null;
+    }
 
     // Sem acento, sem pontuação e sem emoji, como no menu.
     private static String simplificar(String texto) {
