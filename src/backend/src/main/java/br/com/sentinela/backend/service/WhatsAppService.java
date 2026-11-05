@@ -317,7 +317,7 @@ public class WhatsAppService {
 
                 Map<String, Object> body = Map.of(
                         "number", numeroOuLidFinal,
-                        "textMessage", Map.of("text", mensagem)
+                        "text", mensagem
                 );
 
                 HttpEntity<?> requestEntity = new HttpEntity<>(body, headers);
