@@ -10,7 +10,7 @@ public final class MenuDoBot {
 
     // "1", "1.", "1)", "1️⃣" ou "opção 1", sozinhos na mensagem. Um número no meio de uma frase
     // ("tenho 2 lavouras") não conta.
-    private static final Pattern OPCAO = Pattern.compile("^\\s*(?:op[cç][aã]o\\s*)?([1-4])\\D{0,3}\\s*$",
+    private static final Pattern OPCAO = Pattern.compile("^\\s*(?:op[cç][aã]o\\s*)?([1-3])\\D{0,3}\\s*$",
             Pattern.CASE_INSENSITIVE);
 
     // "menu", "Menu!", "0", "voltar", "início", "ajuda", sozinhos na mensagem: abrem o menu.
@@ -55,17 +55,14 @@ public final class MenuDoBot {
         return switch (opcao.group(1)) {
             case "1" -> "consulta_cultivos";
             case "2" -> "consulta_alertas";
-            case "3" -> "consulta_previsao";
-            case "4" -> "encerrar_conversa";
-            default -> "nao_identificada";
+            default -> "consulta_previsao";
         };
     }
 
     public static String opcoes() {
         return "*1* - Minhas lavouras\n"
                 + "*2* - Avisos da semana\n"
-                + "*3* - Previsão do tempo\n"
-                + "*4* - Encerrar conversa";
+                + "*3* - Previsão do tempo";
     }
 
     // O fim de toda resposta de consulta: o menu de novo, para a pessoa escolher a próxima sem digitar "menu".
