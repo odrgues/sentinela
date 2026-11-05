@@ -101,10 +101,9 @@ public class WhatsAppController {
             if (!texto.isBlank()) {
                 WhatsAppService.RespostaWebhook resposta = whatsAppService.processarWebhook(chatId, lid, texto);
 
-                // CORREÇÃO CRUCIAL: Se houver qualquer mensagem gerada, devolvemos ela no JSON
-                // para o webhook responder instantaneamente no chat sem precisar de POST ativo (evita erro 400)
                 if (resposta != null && resposta.mensagem() != null && !resposta.mensagem().isBlank()) {
-                    return ResponseEntity.ok(Map.of("resposta", resposta.mensagem()));
+                    // Retorno síncrono para a Evolution API enviar a mensagem direto sem requisições extras
+                    return ResponseEntity.ok(Map.of("text", resposta.mensagem()));
                 }
             }
 
