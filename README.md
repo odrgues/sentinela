@@ -10,6 +10,7 @@ Trabalho da disciplina **Projetos Integrados 2 (VIA231)**, Uniube, 2026/2.
 Equipe: **Jessica Rodrigues** e **Larissa Miuki**.
 
 **Site no ar:** https://sentinela-sepia.vercel.app
+**Situação:** concluído e apresentado em 18/11/2026. A gestão do projeto (termo de abertura, cronograma e atas) está em [`docs/`](#gestão-do-projeto).
 
 ![Painel do Sentinela, com o mapa de satélite e as lavouras por nível de aviso](docs/imagens/03-painel.jpg)
 
@@ -38,15 +39,14 @@ O Sentinela compara a previsão de 7 dias do **ponto exato da lavoura** com o qu
 
 **Nova lavoura.** A busca de endereço leva o mapa até a cidade; o produtor arrasta o mapa até o marcador ficar em cima da lavoura, e o município aparece sozinho.
 
-![Detalhe da lavoura: satélite do lugar, resumo da semana, gráfico de 7 dias com a faixa ideal, ciclo, fase, avisos com o que fazer e El Niño](docs/imagens/05-detalhe.png)
+![Detalhe da lavoura: satélite do lugar, risco da semana, gráfico de 7 dias com a faixa ideal, ciclo da lavoura, avisos com o que fazer e El Niño](docs/imagens/05-detalhe.png)
 
-**Detalhe da lavoura.** De cima para baixo:
-- a **foto de satélite do lugar**, com o ponto onde a lavoura foi marcada;
-- o **resumo da semana**, com o aviso mais sério na cor do nível e o caminho até o que fazer;
-- o **gráfico de 7 dias**: cada dia é uma barrinha da mínima à máxima, sobre a **faixa de temperatura ideal da cultura** (verde) e o limite de calor ou de frio (tracejado). A chuva vem em barras, e a legenda mostra a chuva da semana contra o ideal. Só os dias fora do normal levam frase;
-- o **ciclo dividido nas fases da cultura**, com a fase de hoje e o que ela pede;
-- os **avisos da semana**, cada um com **O que fazer** (manejo com fonte) e **Por quê?** (o limite da cultura que foi passado). Passar o mouse num aviso acende o dia dele no gráfico;
-- o contexto do **El Niño / La Niña** da safra.
+**Detalhe da lavoura.**
+- No topo, a **foto de satélite do lugar**, com o ponto marcado, e o **risco da semana**: o aviso mais sério, na cor do nível, com o botão **Ver o que fazer**.
+- O **gráfico de 7 dias**: cada dia é uma barrinha da mínima à máxima, sobre a **faixa de temperatura ideal da cultura** (verde) e o limite de calor ou de frio (tracejado). A chuva vem em barras, e a legenda compara a chuva da semana com o ideal. Só os dias fora do normal levam frase. Na aba **Histórico**, os avisos das semanas anteriores.
+- O **ciclo da lavoura**: a colheita prevista, o ciclo dividido nas fases da cultura e a **fase de agora**, com o que ela pede e a fonte.
+- Os **avisos da semana**, agrupados por tipo: os dias em que o limite é passado, cada um com **Por quê?** (o limite da cultura e a fonte), e o **O que fazer** uma vez só para o grupo. Passar o mouse num aviso acende o dia dele no gráfico.
+- O **clima da safra**: a fase do El Niño / La Niña, o que ela costuma trazer para a região e o que fazer.
 
 | | |
 |---|---|
@@ -70,10 +70,10 @@ O site é responsivo: o painel vira um mapa com a lista de lavouras numa folha q
 Um canal de **consulta**: o produtor pergunta e o sistema responde com os dados dele. O cadastro e a edição ficam só no site.
 
 - **Reconhece a pessoa pelo número** salvo na conta, com ou sem o 9º dígito. Quando o WhatsApp esconde o número e manda só um identificador (`@lid`), o bot o guarda na conta para reconhecer a pessoa nas próximas mensagens. Quem não tem conta não vê dado de ninguém.
-- **Menu numerado:** a pessoa responde `1`, `2` ou `3`, ou escreve `menu`.
+- **Menu numerado:** a pessoa responde `1`, `2` ou `3`, ou escreve `menu`. A opção `1` lista as lavouras, e o número de uma delas traz os avisos e a previsão só dela. `sair` encerra a conversa.
 - **Manda sozinho:** boas-vindas ao cadastrar o número, aviso crítico (com o "O que fazer") e o resumo da semana, às segundas.
 - **Respeita a chave** "Receber avisos automáticos" de Minha conta.
-- A **Evolution API** (um WhatsApp Web automatizado, conectado por QR Code) roda no Docker e recebe e envia as mensagens. O backend recebe cada mensagem por webhook.
+- A **Evolution API** (um WhatsApp Web automatizado, conectado por QR Code) roda no Docker e recebe e envia as mensagens. O backend recebe cada mensagem por webhook. Ela roda no notebook da equipe: com ele desligado, o bot não responde, mas o site e a API continuam no ar.
 
 Como as respostas chegam:
 
@@ -133,7 +133,7 @@ O bot reconhece palavras-chave e números do menu; não usa modelo de linguagem.
 | Mapas | Leaflet, imagens de satélite da Esri, busca Photon e OpenStreetMap | sem chave |
 | Bot | Evolution API, no Docker, exposta pelo ngrok | notebook da equipe |
 
-**Qualidade:** o site tem 190 testes automatizados e o backend, 32, entre eles as regras de aviso, o ciclo das culturas e os textos do bot. Senhas são guardadas com BCrypt, o login usa JWT, e cada pessoa só enxerga as próprias lavouras.
+**Qualidade:** o site tem 198 testes automatizados e o backend, 55, entre eles as regras de aviso, o ciclo das culturas, o menu e os textos do bot e a escolha de lavoura pelo número. Senhas são guardadas com BCrypt, o login usa JWT, e cada pessoa só enxerga as próprias lavouras.
 
 ---
 
@@ -163,13 +163,22 @@ Para recriar do zero, apague o banco antes: `docker exec sentinela-mysql mysql -
 ### 2. API
 
 ```bash
+cp .env.example .env          # uma vez; preencha JWT_SECRET com qualquer texto longo
+set -a; source .env; set +a   # carrega as variáveis no terminal
 cd src/backend
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
 Sobe em `http://localhost:8080`. O perfil `dev` libera `POST /api/interno/rodar-rotina`, que roda na hora a rotina das 6h (previsão nova, avisos refeitos e WhatsApp), e `POST /api/interno/atualizar-enso`, que busca na NOAA a série do El Niño (a rotina automática roda todo dia 6). A documentação interativa fica em `http://localhost:8080/swagger-ui.html`.
 
-Tudo o que muda em produção vem de variáveis de ambiente, com valores de desenvolvimento como padrão (ver `.env.example`): `DB_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`, `FRONT_ORIGENS`, `FRONT_URL` e `MAIL_HOST`/`MAIL_USER`/`MAIL_PASSWORD`. Sem `MAIL_HOST`, o link de "Esqueci minha senha" aparece no log da API em vez de ir por e-mail.
+Tudo o que muda em produção vem de variáveis de ambiente, descritas no [`.env.example`](.env.example). `DB_URL`, `DB_USER`, `DB_PASSWORD` e `JWT_SECRET` são obrigatórias e não têm valor padrão, para nenhuma senha ficar no código; o `.env.example` já traz as do banco do docker-compose. As outras têm padrão de desenvolvimento: `FRONT_ORIGENS`, `FRONT_URL`, `MAIL_*` e `EVOLUTION_API_URL`/`EVOLUTION_API_KEY`. Sem `MAIL_HOST`, o link de "Esqueci minha senha" aparece no log da API em vez de ir por e-mail.
+
+### Testes
+
+```bash
+(cd src/frontend && npx vitest run)   # 198 testes, com a API de mentira
+(cd src/backend && ./mvnw test)       # 55 testes; carregue o .env antes, porque um deles sobe a aplicação inteira
+```
 
 ### 3. Front
 
@@ -209,7 +218,7 @@ Antes de apresentar, depois das 6h do dia, rode de novo `database/seeds/05_conta
 
 ## Rotas da API
 
-Todas exigem `Authorization: Bearer <token>`, menos login, cadastro, esqueci a senha e nova senha. Erros sempre no formato `{ status, mensagem, campos }`. Contrato completo no doc "Sentinela — Especificação da API".
+Todas exigem `Authorization: Bearer <token>`, menos login, cadastro, esqueci a senha e nova senha. Erros sempre no formato `{ status, mensagem, campos }`.
 
 | Método | Rota | Tela |
 |---|---|---|
@@ -299,6 +308,36 @@ cultivo   1───N  previsao_diaria    (ON DELETE CASCADE)
 `fase_enso` não tem FK com ninguém: é consultada pelo mês do plantio (ou o último mês medido, nas perenes).
 
 O diagrama ER fica em `database/er_dbdiagram.txt` (DBML, editável em [dbdiagram.io](https://dbdiagram.io)). As imagens `database/er_diagrama.png` e `.pdf` são da versão do CP-1: para atualizar, cole o DBML no dbdiagram.io e exporte de novo.
+
+---
+
+## Limitações conhecidas
+
+- **O bot depende do notebook da equipe.** A Evolution API e o ngrok rodam nele; desligado, o bot não responde. Para ficar sempre no ar, a Evolution precisaria de um servidor próprio, ou o bot teria de migrar para a API oficial do WhatsApp (Meta), que exige verificação da empresa.
+- **Os limites são por cultura**, não por cultivar nem por tipo de solo.
+- **A previsão perde precisão no fim da semana**, como toda previsão de 7 dias; os avisos dos últimos dias são os menos certos.
+- **Ainda não foi validado com produtores em campo.**
+- O diagrama ER em imagem (`database/er_diagrama.png`) é o do CP-1; o DBML em `database/er_dbdiagram.txt` está atualizado.
+
+---
+
+## Gestão do projeto
+
+| Documento | O que tem |
+|---|---|
+| [`docs/termo_abertura.md`](docs/termo_abertura.md) | Problema, escopo, critérios de aceitação, riscos e o que mudou em relação ao planejado |
+| [`docs/cronograma.md`](docs/cronograma.md) | O calendário da disciplina e o que foi entregue em cada data |
+| [`docs/atas/`](docs/atas) | Atas S01 a S06 (até o CP-2) e a ata de encerramento S07, que cobre de 01/10 até a apresentação final |
+| [`docs/deploy.md`](docs/deploy.md) | Onde cada peça está publicada e como publicar de novo |
+| [`docs/especificacao_api.md`](docs/especificacao_api.md) | Todas as rotas da API, com exemplos |
+| [GitHub Projects](https://github.com/users/odrgues/projects/2) | O quadro de tarefas do projeto |
+
+### Equipe
+
+| Integrante | Principais frentes |
+|---|---|
+| Jessica Rodrigues | Banco de dados (CP-1), site inteiro, contrato da API, culturas e orientações com fonte, publicação (Vercel, Render e Aiven), menu e textos do bot, documentação e gestão |
+| Larissa Miuki | API: cadastro de usuário (CP-2), login com JWT, nova senha, culturas e lavouras, integração com a Open-Meteo, motor de avisos, rotina das 6h, El Niño, Swagger, e a integração do bot com a Evolution API |
 
 ---
 
