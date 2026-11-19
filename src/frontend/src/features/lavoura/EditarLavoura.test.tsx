@@ -45,8 +45,10 @@ describe('Editar lavoura', () => {
     await userEvent.clear(screen.getByLabelText('Tamanho em hectares (opcional)'))
     await userEvent.click(screen.getByRole('button', { name: 'Salvar alterações' }))
 
+    // Depois de salvar, a lavoura é buscada de novo antes de aparecer: com todos os arquivos
+    // rodando juntos, isso passa dos 3 segundos do setup.
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Talhão do fundo' }),
+      await screen.findByRole('heading', { level: 1, name: 'Talhão do fundo' }, { timeout: 5000 }),
     ).toBeInTheDocument()
     expect(roteador.state.location.pathname).toBe('/lavouras/1')
     expect(corpos).toEqual([{ culturaId: 2, areaHa: null }])
