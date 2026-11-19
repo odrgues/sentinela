@@ -7,7 +7,7 @@ Três serviços, cada um num lugar:
 | Site (React) | Vercel | https://sentinela-sepia.vercel.app |
 | API (Spring Boot) | Render, plano Starter | https://sentinela-api-38j2.onrender.com |
 | Banco (MySQL 8.4) | Aiven | `sentinela-db-sentinela-db.d.aivencloud.com:16526` |
-| Bot do WhatsApp (Evolution API) | notebook da Larissa, exposto pelo ngrok | ver a seção 4 |
+| Bot do WhatsApp (Evolution API) | notebook da Jessica, exposto pelo ngrok | ver a seção 4 |
 
 A ordem de criação importa, porque um precisa do endereço do outro: banco → site (sem API) → API (com o endereço do banco e do site) → endereço da API no site.
 
@@ -93,7 +93,7 @@ O `src/frontend/vercel.json` manda as rotas do site (como `/lavouras/1`) para o 
 
 ## 4. Bot do WhatsApp — Evolution API
 
-A Evolution API é um WhatsApp Web automatizado: um celular dedicado escaneia o QR Code e vira o número do bot. Ela roda no Docker do notebook da Larissa, e o ngrok dá a ela um endereço público.
+A Evolution API é um WhatsApp Web automatizado: um celular dedicado escaneia o QR Code e vira o número do bot. Ela roda no Docker do notebook da Jessica (até 05/11 rodava no da Larissa), e o ngrok dá a ela um endereço público.
 
 ```
 celular do produtor ⇄ WhatsApp ⇄ Evolution (notebook, porta 8082) ⇄ ngrok
@@ -102,8 +102,8 @@ celular do produtor ⇄ WhatsApp ⇄ Evolution (notebook, porta 8082) ⇄ ngrok
                               API no Render: /api/whatsapp/webhook ───────────┘
 ```
 
-1. Na Evolution, a instância (`sentinela-bot2`) manda o evento `MESSAGES_UPSERT` para `https://<api>.onrender.com/api/whatsapp/webhook`.
-2. O ngrok aponta para a Evolution: `ngrok http --url=<domínio-fixo>.ngrok-free.dev 8082`.
+1. Na Evolution, a instância `sentinela-bot` manda o evento `MESSAGES_UPSERT` para `https://sentinela-api-38j2.onrender.com/api/whatsapp/webhook`. A API responde pela mesma instância: o nome está fixo em `WhatsAppService.java`.
+2. A Evolution sobe com `cd ~/evolution && docker compose up -d`, e o ngrok aponta para ela: `ngrok http --url=<domínio-fixo>.ngrok-free.dev 8082` (o domínio fixo da conta do ngrok da Jessica, o mesmo de `EVOLUTION_API_URL`).
 3. No Render, as variáveis da API:
 
 | Variável | Valor |
@@ -111,7 +111,7 @@ celular do produtor ⇄ WhatsApp ⇄ Evolution (notebook, porta 8082) ⇄ ngrok
 | `EVOLUTION_API_URL` | o endereço do ngrok, ex.: `https://<domínio-fixo>.ngrok-free.dev`. Sem ela, a API tenta `localhost:8082` e o bot não responde |
 | `EVOLUTION_API_KEY` | a `AUTHENTICATION_API_KEY` da Evolution |
 
-O bot só funciona com o notebook da Larissa ligado, com o Docker da Evolution e o ngrok de pé. O site e a API funcionam sem ele.
+O bot só funciona com o notebook da Jessica ligado, com o Docker da Evolution e o ngrok de pé. O site e a API funcionam sem ele.
 
 ---
 
@@ -120,9 +120,11 @@ O bot só funciona com o notebook da Larissa ligado, com o Docker da Evolution e
 A rotina das 6h roda em produção e troca a previsão fixa da conta de demonstração pela previsão de verdade do dia. Para o painel mostrar os avisos da demonstração, rode de novo o seed **depois das 6h** daquele dia: o `05_conta_demonstracao.sql` (conta `sentinela.uniube@gmail.com`, 12 lavouras, que precisa ter sido criada pelo site antes):
 
 ```bash
-mysql -h <host>.aivencloud.com -P <porta> -u avnadmin -p --ssl-mode=REQUIRED --default-character-set=utf8mb4 \
+mysql -h sentinela-db-sentinela-db.d.aivencloud.com -P 16526 -u avnadmin -p --ssl-mode=REQUIRED --default-character-set=utf8mb4 \
   --init-command="SET time_zone='-03:00'" sentinela < database/seeds/05_conta_demonstracao.sql
 ```
+
+O `-p` pede a senha do `avnadmin` na hora (no painel da Aiven, em *Connection information*). Se terminar sem mensagem, deu certo. O seed só troca a previsão e os avisos das 12 lavouras da demonstração, pelo nome; outras lavouras da conta ficam como estão.
 
 Se preferirem mostrar o clima real, não precisa rodar nada: os avisos da conta de demonstração passam a ser os da previsão do dia.
 

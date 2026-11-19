@@ -3,6 +3,8 @@
 Projetos Integrados 2 (VIA231) · Uniube · 2026/2
 Calendário oficial da disciplina, às quintas-feiras.
 
+**Situação:** projeto concluído e apresentado em **18/11/2026**.
+
 ## Calendário oficial
 
 | Data | Etapa | Entrega técnica | Entrega de gestão |
@@ -12,12 +14,28 @@ Calendário oficial da disciplina, às quintas-feiras.
 | 10/09 | Mentoria | Laboratório — dúvidas e adiantamento do CP-2 | — ✅ concluído |
 | ~~17/09~~ **30/09** | **CP-2 — Backend** | CRUD de `Usuario` (4 endpoints: criar, consultar, atualizar, remover) · conexão com o banco do CP-1 · tratamento de erro (400/404/500) · testes manuais documentados · especificação da API em `/docs` | Atas S05 e S06 · commits das duas integrantes — ✅ concluído, entregue com 13 dias de atraso em relação à data original |
 | 24/09 | Mentoria | Laboratório — dúvidas e adiantamento do CP-3 | — |
-| 01/10 | CP-3 — Integração | Frontend consumindo a API · CRUD pela tela · filtros · feedback visual · **sistema hospedado** | Atas em dia · board atualizado |
+| 01/10 | CP-3 — Integração | Frontend consumindo a API · CRUD pela tela · filtros · feedback visual · **sistema hospedado** | Atas em dia · board atualizado — substituído pela apresentação final (ver abaixo) |
 | 08/10 | Mentoria | Laboratório — dúvidas e adiantamento do CP-4 | — |
-| 15/10 | CP-4 — MVP completo | Fluxo end-to-end: cadastro → previsão → alertas · agente no WhatsApp · todas as 12 regras de negócio · autenticação | Bugs e pendências como issues abertas · branches por funcionalidade |
+| 15/10 | CP-4 — MVP completo | Fluxo end-to-end: cadastro → previsão → alertas · agente no WhatsApp · todas as 12 regras de negócio · autenticação | Bugs e pendências como issues abertas · branches por funcionalidade — substituído pela apresentação final |
+| **17/10** | **Mudança de formato** | O professor troca os checkpoints restantes pela apresentação do projeto completo | Registrado na ata S07 |
 | 22/10 | Mentoria | Laboratório — dúvidas e adiantamento do CP-5 | — |
-| 29/10 | CP-5 — Produção | URL pública estável · banco em produção · README final com screenshots · relatório final | Todas as atas em `/docs/atas` · board finalizado |
-| 10/12 | AMOSTRATEC | Defesa final — funcionamento end-to-end (25) · hospedagem (10) · qualidade técnica e defesa (15) | — |
+| 29/10 | CP-5 — Produção | URL pública estável · banco em produção · README final com screenshots · relatório final | Todas as atas em `/docs/atas` · board finalizado — substituído pela apresentação final |
+| **18/11** | **Apresentação final** | Sistema completo no ar: site na Vercel, API no Render, banco na Aiven, bot no WhatsApp pela Evolution API — ✅ concluído | Ata de encerramento S07 · README final · cronograma e termo atualizados — ✅ concluído |
+| ~~10/12~~ | ~~AMOSTRATEC~~ | A defesa final foi a apresentação de 18/11 | — |
+
+## O que foi entregue depois do CP-2
+
+Tudo o que os CP-3, CP-4 e CP-5 pediam entrou na apresentação final:
+
+| Pedido | Onde está |
+|---|---|
+| Frontend consumindo a API, CRUD pela tela, filtros e feedback visual | `src/frontend`: painel, nova lavoura, editar, detalhe, histórico com filtro por nível, Minha conta |
+| Sistema hospedado, URL pública estável e banco em produção | https://sentinela-sepia.vercel.app · API no Render · MySQL na Aiven (`docs/deploy.md`) |
+| Fluxo cadastro → previsão → alertas | Rotina das 6h e logo depois de salvar uma lavoura: Open-Meteo → `previsao_diaria` → `alerta` |
+| Agente no WhatsApp | Bot pela Evolution API, com menu, escolha de lavoura e avisos críticos automáticos |
+| Autenticação | Login com JWT, senhas com BCrypt, link de nova senha por e-mail |
+| README final com screenshots | `README.md` |
+| Todas as atas | `docs/atas`, de S01 a S07 |
 
 ## Regra de corte se o prazo apertar
 
@@ -27,6 +45,10 @@ Decidida antecipadamente no termo de abertura, para não improvisar sob pressão
 2. Contexto do El Niño / La Niña sai em segundo.
 3. CRUD, previsão de 7 dias e motor de alertas são intocáveis.
 
+Não foi preciso cortar nada: o bot e o El Niño foram entregues.
+
 ## Hospedagem
 
 O professor recomenda hospedar já a partir do **CP-3**, não deixar para o CP-5 — descobrir problema de deploy na última semana é o erro mais caro possível.
+
+O site foi publicado na Vercel e a API no Render em 27/10, três semanas antes da apresentação final.
