@@ -180,3 +180,18 @@ A partir do CP-3 há rodízio deliberado entre as frentes, de modo que ambas tra
 | CP-3 | Frontend integrado à API e sistema hospedado |
 | CP-4 | MVP completo com previsão, alertas e agente no WhatsApp |
 | CP-5 | Sistema em produção e documentação final |
+
+## 14. O que mudou em relação ao planejado
+
+Registro feito no encerramento (19/11/2026). As seções acima ficam como foram escritas no início do projeto.
+
+| Planejado | Como ficou |
+|---|---|
+| Entrega em cinco checkpoints até o fim de outubro | Em 17/10 o professor trocou os checkpoints pela apresentação do projeto completo, feita em 18/11/2026. |
+| Agente no WhatsApp com modelo de linguagem, que interpreta a pergunta e redige a resposta | Bot sem modelo de linguagem: menu numerado (lavouras, avisos da semana, previsão) e palavras-chave (`menu`, `sair`). As respostas saem dos dados calculados pelo sistema, como o escopo já exigia. O CA-7 é atendido pelo menu. |
+| WhatsApp Business Platform (Meta), número de teste | Evolution API, um WhatsApp Web automatizado conectado por QR Code, rodando no Docker do notebook da equipe e exposto pelo ngrok. A verificação da Meta não coube no prazo. |
+| Mapa do Google (Maps, Places e Geocoder) | Leaflet com imagens de satélite da Esri e busca do OpenStreetMap, sem chave. O faturamento do Google Cloud falhou na ativação. |
+| Hospedagem no Azure e no Cloudflare Pages | Site na Vercel, API no Render e banco na Aiven (ver `docs/deploy.md`). |
+| Jessica no backend, infraestrutura e documentação; Larissa no banco e no frontend | Em 17/10 a divisão se inverteu: Jessica ficou com o site inteiro e Larissa com a API. Depois, Jessica também implementou parte da API (contrato completo, orientações e culturas) e assumiu a Evolution em 05/11. |
+
+As premissas da seção 7 sobre a WhatsApp Business Platform e a API de modelo de linguagem deixaram de valer, porque nenhuma das duas foi usada. A ordem de corte da seção 9 não precisou ser aplicada: o bot, o El Niño e o histórico de avisos foram entregues.
